@@ -8,18 +8,8 @@ const getLatestPublished = async (req, res) => {
 
 		const articles = await articlesModel.findLatestPublished(limit);
 
-		// 🔍 Debug : Vérifier les données avant envoi
-		console.log("=== DEBUG ENCODING ===");
-		console.log("Premier titre:", articles[0]?.title);
-		console.log("Premier excerpt:", articles[0]?.excerpt);
-		console.log("Buffer du titre:", Buffer.from(articles[0]?.title || ""));
-		console.log("=====================");
-
-		res.json({
-			success: true,
-			data: articles,
-			count: articles.length,
-		});
+    // Retourner directement le tableau
+    res.json(articles);
 	} catch (error) {
 		console.error("Erreur getLatestPublished:", error);
 		res.status(500).json({
