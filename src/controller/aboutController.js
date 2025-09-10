@@ -1,15 +1,20 @@
 const aboutModel = require("../model/aboutModel");
 
-const getAboutPreview = async (req, res) => {
+const getAbout = async (req, res) => {
 	try {
 		const about = await aboutModel.findAbout();
-		res.json(about);
+
+		if (!about) {
+			return res.error("Contenu 'À propos' non trouvé", 404);
+		}
+
+		res.success({ about });
 	} catch (error) {
 		console.error("Erreur getAbout:", error);
-		res.status(500).json({
-			error: "Erreur lors de la récupération des informations",
-		});
+		res.error("Erreur lors de la récupération du contenu 'À propos'", 500);
 	}
 };
 
-module.exports = { getAboutPreview };
+module.exports = {
+	getAbout,
+};

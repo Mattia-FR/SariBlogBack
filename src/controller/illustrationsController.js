@@ -1,22 +1,65 @@
 const illustrationsModel = require("../model/illustrationsModel");
 
+// ✅ Homepage - 6 illustrations pour le carrousel
 const getGalleryPreview = async (req, res) => {
-  try {
-    const limit = req.query.limit
-      ? Number.parseInt(req.query.limit)
-      : undefined;
+	try {
+		const { limit } = req.query;
+		const illustrations = await illustrationsModel.findGalleryPreview(limit);
 
-    const illustrations = await illustrationsModel.findGalleryPreview(limit);
+		res.success({ illustrations });
+	} catch (error) {
+		console.error("Erreur getGalleryPreview:", error);
+		res.error("Erreur lors de la récupération de l'aperçu galerie", 500);
+	}
+};
 
-    res.json(illustrations);
-  } catch (error) {
-    console.error("Erreur getGalleryPreview:", error);
-    res.status(500).json({
-      error: "Erreur lors de la récupération des illustrations",
-    });
-  }
+// ✅ Page galerie - toutes les illustrations avec pagination
+const browse = async (req, res) => {
+	try {
+		const { page, limit } = req.query;
+		const offset = (page - 1) * limit;
+
+		const [illustrations, totalCount] = await Promise.all([
+			illustrationsModel.findAllInGallery(limit, offset),
+			illustrationsModel.countInGallery(),
+		]);
+
+		const totalPages = Math.ceil(totalCount / limit);
+
+		res.success({
+			illustrations,
+			pagination: {
+				page,
+				limit,
+				totalCount,
+				totalPages,
+			},
+		});
+	} catch (error) {
+		console.error("Erreur browse illustrations:", error);
+		res.error("Erreur lors de la récupération des illustrations", 500);
+	}
+};
+
+// ✅ Illustration individuelle
+const read = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const illustration = await illustrationsModel.findById(id);
+
+		if (!illustration) {
+			return res.error("Illustration non trouvée", 404);
+		}
+
+		res.success({ illustration });
+	} catch (error) {
+		console.error("Erreur read illustration:", error);
+		res.error("Erreur lors de la récupération de l'illustration", 500);
+	}
 };
 
 module.exports = {
-  getGalleryPreview,
+	getGalleryPreview,
+	browse,
+	read,
 };

@@ -1,9 +1,20 @@
 const express = require("express");
 const router = express.Router();
 
-const { getGalleryPreview } = require("../controller/illustrationsController");
+const {
+	getGalleryPreview,
+	browse,
+	read,
+} = require("../controller/illustrationsController");
+const { validatePagination, validateId } = require("../middleware/validation");
 
-// GET /api/illustrations/gallery-preview
-router.get("/gallery-preview", getGalleryPreview);
+// ✅ Homepage - 6 illustrations pour le carrousel
+router.get("/gallery-preview", validatePagination, getGalleryPreview);
+
+// ✅ Page galerie - toutes les illustrations avec pagination
+router.get("/", validatePagination, browse);
+
+// ✅ Illustration individuelle par ID
+router.get("/:id", validateId, read);
 
 module.exports = router;

@@ -1,17 +1,23 @@
 const express = require("express");
 const router = express.Router();
 
-const { browse, read, getLatest } = require("../controller/articlesController");
+const {
+	getLatest,
+	browse,
+	readBySlug,
+} = require("../controller/articlesController");
+const {
+	validatePagination,
+	validateSlug,
+} = require("../middleware/validation");
 
-// GET /api/articles (tous les articles avec pagination)
-router.get("/", browse);
+// ✅ Homepage - 4 derniers articles
+router.get("/latest", validatePagination, getLatest);
 
-// GET /api/articles/latest?limit=4
-router.get("/latest", getLatest);
+// ✅ Page blog - tous les articles avec pagination
+router.get("/", validatePagination, browse);
 
-// GET /api/articles/:slug (article complet par slug)
-// On la place à la fin vu que c'est une route générique
-// On évite ainsi qu'elle capture /latest
-router.get("/:slug", read);
+// ✅ Article individuel par slug
+router.get("/slug/:slug", validateSlug, readBySlug);
 
 module.exports = router;

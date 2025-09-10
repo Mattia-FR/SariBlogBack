@@ -1,9 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const { getAboutPreview } = require("../controller/aboutController");
+const { getAbout } = require("../controller/aboutController");
 
-// GET /api/about/about-preview
-router.get("/about-preview", getAboutPreview);
+router.get("/", getAbout);
 
 module.exports = router;
