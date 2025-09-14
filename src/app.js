@@ -37,8 +37,25 @@ app.use(express.json({ limit: "10mb" }));
 app.use(standardResponse);
 app.use(cacheHeaders);
 
-// ✅ Images statiques
-app.use("/images", express.static(path.join(__dirname, "../public/images")));
+// ✅ Images statiques avec CORS explicite
+app.use(
+	"/images",
+	(req, res, next) => {
+		// Permettre l'accès cross-origin pour les images
+		res.header(
+			"Access-Control-Allow-Origin",
+			process.env.FRONTEND_URL || "http://localhost:5173",
+		);
+		res.header("Access-Control-Allow-Methods", "GET");
+		res.header(
+			"Access-Control-Allow-Headers",
+			"Origin, X-Requested-With, Content-Type, Accept",
+		);
+		res.header("Cross-Origin-Resource-Policy", "cross-origin");
+		next();
+	},
+	express.static(path.join(__dirname, "../public/images")),
+);
 
 // ✅ Route de santé
 app.get("/", (req, res) => {

@@ -4,10 +4,10 @@ const { z } = require("zod");
 // SCHÉMAS DE BASE - SIMPLIFIÉS
 // =================================================================
 
-// Schéma de pagination
+// Schéma de pagination - CORRIGÉ
 const paginationSchema = z.object({
-	page: z.coerce.number().int().min(1).default(1),
 	limit: z.coerce.number().int().min(1).max(50).default(10),
+	offset: z.coerce.number().int().min(0).default(0),
 });
 
 // Schéma pour les IDs
@@ -20,7 +20,7 @@ const slugSchema = z.object({
 	slug: z
 		.string()
 		.regex(
-			/^[a-z09-]+$/,
+			/^[a-z0-9-]+$/,
 			"Slug must contain only lowercase letters, numbers and hyphens",
 		),
 });
@@ -41,7 +41,7 @@ const contactSchema = z.object({
 // MIDDLEWARE DE VALIDATION - SIMPLIFIÉS
 // =================================================================
 
-// Middleware de validation des paramètres de pagination
+// Middleware de validation des paramètres de pagination - CORRIGÉ
 const validatePagination = (req, res, next) => {
 	try {
 		const validatedQuery = paginationSchema.parse(req.query);
@@ -104,11 +104,13 @@ const validateSlug = (req, res, next) => {
 				error: {
 					code: "INVALID_SLUG",
 					message: "Invalid slug parameter",
-					details: error.errors.map((err) => ({
-						field: err.path.join("."),
-						message: err.message,
-						received: err.received,
-					})),
+					details: error.errors
+						? error.errors.map((err) => ({
+								field: err.path.join("."),
+								message: err.message,
+								received: err.received,
+							}))
+						: [],
 				},
 			});
 		}

@@ -1,6 +1,6 @@
 const articlesModel = require("../model/articlesModel");
 
-// ✅ Homepage - 4 derniers articles
+// ✅ Homepage - 4 derniers articles - CORRIGÉ
 const getLatest = async (req, res) => {
 	try {
 		const { limit } = req.query;
@@ -13,11 +13,10 @@ const getLatest = async (req, res) => {
 	}
 };
 
-// ✅ Page blog - tous les articles avec pagination
+// ✅ Page blog - tous les articles avec pagination - CORRIGÉ
 const browse = async (req, res) => {
 	try {
-		const { page, limit } = req.query;
-		const offset = (page - 1) * limit;
+		const { limit, offset } = req.query;
 
 		const [articles, totalCount] = await Promise.all([
 			articlesModel.findAllPublished(limit, offset),
@@ -29,8 +28,8 @@ const browse = async (req, res) => {
 		res.success({
 			articles,
 			pagination: {
-				page,
 				limit,
+				offset,
 				totalCount,
 				totalPages,
 			},
@@ -41,7 +40,7 @@ const browse = async (req, res) => {
 	}
 };
 
-// ✅ Article individuel
+// ✅ Article individuel par slug
 const readBySlug = async (req, res) => {
 	try {
 		const { slug } = req.params;

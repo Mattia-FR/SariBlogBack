@@ -24,10 +24,10 @@ const findLatestPublished = async (limit = 4) => {
 		WHERE a.status = 'published'
 		GROUP BY a.id
 		ORDER BY a.created_at DESC
-		LIMIT ?
+		LIMIT ${Number.parseInt(limit, 10) || 4}
 	`;
 
-	const [rows] = await db.execute(query, [limit]);
+	const [rows] = await db.execute(query);
 	return rows;
 };
 
@@ -48,10 +48,10 @@ const findAllPublished = async (limit, offset) => {
 		WHERE a.status = 'published'
 		GROUP BY a.id
 		ORDER BY a.created_at DESC
-		LIMIT ? OFFSET ?
+		LIMIT ${Number.parseInt(limit, 10) || 10} OFFSET ${Number.parseInt(offset, 10) || 0}
 	`;
 
-	const [rows] = await db.execute(query, [limit, offset]);
+	const [rows] = await db.execute(query);
 	return rows;
 };
 

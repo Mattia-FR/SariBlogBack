@@ -12,10 +12,9 @@ const findGalleryPreview = async (limit = 6) => {
     FROM illustrations i
     WHERE i.is_in_gallery = TRUE
     ORDER BY i.created_at DESC
-    LIMIT ?
+    LIMIT ${Number.parseInt(limit, 10) || 6}
   `;
-
-	const [rows] = await db.execute(query, [limit]);
+	const [rows] = await db.execute(query);
 	return rows;
 };
 

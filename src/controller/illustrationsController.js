@@ -1,6 +1,6 @@
 const illustrationsModel = require("../model/illustrationsModel");
 
-// ✅ Homepage - 6 illustrations pour le carrousel
+// ✅ Homepage - 6 illustrations pour le carrousel - CORRIGÉ
 const getGalleryPreview = async (req, res) => {
 	try {
 		const { limit } = req.query;
@@ -13,11 +13,10 @@ const getGalleryPreview = async (req, res) => {
 	}
 };
 
-// ✅ Page galerie - toutes les illustrations avec pagination
+// ✅ Page galerie - toutes les illustrations avec pagination - CORRIGÉ
 const browse = async (req, res) => {
 	try {
-		const { page, limit } = req.query;
-		const offset = (page - 1) * limit;
+		const { limit, offset } = req.query;
 
 		const [illustrations, totalCount] = await Promise.all([
 			illustrationsModel.findAllInGallery(limit, offset),
@@ -29,8 +28,8 @@ const browse = async (req, res) => {
 		res.success({
 			illustrations,
 			pagination: {
-				page,
 				limit,
+				offset,
 				totalCount,
 				totalPages,
 			},
