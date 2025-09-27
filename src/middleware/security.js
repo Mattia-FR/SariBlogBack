@@ -52,9 +52,23 @@ const contactRateLimit = rateLimit({
 // Protection contact : Empêche l'envoi massif de messages
 // Économie ressources : Limite la charge serveur
 
+// Rate limiting pour l'authentification
+const authRateLimit = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 5, // 5 tentatives de connexion par IP
+	message: {
+		success: false,
+		error: {
+			code: "AUTH_RATE_LIMIT_EXCEEDED",
+			message: "Trop de tentatives de connexion, veuillez réessayer plus tard.",
+		},
+	},
+});
+
 module.exports = {
 	helmetConfig,
 	generalRateLimit,
 	contactRateLimit,
+	authRateLimit,
 	compression: compression(),
 };

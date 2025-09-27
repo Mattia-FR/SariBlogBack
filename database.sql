@@ -254,3 +254,25 @@ INSERT INTO messages (name, email, subject, message, sender_ip, is_read) VALUES
 -- =================================================================
 INSERT INTO about (content, image) VALUES
 ("Illustratrice passionnée par le mélange des techniques traditionnelles et numériques, je navigue entre aquarelle, encre de Chine, croquis spontanés et explorations digitales. Mon univers artistique se nourrit de la nature, de la fantasy et de l'abstraction, créant des œuvres qui oscillent entre réalisme et onirisme. Formée aux arts plastiques, j'ai développé au fil des années une approche hybride qui mêle la spontanéité du croquis traditionnel à la précision de l'art numérique. Chaque technique apporte sa propre richesse : l'aquarelle pour sa transparence et sa fluidité, l'encre pour ses contrastes saisissants, le numérique pour ses possibilités infinies. Mes inspirations puisent dans la beauté des paysages, la complexité des portraits, la magie des univers fantasy et l'épurement des formes minimalistes. J'aime explorer comment une même émotion peut s'exprimer à travers différents médiums, comment une ligne peut raconter une histoire, comment une couleur peut évoquer un souvenir. Mon processus créatif se nourrit d'observations quotidiennes, de croquis spontanés, d'expérimentations techniques. Je crois en l'importance de la pratique régulière, du défi artistique, de la sortie de zone de confort. Chaque œuvre est une exploration, chaque projet une nouvelle aventure. À travers ce blog, je partage mes découvertes, mes techniques, mes réflexions sur l'art et la création. Un espace où tradition et modernité se rencontrent, où chaque technique trouve sa place dans un univers artistique en perpétuelle évolution.", "portrait.jpg");
+
+-- =================================================================
+-- TABLE DES UTILISATEURS ADMIN
+-- =================================================================
+CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin', 'editor') DEFAULT 'editor',
+  is_active BOOLEAN DEFAULT TRUE,
+  last_login DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =================================================================
+-- UTILISATEUR ADMIN PAR DÉFAUT
+-- =================================================================
+-- Mot de passe: admin123 (sera hashé avec argon2)
+INSERT INTO users (username, email, password_hash, role) VALUES
+('admin', 'admin@sariblog.com', '$argon2id$v=19$m=65536,t=3,p=4$e4upR2F/f47cv3F1r4OH2A$2rL8mNW32tg/bpDyXyvkHyRCDCFuTKsbuENGzld8vmg', 'admin');
