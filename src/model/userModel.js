@@ -1,8 +1,8 @@
-const db = require("./db");
 const argon2 = require("argon2");
 
-// Créer un nouvel utilisateur
+// ✅ Créer un nouvel utilisateur
 const create = async ({ username, email, password, role = "editor" }) => {
+	// Hasher le mot de passe avec argon2
 	const passwordHash = await argon2.hash(password);
 
 	const query = `
@@ -26,7 +26,7 @@ const create = async ({ username, email, password, role = "editor" }) => {
 	};
 };
 
-// Trouver un utilisateur par email
+// ✅ Récupérer un utilisateur par email (pour l'authentification)
 const findByEmail = async (email) => {
 	const query = `
 		SELECT id, username, email, password_hash, role, is_active, last_login, created_at
@@ -38,7 +38,7 @@ const findByEmail = async (email) => {
 	return rows[0] || null;
 };
 
-// Trouver un utilisateur par ID
+// ✅ Récupérer un utilisateur par ID
 const findById = async (id) => {
 	const query = `
 		SELECT id, username, email, role, is_active, last_login, created_at
@@ -50,23 +50,7 @@ const findById = async (id) => {
 	return rows[0] || null;
 };
 
-// Mettre à jour la dernière connexion
-const updateLastLogin = async (id) => {
-	const query = `
-		UPDATE users 
-		SET last_login = NOW() 
-		WHERE id = ?
-	`;
-
-	await db.execute(query, [id]);
-};
-
-// Vérifier le mot de passe
-const verifyPassword = async (password, hash) => {
-	return await argon2.verify(hash, password);
-};
-
-// ✅ Lister tous les utilisateurs avec pagination (admin)
+// ✅ Lister tous les utilisateurs avec pagination
 const findAll = async (limit, offset) => {
 	const query = `
 		SELECT 
@@ -75,9 +59,9 @@ const findAll = async (limit, offset) => {
 			email,
 			role,
 			is_active,
-			DATE_FORMAT(last_login, '%d/%m/%Y à %H:%i') as last_login,
-			DATE_FORMAT(created_at, '%d/%m/%Y') as created_at,
-			DATE_FORMAT(updated_at, '%d/%m/%Y') as updated_at
+			last_login,
+			created_at,
+			updated_at
 		FROM users
 		ORDER BY created_at DESC
 		LIMIT ${Number.parseInt(limit, 10) || 10} OFFSET ${Number.parseInt(offset, 10) || 0}
@@ -94,50 +78,24 @@ const countAll = async () => {
 	return rows[0].total;
 };
 
-// ✅ Trouver un utilisateur par ID (admin - inclut les inactifs)
-const findByIdAdmin = async (id) => {
+// ✅ Mettre à jour la dernière connexion
+const updateLastLogin = async (id) => {
 	const query = `
-		SELECT 
-			id, 
-			username, 
-			email, 
-			role, 
-			is_active, 
-			DATE_FORMAT(last_login, '%d/%m/%Y à %H:%i') as last_login,
-			DATE_FORMAT(created_at, '%d/%m/%Y') as created_at,
-			DATE_FORMAT(updated_at, '%d/%m/%Y') as updated_at
-		FROM users 
+		UPDATE users 
+		SET last_login = NOW() 
 		WHERE id = ?
 	`;
 
-	const [rows] = await db.execute(query, [id]);
-	return rows[0] || null;
+	await db.execute(query, [id]);
+};
+
+// ✅ Vérifier le mot de passe
+const verifyPassword = async (password, hash) => {
+	return await argon2.verify(hash, password);
 };
 
 // ✅ Modifier un utilisateur
 const update = async (id, { username, email, role, is_active }) => {
-	// Récupérer l'utilisateur existant
-	const existingUser = await findByIdAdmin(id);
-	if (!existingUser) {
-		throw new Error("Utilisateur non trouvé");
-	}
-
-	// Vérifier l'unicité de l'email si modifié
-	if (email && email !== existingUser.email) {
-		const existingEmail = await findByEmail(email);
-		if (existingEmail) {
-			throw new Error("Un utilisateur avec cet email existe déjà");
-		}
-	}
-
-	// Vérifier l'unicité du username si modifié
-	if (username && username !== existingUser.username) {
-		const existingUsername = await findByUsername(username);
-		if (existingUsername) {
-			throw new Error("Un utilisateur avec ce nom d'utilisateur existe déjà");
-		}
-	}
-
 	const query = `
 		UPDATE users 
 		SET username = COALESCE(?, username),
@@ -150,19 +108,17 @@ const update = async (id, { username, email, role, is_active }) => {
 
 	await db.execute(query, [username, email, role, is_active, id]);
 
-	return await findByIdAdmin(id);
+	return await findById(id);
 };
 
-// ✅ Supprimer un utilisateur (désactiver)
-const remove = async (id) => {
-	// Vérifier que l'utilisateur existe
-	const existingUser = await findByIdAdmin(id);
-	if (!existingUser) {
-		throw new Error("Utilisateur non trouvé");
-	}
+// ✅ Désactiver un utilisateur
+const deactivate = async (id) => {
+	const query = `
+		UPDATE users 
+		SET is_active = FALSE, updated_at = NOW() 
+		WHERE id = ?
+	`;
 
-	const query =
-		"UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = ?";
 	const [result] = await db.execute(query, [id]);
 
 	if (result.affectedRows === 0) {
@@ -172,7 +128,7 @@ const remove = async (id) => {
 	return { id: Number.parseInt(id, 10), is_active: false };
 };
 
-// ✅ Changer le mot de passe d'un utilisateur
+// ✅ Changer le mot de passe
 const changePassword = async (id, newPassword) => {
 	const passwordHash = await argon2.hash(newPassword);
 
@@ -182,7 +138,32 @@ const changePassword = async (id, newPassword) => {
 		WHERE id = ?
 	`;
 
-	const [result] = await db.execute(query, [passwordHash, id]);
+	await db.execute(query, [passwordHash, id]);
+
+	return { id: Number.parseInt(id, 10) };
+};
+
+// ✅ Activer/Désactiver un utilisateur
+const toggleActive = async (id, is_active) => {
+	const query = `
+		UPDATE users 
+		SET is_active = ?, updated_at = NOW()
+		WHERE id = ?
+	`;
+
+	const [result] = await db.execute(query, [is_active, id]);
+
+	if (result.affectedRows === 0) {
+		throw new Error("Utilisateur non trouvé");
+	}
+
+	return { id: Number.parseInt(id, 10), is_active };
+};
+
+// ✅ Supprimer un utilisateur
+const remove = async (id) => {
+	const query = "DELETE FROM users WHERE id = ?";
+	const [result] = await db.execute(query, [id]);
 
 	if (result.affectedRows === 0) {
 		throw new Error("Utilisateur non trouvé");
@@ -191,47 +172,15 @@ const changePassword = async (id, newPassword) => {
 	return { id: Number.parseInt(id, 10) };
 };
 
-// ✅ Activer/désactiver un utilisateur
-const toggleActive = async (id) => {
-	const existingUser = await findByIdAdmin(id);
-	if (!existingUser) {
-		throw new Error("Utilisateur non trouvé");
-	}
-
-	const newStatus = !existingUser.is_active;
-
-	const query = `
-		UPDATE users 
-		SET is_active = ?, updated_at = NOW()
-		WHERE id = ?
-	`;
-
-	await db.execute(query, [newStatus, id]);
-
-	return {
-		id: Number.parseInt(id, 10),
-		is_active: newStatus,
-		message: `Utilisateur ${newStatus ? "activé" : "désactivé"} avec succès`,
-	};
-};
-
-// ✅ Trouver un utilisateur par username (pour vérification d'unicité)
-const findByUsername = async (username) => {
-	const query = "SELECT id, username FROM users WHERE username = ?";
-	const [rows] = await db.execute(query, [username]);
-	return rows[0] || null;
-};
-
 // ✅ Obtenir les statistiques des utilisateurs
 const getStats = async () => {
 	const query = `
 		SELECT 
-			COUNT(*) as total_users,
-			COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active_users,
-			COUNT(CASE WHEN is_active = FALSE THEN 1 END) as inactive_users,
-			COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_users,
-			COUNT(CASE WHEN role = 'editor' THEN 1 END) as editor_users,
-			COUNT(CASE WHEN last_login >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as recent_logins
+			COUNT(*) as total,
+			COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active_count,
+			COUNT(CASE WHEN is_active = FALSE THEN 1 END) as inactive_count,
+			COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_count,
+			COUNT(CASE WHEN role = 'editor' THEN 1 END) as editor_count
 		FROM users
 	`;
 
@@ -243,16 +192,14 @@ module.exports = {
 	create,
 	findByEmail,
 	findById,
-	updateLastLogin,
-	verifyPassword,
-	// Nouvelles fonctions admin
 	findAll,
 	countAll,
-	findByIdAdmin,
+	updateLastLogin,
+	verifyPassword,
 	update,
-	remove,
+	deactivate,
 	changePassword,
 	toggleActive,
-	findByUsername,
+	remove,
 	getStats,
 };

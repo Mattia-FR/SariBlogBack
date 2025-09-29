@@ -11,7 +11,7 @@ const findAll = async (limit, offset) => {
 			message,
 			sender_ip,
 			is_read,
-			DATE_FORMAT(created_at, '%d/%m/%Y à %H:%i') as created_at
+			created_at
 		FROM messages
 		ORDER BY created_at DESC
 		LIMIT ${Number.parseInt(limit, 10) || 10} OFFSET ${Number.parseInt(offset, 10) || 0}
@@ -23,14 +23,14 @@ const findAll = async (limit, offset) => {
 
 // ✅ Compter le total de messages
 const countAll = async () => {
-	const query = `SELECT COUNT(*) as total FROM messages`;
+	const query = "SELECT COUNT(*) as total FROM messages";
 	const [rows] = await db.execute(query);
 	return rows[0].total;
 };
 
 // ✅ Compter les messages non lus
 const countUnread = async () => {
-	const query = `SELECT COUNT(*) as total FROM messages WHERE is_read = FALSE`;
+	const query = "SELECT COUNT(*) as total FROM messages WHERE is_read = FALSE";
 	const [rows] = await db.execute(query);
 	return rows[0].total;
 };
@@ -46,7 +46,7 @@ const findById = async (id) => {
 			message,
 			sender_ip,
 			is_read,
-			DATE_FORMAT(created_at, '%d/%m/%Y à %H:%i') as created_at
+			created_at
 		FROM messages
 		WHERE id = ?
 	`;
@@ -64,11 +64,11 @@ const markAsRead = async (id) => {
 	`;
 
 	const [result] = await db.execute(query, [id]);
-	
+
 	if (result.affectedRows === 0) {
 		throw new Error("Message non trouvé");
 	}
-	
+
 	return { id: Number.parseInt(id, 10), is_read: true };
 };
 
@@ -81,45 +81,45 @@ const markAsUnread = async (id) => {
 	`;
 
 	const [result] = await db.execute(query, [id]);
-	
+
 	if (result.affectedRows === 0) {
 		throw new Error("Message non trouvé");
 	}
-	
+
 	return { id: Number.parseInt(id, 10), is_read: false };
 };
 
 // ✅ Marquer tous les messages comme lus
 const markAllAsRead = async () => {
-	const query = `UPDATE messages SET is_read = TRUE WHERE is_read = FALSE`;
+	const query = "UPDATE messages SET is_read = TRUE WHERE is_read = FALSE";
 	const [result] = await db.execute(query);
-	
-	return { 
+
+	return {
 		updated_count: result.affectedRows,
-		message: `${result.affectedRows} message(s) marqué(s) comme lu(s)`
+		message: `${result.affectedRows} message(s) marqué(s) comme lu(s)`,
 	};
 };
 
 // ✅ Supprimer un message
 const remove = async (id) => {
-	const query = `DELETE FROM messages WHERE id = ?`;
+	const query = "DELETE FROM messages WHERE id = ?";
 	const [result] = await db.execute(query, [id]);
-	
+
 	if (result.affectedRows === 0) {
 		throw new Error("Message non trouvé");
 	}
-	
+
 	return { id: Number.parseInt(id, 10) };
 };
 
 // ✅ Supprimer tous les messages lus
 const removeAllRead = async () => {
-	const query = `DELETE FROM messages WHERE is_read = TRUE`;
+	const query = "DELETE FROM messages WHERE is_read = TRUE";
 	const [result] = await db.execute(query);
-	
-	return { 
+
+	return {
 		deleted_count: result.affectedRows,
-		message: `${result.affectedRows} message(s) supprimé(s)`
+		message: `${result.affectedRows} message(s) supprimé(s)`,
 	};
 };
 
@@ -149,5 +149,5 @@ module.exports = {
 	markAllAsRead,
 	remove,
 	removeAllRead,
-	getStats
+	getStats,
 };

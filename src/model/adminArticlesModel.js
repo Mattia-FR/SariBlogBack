@@ -13,8 +13,8 @@ const findAll = async (limit, offset) => {
 			a.content,
 			a.image, 
 			a.status,
-			DATE_FORMAT(a.created_at, '%d/%m/%Y') as created_at,
-			DATE_FORMAT(a.updated_at, '%d/%m/%Y') as updated_at
+			a.created_at,
+			a.updated_at
 		FROM articles a
 		ORDER BY a.created_at DESC
 		LIMIT ${Number.parseInt(limit, 10) || 10} OFFSET ${Number.parseInt(offset, 10) || 0}
@@ -61,8 +61,8 @@ const findById = async (id) => {
 			a.content,
 			a.image, 
 			a.status,
-			DATE_FORMAT(a.created_at, '%d/%m/%Y') as created_at,
-			DATE_FORMAT(a.updated_at, '%d/%m/%Y') as updated_at,
+			a.created_at,
+			a.updated_at,
 			GROUP_CONCAT(t.id SEPARATOR ',') as tag_ids,
 			GROUP_CONCAT(t.name SEPARATOR ', ') as tags
 		FROM articles a

@@ -10,7 +10,7 @@ const findAll = async (limit, offset) => {
 			t.slug,
 			COUNT(DISTINCT at.article_id) as articles_count,
 			COUNT(DISTINCT it.illustration_id) as illustrations_count,
-			DATE_FORMAT(t.created_at, '%d/%m/%Y') as created_at
+			t.created_at
 		FROM tags t
 		LEFT JOIN article_tags at ON t.id = at.tag_id
 		LEFT JOIN illustration_tags it ON t.id = it.tag_id
@@ -25,7 +25,7 @@ const findAll = async (limit, offset) => {
 
 // ✅ Compter le total de tags
 const countAll = async () => {
-	const query = `SELECT COUNT(*) as total FROM tags`;
+	const query = "SELECT COUNT(*) as total FROM tags";
 	const [rows] = await db.execute(query);
 	return rows[0].total;
 };
@@ -52,7 +52,7 @@ const findById = async (id) => {
 
 // ✅ Récupérer un tag par slug
 const findBySlug = async (slug) => {
-	const query = `SELECT id, name, slug FROM tags WHERE slug = ?`;
+	const query = "SELECT id, name, slug FROM tags WHERE slug = ?";
 	const [rows] = await db.execute(query, [slug]);
 	return rows[0] || null;
 };
@@ -60,7 +60,7 @@ const findBySlug = async (slug) => {
 // ✅ Créer un nouveau tag
 const create = async ({ name }) => {
 	const slug = slugify(name, { lower: true, strict: true });
-	
+
 	// Vérifier que le slug est unique
 	const existingSlug = await findBySlug(slug);
 	if (existingSlug) {
@@ -73,12 +73,12 @@ const create = async ({ name }) => {
 	`;
 
 	const [result] = await db.execute(query, [name, slug]);
-	
+
 	return {
 		id: result.insertId,
 		name,
 		slug,
-		created_at: new Date().toISOString()
+		created_at: new Date().toISOString(),
 	};
 };
 
@@ -91,11 +91,11 @@ const update = async (id, { name }) => {
 	}
 
 	let slug = existingTag.slug;
-	
+
 	// Si le nom change, générer un nouveau slug
 	if (name && name !== existingTag.name) {
 		slug = slugify(name, { lower: true, strict: true });
-		
+
 		// Vérifier que le nouveau slug est unique
 		const existingSlug = await findBySlug(slug);
 		if (existingSlug && existingSlug.id !== Number.parseInt(id, 10)) {
@@ -111,7 +111,7 @@ const update = async (id, { name }) => {
 	`;
 
 	await db.execute(query, [name, slug, id]);
-	
+
 	return await findById(id);
 };
 
@@ -125,16 +125,18 @@ const remove = async (id) => {
 
 	// Vérifier qu'il n'est pas utilisé
 	if (existingTag.articles_count > 0 || existingTag.illustrations_count > 0) {
-		throw new Error("Impossible de supprimer ce tag car il est utilisé par des articles ou illustrations");
+		throw new Error(
+			"Impossible de supprimer ce tag car il est utilisé par des articles ou illustrations",
+		);
 	}
 
-	const query = `DELETE FROM tags WHERE id = ?`;
+	const query = "DELETE FROM tags WHERE id = ?";
 	const [result] = await db.execute(query, [id]);
-	
+
 	if (result.affectedRows === 0) {
 		throw new Error("Tag non trouvé");
 	}
-	
+
 	return { id: Number.parseInt(id, 10) };
 };
 
@@ -187,5 +189,5 @@ module.exports = {
 	update,
 	remove,
 	getStats,
-	search
+	search,
 };

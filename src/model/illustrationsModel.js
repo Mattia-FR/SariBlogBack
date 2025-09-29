@@ -27,7 +27,7 @@ const findAllInGallery = async (limit, offset) => {
       i.description,
       i.image,
       i.alt_text,
-      DATE_FORMAT(i.created_at, '%d/%m/%Y') as created_at
+      i.created_at
     FROM illustrations i
     WHERE i.is_in_gallery = TRUE
     ORDER BY i.created_at DESC
@@ -55,7 +55,7 @@ const findById = async (id) => {
       i.description,
       i.image,
       i.alt_text,
-      DATE_FORMAT(i.created_at, '%d/%m/%Y') as created_at
+      i.created_at
     FROM illustrations i
     WHERE i.id = ? AND i.is_in_gallery = TRUE
   `;
