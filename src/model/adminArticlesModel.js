@@ -3,7 +3,8 @@ const slugify = require("slugify");
 
 // ✅ Lister tous les articles (publiés + brouillons) avec pagination
 const findAll = async (limit, offset) => {
-	const query = `
+	// 1. Récupérer les articles de base
+	const articlesQuery = `
 		SELECT 
 			a.id, 
 			a.title, 
@@ -13,23 +14,38 @@ const findAll = async (limit, offset) => {
 			a.image, 
 			a.status,
 			DATE_FORMAT(a.created_at, '%d/%m/%Y') as created_at,
-			DATE_FORMAT(a.updated_at, '%d/%m/%Y') as updated_at,
-			GROUP_CONCAT(t.name SEPARATOR ', ') as tags
+			DATE_FORMAT(a.updated_at, '%d/%m/%Y') as updated_at
 		FROM articles a
-		LEFT JOIN article_tags at ON a.id = at.article_id
-		LEFT JOIN tags t ON at.tag_id = t.id
-		GROUP BY a.id
 		ORDER BY a.created_at DESC
 		LIMIT ${Number.parseInt(limit, 10) || 10} OFFSET ${Number.parseInt(offset, 10) || 0}
 	`;
 
-	const [rows] = await db.execute(query);
-	return rows;
+	const [articles] = await db.execute(articlesQuery);
+
+	// 2. Pour chaque article, récupérer ses tags
+	const articlesWithTags = await Promise.all(
+		articles.map(async (article) => {
+			const tagsQuery = `
+				SELECT t.id, t.name 
+				FROM tags t
+				INNER JOIN article_tags at ON t.id = at.tag_id
+				WHERE at.article_id = ?
+			`;
+			const [tags] = await db.execute(tagsQuery, [article.id]);
+
+			return {
+				...article,
+				tags: tags || [],
+			};
+		}),
+	);
+
+	return articlesWithTags;
 };
 
 // ✅ Compter le total d'articles
 const countAll = async () => {
-	const query = `SELECT COUNT(*) as total FROM articles`;
+	const query = "SELECT COUNT(*) as total FROM articles";
 	const [rows] = await db.execute(query);
 	return rows[0].total;
 };
@@ -61,9 +77,16 @@ const findById = async (id) => {
 };
 
 // ✅ Créer un nouvel article
-const create = async ({ title, excerpt, content, image, status = 'draft', tagIds = [] }) => {
+const create = async ({
+	title,
+	excerpt,
+	content,
+	image,
+	status = "draft",
+	tagIds = [],
+}) => {
 	const slug = slugify(title, { lower: true, strict: true });
-	
+
 	// Vérifier que le slug est unique
 	const existingSlug = await findBySlug(slug);
 	if (existingSlug) {
@@ -75,7 +98,14 @@ const create = async ({ title, excerpt, content, image, status = 'draft', tagIds
 		VALUES (?, ?, ?, ?, ?, ?)
 	`;
 
-	const [result] = await db.execute(query, [title, slug, excerpt, content, image, status]);
+	const [result] = await db.execute(query, [
+		title,
+		slug,
+		excerpt,
+		content,
+		image,
+		status,
+	]);
 	const articleId = result.insertId;
 
 	// Ajouter les tags si fournis
@@ -91,12 +121,15 @@ const create = async ({ title, excerpt, content, image, status = 'draft', tagIds
 		content,
 		image,
 		status,
-		created_at: new Date().toISOString()
+		created_at: new Date().toISOString(),
 	};
 };
 
 // ✅ Modifier un article
-const update = async (id, { title, excerpt, content, image, status, tagIds = [] }) => {
+const update = async (
+	id,
+	{ title, excerpt, content, image, status, tagIds = [] },
+) => {
 	// Récupérer l'article existant
 	const existingArticle = await findById(id);
 	if (!existingArticle) {
@@ -104,11 +137,11 @@ const update = async (id, { title, excerpt, content, image, status, tagIds = [] 
 	}
 
 	let slug = existingArticle.slug;
-	
+
 	// Si le titre change, générer un nouveau slug
 	if (title && title !== existingArticle.title) {
 		slug = slugify(title, { lower: true, strict: true });
-		
+
 		// Vérifier que le nouveau slug est unique
 		const existingSlug = await findBySlug(slug);
 		if (existingSlug && existingSlug.id !== Number.parseInt(id, 10)) {
@@ -140,19 +173,19 @@ const update = async (id, { title, excerpt, content, image, status, tagIds = [] 
 
 // ✅ Supprimer un article
 const remove = async (id) => {
-	const query = `DELETE FROM articles WHERE id = ?`;
+	const query = "DELETE FROM articles WHERE id = ?";
 	const [result] = await db.execute(query, [id]);
-	
+
 	if (result.affectedRows === 0) {
 		throw new Error("Article non trouvé");
 	}
-	
+
 	return { id: Number.parseInt(id, 10) };
 };
 
 // ✅ Récupérer un article par slug (pour vérification d'unicité)
 const findBySlug = async (slug) => {
-	const query = `SELECT id, title, slug FROM articles WHERE slug = ?`;
+	const query = "SELECT id, title, slug FROM articles WHERE slug = ?";
 	const [rows] = await db.execute(query, [slug]);
 	return rows[0] || null;
 };
@@ -160,11 +193,13 @@ const findBySlug = async (slug) => {
 // ✅ Ajouter des tags à un article
 const addTagsToArticle = async (articleId, tagIds) => {
 	// Supprimer les tags existants
-	await db.execute(`DELETE FROM article_tags WHERE article_id = ?`, [articleId]);
-	
+	await db.execute("DELETE FROM article_tags WHERE article_id = ?", [
+		articleId,
+	]);
+
 	// Ajouter les nouveaux tags
 	if (tagIds.length > 0) {
-		const values = tagIds.map(tagId => `(${articleId}, ${tagId})`).join(', ');
+		const values = tagIds.map((tagId) => `(${articleId}, ${tagId})`).join(", ");
 		const query = `INSERT INTO article_tags (article_id, tag_id) VALUES ${values}`;
 		await db.execute(query);
 	}
@@ -173,11 +208,13 @@ const addTagsToArticle = async (articleId, tagIds) => {
 // ✅ Mettre à jour les tags d'un article
 const updateArticleTags = async (articleId, tagIds) => {
 	// Supprimer les tags existants
-	await db.execute(`DELETE FROM article_tags WHERE article_id = ?`, [articleId]);
-	
+	await db.execute("DELETE FROM article_tags WHERE article_id = ?", [
+		articleId,
+	]);
+
 	// Ajouter les nouveaux tags
 	if (tagIds.length > 0) {
-		const values = tagIds.map(tagId => `(${articleId}, ${tagId})`).join(', ');
+		const values = tagIds.map((tagId) => `(${articleId}, ${tagId})`).join(", ");
 		const query = `INSERT INTO article_tags (article_id, tag_id) VALUES ${values}`;
 		await db.execute(query);
 	}
@@ -185,7 +222,7 @@ const updateArticleTags = async (articleId, tagIds) => {
 
 // ✅ Récupérer tous les tags disponibles
 const getAllTags = async () => {
-	const query = `SELECT id, name, slug FROM tags ORDER BY name`;
+	const query = "SELECT id, name, slug FROM tags ORDER BY name";
 	const [rows] = await db.execute(query);
 	return rows;
 };
@@ -198,5 +235,5 @@ module.exports = {
 	update,
 	remove,
 	findBySlug,
-	getAllTags
+	getAllTags,
 };
