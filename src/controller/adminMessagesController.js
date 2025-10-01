@@ -3,7 +3,11 @@ const adminMessagesModel = require("../model/adminMessagesModel");
 // ✅ Lister tous les messages (admin)
 const browse = async (req, res) => {
 	try {
+		console.info("🔍 [ADMIN MESSAGES] Début de browse");
+		console.info("🔍 [ADMIN MESSAGES] Query params:", req.query);
+
 		const { limit, offset } = req.query;
+		console.info("🔍 [ADMIN MESSAGES] Limit:", limit, "Offset:", offset);
 
 		const [messages, totalCount, unreadCount] = await Promise.all([
 			adminMessagesModel.findAll(limit, offset),
@@ -13,8 +17,8 @@ const browse = async (req, res) => {
 
 		const totalPages = Math.ceil(totalCount / limit);
 
-		res.success({
-			messages,
+		const response = {
+			messages, // ✅ Changé de "items" à "messages"
 			pagination: {
 				limit,
 				offset,
@@ -22,11 +26,19 @@ const browse = async (req, res) => {
 				totalPages,
 			},
 			stats: {
-				unreadCount
-			}
-		});
+				total: totalCount,
+				unread: unreadCount,
+				read: totalCount - unreadCount,
+			},
+		};
+
+		console.info(
+			"🔍 [ADMIN MESSAGES] Réponse finale:",
+			JSON.stringify(response, null, 2),
+		);
+		res.success(response);
 	} catch (error) {
-		console.error("Erreur browse admin messages:", error);
+		console.error("❌ [ADMIN MESSAGES] Erreur browse:", error);
 		res.error("Erreur lors de la récupération des messages", 500);
 	}
 };
@@ -52,17 +64,17 @@ const read = async (req, res) => {
 const markAsRead = async (req, res) => {
 	try {
 		const { id } = req.params;
-		
+
 		const updatedMessage = await adminMessagesModel.markAsRead(id);
 
 		res.success({ message: updatedMessage }, "Message marqué comme lu");
 	} catch (error) {
 		console.error("Erreur markAsRead message:", error);
-		
+
 		if (error.message === "Message non trouvé") {
 			return res.error("Message non trouvé", 404);
 		}
-		
+
 		res.error("Erreur lors du marquage du message", 500);
 	}
 };
@@ -71,17 +83,17 @@ const markAsRead = async (req, res) => {
 const markAsUnread = async (req, res) => {
 	try {
 		const { id } = req.params;
-		
+
 		const updatedMessage = await adminMessagesModel.markAsUnread(id);
 
 		res.success({ message: updatedMessage }, "Message marqué comme non lu");
 	} catch (error) {
 		console.error("Erreur markAsUnread message:", error);
-		
+
 		if (error.message === "Message non trouvé") {
 			return res.error("Message non trouvé", 404);
 		}
-		
+
 		res.error("Erreur lors du marquage du message", 500);
 	}
 };
@@ -102,17 +114,17 @@ const markAllAsRead = async (req, res) => {
 const remove = async (req, res) => {
 	try {
 		const { id } = req.params;
-		
+
 		const deletedMessage = await adminMessagesModel.remove(id);
 
 		res.success({ message: deletedMessage }, "Message supprimé avec succès");
 	} catch (error) {
 		console.error("Erreur delete message:", error);
-		
+
 		if (error.message === "Message non trouvé") {
 			return res.error("Message non trouvé", 404);
 		}
-		
+
 		res.error("Erreur lors de la suppression du message", 500);
 	}
 };
@@ -148,5 +160,5 @@ module.exports = {
 	markAllAsRead,
 	remove,
 	removeAllRead,
-	getStats
+	getStats,
 };

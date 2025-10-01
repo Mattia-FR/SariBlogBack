@@ -1,3 +1,4 @@
+const db = require("./db");
 const argon2 = require("argon2");
 
 // ✅ Créer un nouvel utilisateur

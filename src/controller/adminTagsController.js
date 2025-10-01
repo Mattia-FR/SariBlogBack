@@ -12,7 +12,7 @@ const browse = async (req, res) => {
 
 		const totalPages = Math.ceil(totalCount / limit);
 
-		res.success({
+		const response = {
 			tags,
 			pagination: {
 				limit,
@@ -20,9 +20,11 @@ const browse = async (req, res) => {
 				totalCount,
 				totalPages,
 			},
-		});
+		};
+
+		res.success(response);
 	} catch (error) {
-		console.error("Erreur browse admin tags:", error);
+		console.error("❌ [ADMIN TAGS] Erreur browse:", error);
 		res.error("Erreur lors de la récupération des tags", 500);
 	}
 };
@@ -54,7 +56,7 @@ const create = async (req, res) => {
 		res.success({ tag: newTag }, "Tag créé avec succès");
 	} catch (error) {
 		console.error("Erreur create tag:", error);
-		
+
 		if (error.message === "Un tag avec ce nom existe déjà") {
 			return res.status(409).json({
 				success: false,
@@ -64,7 +66,7 @@ const create = async (req, res) => {
 				},
 			});
 		}
-		
+
 		res.error("Erreur lors de la création du tag", 500);
 	}
 };
@@ -80,11 +82,11 @@ const update = async (req, res) => {
 		res.success({ tag: updatedTag }, "Tag modifié avec succès");
 	} catch (error) {
 		console.error("Erreur update tag:", error);
-		
+
 		if (error.message === "Tag non trouvé") {
 			return res.error("Tag non trouvé", 404);
 		}
-		
+
 		if (error.message === "Un tag avec ce nom existe déjà") {
 			return res.status(409).json({
 				success: false,
@@ -94,7 +96,7 @@ const update = async (req, res) => {
 				},
 			});
 		}
-		
+
 		res.error("Erreur lors de la modification du tag", 500);
 	}
 };
@@ -103,18 +105,21 @@ const update = async (req, res) => {
 const remove = async (req, res) => {
 	try {
 		const { id } = req.params;
-		
+
 		const deletedTag = await adminTagsModel.remove(id);
 
 		res.success({ tag: deletedTag }, "Tag supprimé avec succès");
 	} catch (error) {
 		console.error("Erreur delete tag:", error);
-		
+
 		if (error.message === "Tag non trouvé") {
 			return res.error("Tag non trouvé", 404);
 		}
-		
-		if (error.message === "Impossible de supprimer ce tag car il est utilisé par des articles ou illustrations") {
+
+		if (
+			error.message ===
+			"Impossible de supprimer ce tag car il est utilisé par des articles ou illustrations"
+		) {
 			return res.status(409).json({
 				success: false,
 				error: {
@@ -123,7 +128,7 @@ const remove = async (req, res) => {
 				},
 			});
 		}
-		
+
 		res.error("Erreur lors de la suppression du tag", 500);
 	}
 };
@@ -143,7 +148,7 @@ const getStats = async (req, res) => {
 const search = async (req, res) => {
 	try {
 		const { q, limit } = req.query;
-		
+
 		if (!q || q.trim().length < 2) {
 			return res.status(400).json({
 				success: false,
@@ -169,5 +174,5 @@ module.exports = {
 	update,
 	remove,
 	getStats,
-	search
+	search,
 };

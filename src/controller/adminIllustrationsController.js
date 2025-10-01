@@ -3,16 +3,31 @@ const adminIllustrationsModel = require("../model/adminIllustrationsModel");
 // ✅ Lister toutes les illustrations (admin)
 const browse = async (req, res) => {
 	try {
-		const { limit, offset } = req.query;
+		console.info("🔍 [ADMIN ILLUSTRATIONS] Début de browse");
+		console.info("🔍 [ADMIN ILLUSTRATIONS] Query params:", req.query);
 
-		const [illustrations, totalCount] = await Promise.all([
-			adminIllustrationsModel.findAll(limit, offset),
-			adminIllustrationsModel.countAll(),
-		]);
+		const { limit, offset } = req.query;
+		console.info("🔍 [ADMIN ILLUSTRATIONS] Limit:", limit, "Offset:", offset);
+
+		console.info("🔍 [ADMIN ILLUSTRATIONS] Appel findAll...");
+		const illustrations = await adminIllustrationsModel.findAll(limit, offset);
+		console.info(
+			"🔍 [ADMIN ILLUSTRATIONS] Illustrations trouvées:",
+			illustrations.length,
+		);
+		console.info(
+			"🔍 [ADMIN ILLUSTRATIONS] Première illustration:",
+			illustrations[0],
+		);
+
+		console.info("🔍 [ADMIN ILLUSTRATIONS] Appel countAll...");
+		const totalCount = await adminIllustrationsModel.countAll();
+		console.info("🔍 [ADMIN ILLUSTRATIONS] Total count:", totalCount);
 
 		const totalPages = Math.ceil(totalCount / limit);
+		console.info("🔍 [ADMIN ILLUSTRATIONS] Total pages:", totalPages);
 
-		res.success({
+		const response = {
 			illustrations,
 			pagination: {
 				limit,
@@ -20,9 +35,15 @@ const browse = async (req, res) => {
 				totalCount,
 				totalPages,
 			},
-		});
+		};
+
+		console.info(
+			"🔍 [ADMIN ILLUSTRATIONS] Réponse finale:",
+			JSON.stringify(response, null, 2),
+		);
+		res.success(response);
 	} catch (error) {
-		console.error("Erreur browse admin illustrations:", error);
+		console.error("❌ [ADMIN ILLUSTRATIONS] Erreur browse:", error);
 		res.error("Erreur lors de la récupération des illustrations", 500);
 	}
 };
@@ -47,7 +68,8 @@ const read = async (req, res) => {
 // ✅ Créer une nouvelle illustration
 const create = async (req, res) => {
 	try {
-		const { title, description, image, alt_text, is_in_gallery, tagIds } = req.body;
+		const { title, description, image, alt_text, is_in_gallery, tagIds } =
+			req.body;
 
 		const newIllustration = await adminIllustrationsModel.create({
 			title,
@@ -55,10 +77,13 @@ const create = async (req, res) => {
 			image,
 			alt_text,
 			is_in_gallery,
-			tagIds: tagIds || []
+			tagIds: tagIds || [],
 		});
 
-		res.success({ illustration: newIllustration }, "Illustration créée avec succès");
+		res.success(
+			{ illustration: newIllustration },
+			"Illustration créée avec succès",
+		);
 	} catch (error) {
 		console.error("Erreur create illustration:", error);
 		res.error("Erreur lors de la création de l'illustration", 500);
@@ -69,7 +94,8 @@ const create = async (req, res) => {
 const update = async (req, res) => {
 	try {
 		const { id } = req.params;
-		const { title, description, image, alt_text, is_in_gallery, tagIds } = req.body;
+		const { title, description, image, alt_text, is_in_gallery, tagIds } =
+			req.body;
 
 		const updatedIllustration = await adminIllustrationsModel.update(id, {
 			title,
@@ -77,17 +103,20 @@ const update = async (req, res) => {
 			image,
 			alt_text,
 			is_in_gallery,
-			tagIds: tagIds || []
+			tagIds: tagIds || [],
 		});
 
-		res.success({ illustration: updatedIllustration }, "Illustration modifiée avec succès");
+		res.success(
+			{ illustration: updatedIllustration },
+			"Illustration modifiée avec succès",
+		);
 	} catch (error) {
 		console.error("Erreur update illustration:", error);
-		
+
 		if (error.message === "Illustration non trouvée") {
 			return res.error("Illustration non trouvée", 404);
 		}
-		
+
 		res.error("Erreur lors de la modification de l'illustration", 500);
 	}
 };
@@ -96,17 +125,20 @@ const update = async (req, res) => {
 const remove = async (req, res) => {
 	try {
 		const { id } = req.params;
-		
+
 		const deletedIllustration = await adminIllustrationsModel.remove(id);
 
-		res.success({ illustration: deletedIllustration }, "Illustration supprimée avec succès");
+		res.success(
+			{ illustration: deletedIllustration },
+			"Illustration supprimée avec succès",
+		);
 	} catch (error) {
 		console.error("Erreur delete illustration:", error);
-		
+
 		if (error.message === "Illustration non trouvée") {
 			return res.error("Illustration non trouvée", 404);
 		}
-		
+
 		res.error("Erreur lors de la suppression de l'illustration", 500);
 	}
 };
@@ -128,5 +160,5 @@ module.exports = {
 	create,
 	update,
 	remove,
-	getTags
+	getTags,
 };

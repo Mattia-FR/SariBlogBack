@@ -9,7 +9,7 @@ const {
 	markAllAsRead,
 	remove,
 	removeAllRead,
-	getStats
+	getStats,
 } = require("../controller/adminMessagesController");
 const { authenticateToken } = require("../middleware/auth");
 const { validatePagination, validateId } = require("../middleware/validation");
@@ -27,18 +27,18 @@ router.get("/", validatePagination, browse);
 router.get("/:id", validateId, read);
 
 // ✅ Marquer un message comme lu
-router.patch("/:id/read", validateId, markAsRead);
+router.put("/:id/read", validateId, markAsRead); // ✅ Changé de PATCH à PUT
 
 // ✅ Marquer un message comme non lu
-router.patch("/:id/unread", validateId, markAsUnread);
+router.put("/:id/unread", validateId, markAsUnread); // ✅ Changé de PATCH à PUT
 
 // ✅ Marquer tous les messages comme lus
-router.patch("/mark-all-read", markAllAsRead);
+router.put("/read-all", markAllAsRead); // ✅ Changé de PATCH à PUT
 
 // ✅ Supprimer un message
 router.delete("/:id", validateId, remove);
 
 // ✅ Supprimer tous les messages lus
-router.delete("/remove-read", removeAllRead);
+router.delete("/read-all", removeAllRead); // ✅ Changé de remove-read à read-all
 
 module.exports = router;

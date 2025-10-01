@@ -2,6 +2,9 @@ const db = require("./db");
 
 // ✅ Lister toutes les illustrations (galerie + non-galerie) avec pagination
 const findAll = async (limit, offset) => {
+	console.info("🔍 [MODEL ILLUSTRATIONS] Début de findAll");
+	console.info("🔍 [MODEL ILLUSTRATIONS] Limit:", limit, "Offset:", offset);
+
 	const query = `
 		SELECT 
 			i.id,
@@ -11,7 +14,10 @@ const findAll = async (limit, offset) => {
 			i.alt_text,
 			i.is_in_gallery,
 			i.created_at,
-			GROUP_CONCAT(t.name SEPARATOR ', ') as tags
+			GROUP_CONCAT(
+				JSON_OBJECT('id', t.id, 'name', t.name, 'slug', t.slug) 
+				SEPARATOR '|||'
+			) as tags_json
 		FROM illustrations i
 		LEFT JOIN illustration_tags it ON i.id = it.illustration_id
 		LEFT JOIN tags t ON it.tag_id = t.id
@@ -20,15 +26,59 @@ const findAll = async (limit, offset) => {
 		LIMIT ${Number.parseInt(limit, 10) || 10} OFFSET ${Number.parseInt(offset, 10) || 0}
 	`;
 
-	const [rows] = await db.execute(query);
-	return rows;
+	console.info("🔍 [MODEL ILLUSTRATIONS] Requête SQL:", query);
+
+	try {
+		const [rows] = await db.execute(query);
+		console.info("🔍 [MODEL ILLUSTRATIONS] Rows brutes:", rows.length);
+		console.info("🔍 [MODEL ILLUSTRATIONS] Première row brute:", rows[0]);
+
+		// ✅ Transformer les données pour correspondre à la structure attendue
+		const transformedRows = rows.map((row) => ({
+			id: row.id,
+			title: row.title,
+			description: row.description,
+			image: row.image,
+			alt_text: row.alt_text,
+			is_in_gallery: Boolean(row.is_in_gallery),
+			created_at: row.created_at,
+			updated_at: row.created_at, // ✅ Utiliser created_at comme updated_at
+			tags: row.tags_json
+				? row.tags_json.split("|||").map((tagStr) => JSON.parse(tagStr))
+				: [],
+		}));
+
+		console.info(
+			"🔍 [MODEL ILLUSTRATIONS] Rows transformées:",
+			transformedRows.length,
+		);
+		console.info(
+			"🔍 [MODEL ILLUSTRATIONS] Première row transformée:",
+			transformedRows[0],
+		);
+
+		return transformedRows;
+	} catch (error) {
+		console.error("❌ [MODEL ILLUSTRATIONS] Erreur SQL:", error);
+		throw error;
+	}
 };
 
 // ✅ Compter le total d'illustrations
 const countAll = async () => {
+	console.info("🔍 [MODEL ILLUSTRATIONS] Début de countAll");
+
 	const query = "SELECT COUNT(*) as total FROM illustrations";
-	const [rows] = await db.execute(query);
-	return rows[0].total;
+	console.info("🔍 [MODEL ILLUSTRATIONS] Requête count:", query);
+
+	try {
+		const [rows] = await db.execute(query);
+		console.info("🔍 [MODEL ILLUSTRATIONS] Count result:", rows[0]);
+		return rows[0].total;
+	} catch (error) {
+		console.error("❌ [MODEL ILLUSTRATIONS] Erreur count:", error);
+		throw error;
+	}
 };
 
 // ✅ Récupérer une illustration par ID (pour l'admin)
@@ -42,8 +92,10 @@ const findById = async (id) => {
 			i.alt_text,
 			i.is_in_gallery,
 			i.created_at,
-			GROUP_CONCAT(t.id SEPARATOR ',') as tag_ids,
-			GROUP_CONCAT(t.name SEPARATOR ', ') as tags
+			GROUP_CONCAT(
+				JSON_OBJECT('id', t.id, 'name', t.name, 'slug', t.slug) 
+				SEPARATOR '|||'
+			) as tags_json
 		FROM illustrations i
 		LEFT JOIN illustration_tags it ON i.id = it.illustration_id
 		LEFT JOIN tags t ON it.tag_id = t.id
@@ -52,7 +104,23 @@ const findById = async (id) => {
 	`;
 
 	const [rows] = await db.execute(query, [id]);
-	return rows[0] || null;
+
+	if (!rows[0]) return null;
+
+	const row = rows[0];
+	return {
+		id: row.id,
+		title: row.title,
+		description: row.description,
+		image: row.image,
+		alt_text: row.alt_text,
+		is_in_gallery: Boolean(row.is_in_gallery),
+		created_at: row.created_at,
+		updated_at: row.created_at, // ✅ Utiliser created_at comme updated_at
+		tags: row.tags_json
+			? row.tags_json.split("|||").map((tagStr) => JSON.parse(tagStr))
+			: [],
+	};
 };
 
 // ✅ Créer une nouvelle illustration
@@ -91,6 +159,8 @@ const create = async ({
 		alt_text,
 		is_in_gallery,
 		created_at: new Date().toISOString(),
+		updated_at: new Date().toISOString(),
+		tags: [],
 	};
 };
 
