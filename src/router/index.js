@@ -12,7 +12,6 @@ const adminMessagesRouter = require("./adminMessagesRouter");
 const adminAboutRouter = require("./adminAboutRouter");
 const adminTagsRouter = require("./adminTagsRouter");
 const uploadRouter = require("./uploadRouter");
-const adminUsersRouter = require("./adminUsersRouter");
 
 // ✅ Routes API publiques
 router.use("/articles", articlesRouter);
@@ -30,6 +29,5 @@ router.use("/admin/messages", adminMessagesRouter);
 router.use("/admin/about", adminAboutRouter);
 router.use("/admin/tags", adminTagsRouter);
 router.use("/admin/upload", uploadRouter);
-router.use("/admin/users", adminUsersRouter);
 
 module.exports = router;

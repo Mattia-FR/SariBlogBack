@@ -11,7 +11,6 @@ const illustrationsSchemas = require("./schemas/illustrations");
 const aboutSchemas = require("./schemas/about");
 const tagsSchemas = require("./schemas/tags");
 const uploadSchemas = require("./schemas/upload");
-const usersSchemas = require("./schemas/users");
 
 // Import des middleware
 const baseMiddleware = require("./middleware/base");
@@ -42,6 +41,5 @@ module.exports = {
 		...aboutSchemas,
 		...tagsSchemas,
 		...uploadSchemas,
-		...usersSchemas,
 	},
 };
