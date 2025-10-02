@@ -276,3 +276,7 @@ CREATE TABLE users (
 -- Mot de passe: admin123 (sera hashé avec argon2)
 INSERT INTO users (username, email, password_hash, role) VALUES
 ('admin', 'admin@sariblog.com', '$argon2id$v=19$m=65536,t=3,p=4$e4upR2F/f47cv3F1r4OH2A$2rL8mNW32tg/bpDyXyvkHyRCDCFuTKsbuENGzld8vmg', 'admin');
+
+-- Utilisateur editor par défaut pour l'illustratrice
+INSERT INTO users (username, email, password_hash, role) VALUES
+('illustratrice', 'illustratrice@sariblog.com', '$argon2id$v=19$m=65536,t=3,p=4$e4upR2F/f47cv3F1r4OH2A$2rL8mNW32tg/bpDyXyvkHyRCDCFuTKsbuENGzld8vmg', 'editor');

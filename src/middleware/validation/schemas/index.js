@@ -11,7 +11,6 @@ const illustrationsSchemas = require("./illustrations");
 const aboutSchemas = require("./about");
 const tagsSchemas = require("./tags");
 const uploadSchemas = require("./upload");
-const usersSchemas = require("./users");
 
 // =================================================================
 // EXPORTS FINAUX
@@ -26,5 +25,4 @@ module.exports = {
 	...aboutSchemas,
 	...tagsSchemas,
 	...uploadSchemas,
-	...usersSchemas,
 };
