@@ -6,7 +6,7 @@ const morgan = require("morgan");
 const router = require("./router");
 const {
 	helmetConfig,
-	generalRateLimit,
+	globalSafetyRateLimit, // Rate limit global de sécurité
 	compression,
 } = require("./middleware/security");
 const { standardResponse, cacheHeaders } = require("./middleware/response");
@@ -17,7 +17,9 @@ const app = express();
 // ✅ Appliquer les middleware de sécurité
 app.use(helmetConfig);
 app.use(compression);
-app.use(generalRateLimit);
+
+// ✅ Rate limit global de sécurité (très permissif, juste pour éviter les abus extrêmes)
+app.use(globalSafetyRateLimit);
 
 // ✅ CORS configuré
 app.use(
@@ -27,15 +29,15 @@ app.use(
 	}),
 );
 
-// ✅ Logging
+// ✅ Middleware de logging
 app.use(morgan("combined"));
 
-// ✅ Parsing
+// ✅ Middleware de parsing
 app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // ✅ Middleware de réponse standardisée
 app.use(standardResponse);
-app.use(cacheHeaders);
 
 // ✅ Images statiques avec CORS explicite
 app.use(

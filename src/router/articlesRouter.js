@@ -10,6 +10,10 @@ const {
 	validatePagination,
 	validateSlug,
 } = require("../middleware/validation");
+const { browseRateLimit } = require("../middleware/security");
+
+// ✅ Appliquer le rate limit de navigation à toutes les routes d'articles
+router.use(browseRateLimit);
 
 // ✅ Homepage - 4 derniers articles
 router.get("/latest", validatePagination, getLatest);

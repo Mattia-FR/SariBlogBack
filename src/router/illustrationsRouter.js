@@ -7,6 +7,10 @@ const {
 	read,
 } = require("../controller/illustrationsController");
 const { validatePagination, validateId } = require("../middleware/validation");
+const { browseRateLimit } = require("../middleware/security");
+
+// ✅ Appliquer le rate limit de navigation à toutes les routes d'illustrations
+router.use(browseRateLimit);
 
 // ✅ Homepage - 6 illustrations pour le carrousel
 router.get("/gallery-preview", validatePagination, getGalleryPreview);
