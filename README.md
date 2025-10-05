@@ -456,12 +456,20 @@ const authRateLimit = rateLimit({
 ### CORS (Cross-Origin Resource Sharing)
 
 ```javascript
+// Configuration CORS de base
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5173",
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Configuration CORS spécifique pour les images statiques
+app.use("/images", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL || "http://localhost:5173");
+  res.header("Access-Control-Allow-Methods", "GET");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(path.join(__dirname, "../public/images")));
 ```
 
 ### Validation des données
@@ -1047,12 +1055,20 @@ Cette API REST est consommée par le frontend SariBlog (dépôt séparé) :
 
 ### Configuration CORS
 ```javascript
+// Configuration CORS de base
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5173",
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Configuration CORS spécifique pour les images statiques
+app.use("/images", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL || "http://localhost:5173");
+  res.header("Access-Control-Allow-Methods", "GET");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(path.join(__dirname, "../public/images")));
 ```
 
 ---

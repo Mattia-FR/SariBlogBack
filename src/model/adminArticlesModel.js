@@ -3,45 +3,42 @@ const slugify = require("slugify");
 
 // ✅ Lister tous les articles (publiés + brouillons) avec pagination
 const findAll = async (limit, offset) => {
-	// 1. Récupérer les articles de base
-	const articlesQuery = `
-		SELECT 
-			a.id, 
-			a.title, 
-			a.slug, 
-			a.excerpt, 
-			a.content,
-			a.image, 
-			a.status,
-			a.created_at,
-			a.updated_at
-		FROM articles a
-		ORDER BY a.created_at DESC
-		LIMIT ${Number.parseInt(limit, 10) || 10} OFFSET ${Number.parseInt(offset, 10) || 0}
+	const query = `
+	  SELECT
+		a.id,
+		a.title,
+		a.slug,
+		a.excerpt,
+		a.content,
+		a.image,
+		a.status,
+		a.created_at,
+		a.updated_at,
+		GROUP_CONCAT(
+		  JSON_OBJECT('id', t.id, 'name', t.name)
+		  SEPARATOR '|||'
+		) as tags
+	  FROM articles a
+	  LEFT JOIN article_tags at ON a.id = at.article_id
+	  LEFT JOIN tags t ON at.tag_id = t.id
+	  GROUP BY a.id
+	  ORDER BY a.created_at DESC
+	  LIMIT ? OFFSET ?
 	`;
-
-	const [articles] = await db.execute(articlesQuery);
-
-	// 2. Pour chaque article, récupérer ses tags
-	const articlesWithTags = await Promise.all(
-		articles.map(async (article) => {
-			const tagsQuery = `
-				SELECT t.id, t.name 
-				FROM tags t
-				INNER JOIN article_tags at ON t.id = at.tag_id
-				WHERE at.article_id = ?
-			`;
-			const [tags] = await db.execute(tagsQuery, [article.id]);
-
-			return {
-				...article,
-				tags: tags || [],
-			};
-		}),
-	);
-
-	return articlesWithTags;
-};
+	
+	const [articles] = await db.execute(query, [
+	  Number.parseInt(limit, 10) || 10,
+	  Number.parseInt(offset, 10) || 0
+	]);
+	
+	// Parser les tags JSON de manière sécurisée
+	return articles.map(article => ({
+	  ...article,
+	  tags: article.tags 
+		? article.tags.split('|||').map(tag => JSON.parse(tag))
+		: []
+	}));
+  };
 
 // ✅ Compter le total d'articles
 const countAll = async () => {
