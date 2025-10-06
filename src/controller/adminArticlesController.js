@@ -10,13 +10,14 @@ const browse = async (req, res) => {
 			adminArticlesModel.countAll(),
 		]);
 
-		const totalPages = Math.ceil(totalCount / limit);
+		const limitNum = Number(limit) || 10;
+		const totalPages = Math.ceil(totalCount / limitNum);
 
 		res.success({
 			articles,
 			pagination: {
-				limit,
-				offset,
+				limit: limitNum,
+				offset: Number(offset) || 0,
 				totalCount,
 				totalPages,
 			},

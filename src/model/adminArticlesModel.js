@@ -3,6 +3,10 @@ const slugify = require("slugify");
 
 // ✅ Lister tous les articles (publiés + brouillons) avec pagination
 const findAll = async (limit, offset) => {
+	// S'assurer que les paramètres sont des nombres entiers valides
+	const limitNum = Math.max(1, Math.min(50, limit || 10));
+	const offsetNum = Math.max(0, offset || 0);
+
 	const query = `
 	  SELECT
 		a.id,
@@ -25,20 +29,20 @@ const findAll = async (limit, offset) => {
 	  ORDER BY a.created_at DESC
 	  LIMIT ? OFFSET ?
 	`;
-	
+
 	const [articles] = await db.execute(query, [
-	  Number.parseInt(limit, 10) || 10,
-	  Number.parseInt(offset, 10) || 0
+		String(limitNum),
+		String(offsetNum),
 	]);
-	
+
 	// Parser les tags JSON de manière sécurisée
-	return articles.map(article => ({
-	  ...article,
-	  tags: article.tags 
-		? article.tags.split('|||').map(tag => JSON.parse(tag))
-		: []
+	return articles.map((article) => ({
+		...article,
+		tags: article.tags
+			? article.tags.split("|||").map((tag) => JSON.parse(tag))
+			: [],
 	}));
-  };
+};
 
 // ✅ Compter le total d'articles
 const countAll = async () => {

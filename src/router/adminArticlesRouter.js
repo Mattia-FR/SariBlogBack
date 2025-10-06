@@ -26,6 +26,9 @@ router.use(authenticateToken);
 // ✅ Lister tous les articles (admin)
 router.get("/", validatePagination, browse);
 
+// ✅ Obtenir tous les tags disponibles (doit être avant /:id)
+router.get("/tags", getTags);
+
 // ✅ Lire un article spécifique (admin)
 router.get("/:id", validateId, read);
 
@@ -37,9 +40,6 @@ router.put("/:id", validateId, validateArticle, update);
 
 // ✅ Supprimer un article
 router.delete("/:id", validateId, remove);
-
-// ✅ Obtenir tous les tags disponibles
-router.get("/tags", getTags);
 
 // ✅ Obtenir les tags d'un article
 router.get("/:id/tags", validateId, getTags);
