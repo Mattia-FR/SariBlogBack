@@ -1,6 +1,26 @@
 const db = require("./db");
 const slugify = require("slugify");
 
+// ✅ Fonction utilitaire pour générer automatiquement un extrait
+const generateExcerpt = (content, maxLength = 150) => {
+	if (!content) return "";
+
+	// Nettoyer le HTML si présent
+	const cleanContent = content.replace(/<[^>]*>/g, "");
+
+	if (cleanContent.length <= maxLength) {
+		return cleanContent;
+	}
+
+	// Trouver le dernier espace avant maxLength pour éviter de couper un mot
+	const truncated = cleanContent.substring(0, maxLength);
+	const lastSpace = truncated.lastIndexOf(" ");
+
+	return lastSpace > 0
+		? `${truncated.substring(0, lastSpace)}...`
+		: `${truncated}...`;
+};
+
 // ✅ Lister tous les articles (publiés + brouillons) avec pagination
 const findAll = async (limit, offset) => {
 	// S'assurer que les paramètres sont des nombres entiers valides
@@ -94,6 +114,9 @@ const create = async ({
 		throw new Error("Un article avec ce titre existe déjà");
 	}
 
+	// ✅ Générer l'extrait automatiquement si pas fourni
+	const finalExcerpt = excerpt || generateExcerpt(content);
+
 	const query = `
 		INSERT INTO articles (title, slug, excerpt, content, image, status)
 		VALUES (?, ?, ?, ?, ?, ?)
@@ -102,7 +125,7 @@ const create = async ({
 	const [result] = await db.execute(query, [
 		title,
 		slug,
-		excerpt,
+		finalExcerpt,
 		content,
 		image,
 		status,
@@ -118,7 +141,7 @@ const create = async ({
 		id: articleId,
 		title,
 		slug,
-		excerpt,
+		excerpt: finalExcerpt,
 		content,
 		image,
 		status,
@@ -150,6 +173,12 @@ const update = async (
 		}
 	}
 
+	// ✅ Générer l'extrait automatiquement si pas fourni et que le contenu a changé
+	let finalExcerpt = excerpt;
+	if (!excerpt && content) {
+		finalExcerpt = generateExcerpt(content);
+	}
+
 	const query = `
 		UPDATE articles 
 		SET title = COALESCE(?, title),
@@ -162,7 +191,15 @@ const update = async (
 		WHERE id = ?
 	`;
 
-	await db.execute(query, [title, slug, excerpt, content, image, status, id]);
+	await db.execute(query, [
+		title,
+		slug,
+		finalExcerpt,
+		content,
+		image,
+		status,
+		id,
+	]);
 
 	// Mettre à jour les tags si fournis
 	if (tagIds.length >= 0) {
