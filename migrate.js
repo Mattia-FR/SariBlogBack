@@ -1,14 +1,14 @@
-// Load environment variables from .env file
+// Charger les variables d'environnement depuis le fichier .env
 require("dotenv").config();
 
 const fs = require("node:fs");
 const path = require("node:path");
 const mysql = require("mysql2/promise");
 
-// Build the path to the database SQL file
+// Construire le chemin vers le fichier SQL de la base de données
 const schema = path.join(__dirname, "database.sql");
 
-// Get database connection details from .env file
+// Récupérer les détails de connexion à la base de données depuis le fichier .env
 const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
 
 // Validation des variables d'environnement
@@ -21,37 +21,37 @@ const migrate = async () => {
 	try {
 		console.log("🔄 Starting database migration...");
 
-		// Read the SQL statements from the database.sql file
+		// Lire les instructions SQL depuis le fichier database.sql
 		const sql = fs.readFileSync(schema, "utf8");
 
-		// Create a specific connection to the database
+		// Créer une connexion spécifique à la base de données
 		const database = await mysql.createConnection({
 			host: DB_HOST,
 			port: DB_PORT || 3306,
 			user: DB_USER,
 			password: DB_PASSWORD,
-			multipleStatements: true, // Allow multiple SQL statements
+			multipleStatements: true, // Permettre plusieurs instructions SQL
 		});
 
 		console.log("📡 Connected to MySQL server");
 
-		// Drop the existing database if it exists
+		// Supprimer la base de données existante si elle existe
 		console.log(`🗑️  Dropping database '${DB_NAME}' if it exists...`);
 		await database.query(`DROP DATABASE IF EXISTS \`${DB_NAME}\``);
 
-		// Create a new database with the specified name
+		// Créer une nouvelle base de données avec le nom spécifié
 		console.log(`🆕 Creating database '${DB_NAME}'...`);
 		await database.query(`CREATE DATABASE \`${DB_NAME}\``);
 
-		// Switch to the newly created database
+		// Basculer vers la base de données nouvellement créée
 		console.log(`🔄 Switching to database '${DB_NAME}'...`);
 		await database.query(`USE \`${DB_NAME}\``);
 
-		// Execute the SQL statements to update the database schema
+		// Exécuter les instructions SQL pour mettre à jour le schéma de la base de données
 		console.log("⚙️ Executing schema and data...");
 		await database.query(sql);
 
-		// Close the database connection
+		// Fermer la connexion à la base de données
 		await database.end();
 
 		console.log(
@@ -66,5 +66,5 @@ const migrate = async () => {
 	}
 };
 
-// Run the migration function
+// Exécuter la fonction de migration
 migrate();
