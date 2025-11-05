@@ -6,7 +6,9 @@ import type {
 	UserRow,
 	UserWithPassword,
 	UserUpdateData,
+	UserCreateData,
 } from "../types/users";
+import type { ResultSetHeader } from "mysql2/promise";
 
 // Récupère tous les utilisateurs de la base de données, sans exposer le password.
 // Utilisé pour les listes publiques ou les pages d'administration.
@@ -89,9 +91,119 @@ const updateData = async (
 	return findById(id);
 };
 
+// Met à jour le mot de passe d'un utilisateur.
+// Utilisé pour le changement de mot de passe (profil utilisateur ou réinitialisation).
+// ATTENTION : Le password doit être hashé (Argon2) AVANT d'appeler cette fonction.
+// Retourne true si le password a été modifié, false si l'utilisateur n'existe pas.
+const updatePassword = async (
+	id: number,
+	hashedPassword: string,
+): Promise<boolean> => {
+	try {
+		const [result] = await pool.query<ResultSetHeader>(
+			"UPDATE users SET password = ? WHERE id = ?",
+			[hashedPassword, id],
+		);
+		return result.affectedRows > 0;
+	} catch (err) {
+		console.error("Error updating password:", err);
+		throw err;
+	}
+};
+
+// Crée un nouvel utilisateur dans la base de données.
+// Utilisé pour l'inscription et la création de comptes utilisateurs.
+// Vérifie que l'email et le username ne sont pas déjà utilisés avant l'insertion.
+// Le password doit être hashé (Argon2) AVANT d'appeler cette fonction.
+// Retourne l'utilisateur créé (sans password) ou lance une erreur EMAIL_EXISTS/USERNAME_EXISTS.
+const create = async (data: UserCreateData): Promise<User> => {
+	try {
+		// Vérifier email ET username en une seule requête
+		const [existing] = await pool.query<UserRow[]>(
+			"SELECT id, email, username FROM users WHERE email = ? OR username = ?",
+			[data.email, data.username],
+		);
+
+		if (existing.length > 0) {
+			const duplicate = existing[0];
+			if (duplicate.email === data.email) {
+				throw new Error("EMAIL_EXISTS");
+			}
+			if (duplicate.username === data.username) {
+				throw new Error("USERNAME_EXISTS");
+			}
+		}
+
+		// Insertion
+		const [result] = await pool.query<ResultSetHeader>(
+			`INSERT INTO users (username, email, password, firstname, lastname, role, avatar, bio)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			[
+				data.username,
+				data.email,
+				data.password,
+				data.firstname ?? null,
+				data.lastname ?? null,
+				data.role ?? "subscriber",
+				data.avatar ?? null,
+				data.bio ?? null,
+			],
+		);
+
+		const newUser = await findById(result.insertId);
+		if (!newUser) {
+			throw new Error("Failed to retrieve created user");
+		}
+		return newUser;
+	} catch (err) {
+		// Si c'est déjà une erreur custom (EMAIL_EXISTS, USERNAME_EXISTS), on la relance
+		if (
+			err instanceof Error &&
+			(err.message === "EMAIL_EXISTS" || err.message === "USERNAME_EXISTS")
+		) {
+			throw err;
+		}
+
+		// Sinon, on intercepte les erreurs MySQL (fallback de sécurité)
+		// Les contraintes UNIQUE peuvent quand même échouer en cas de race condition
+		if (err instanceof Error && err.message.includes("Duplicate entry")) {
+			if (err.message.includes("email")) {
+				throw new Error("EMAIL_EXISTS");
+			}
+			if (err.message.includes("username")) {
+				throw new Error("USERNAME_EXISTS");
+			}
+		}
+
+		console.error("Error creating user:", err);
+		throw err;
+	}
+};
+
+// Supprime un utilisateur de la base de données par son ID.
+// Utilisé pour la suppression de comptes utilisateurs.
+// Retourne true si l'utilisateur a été supprimé, false s'il n'existait pas.
+const deleteOne = async (id: number): Promise<boolean> => {
+	try {
+		const [result] = await pool.query<ResultSetHeader>(
+			"DELETE FROM users WHERE id = ?",
+			[id],
+		);
+		return result.affectedRows > 0;
+	} catch (err) {
+		if (err instanceof Error) {
+			console.error("Error deleting user:", err.message);
+		}
+		throw err;
+	}
+};
+
 export default {
 	findAll,
 	findById,
 	findByEmail,
 	updateData,
+	updatePassword,
+	create,
+	deleteOne,
 };

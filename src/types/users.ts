@@ -36,3 +36,17 @@ export interface UserUpdateData {
 	avatar?: string | null;
 	bio?: string | null;
 }
+
+// Interface pour la création d'un nouvel utilisateur.
+// Les champs obligatoires sont : username, email, password.
+// Le role a une valeur par défaut 'subscriber' en base de données.
+export interface UserCreateData {
+	username: string;
+	email: string;
+	password: string; // Doit être hashé avant insertion !
+	firstname?: string | null;
+	lastname?: string | null;
+	role?: "admin" | "editor" | "subscriber";
+	avatar?: string | null;
+	bio?: string | null;
+}
