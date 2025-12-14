@@ -19,11 +19,18 @@ export interface ImageRow extends RowDataPacket {
 // Utilisée pour afficher une image individuelle ou dans la galerie (où on veut toutes les infos).
 export interface Image extends ImageRow {}
 
+// Interface représentant le résultat SQL de findByArticleId().
+// Correspond exactement aux champs sélectionnés dans findByArticleId().
+export interface ImageForArticleRowFromQuery extends RowDataPacket {
+	id: number;
+	title: string | null;
+	path: string;
+	alt_descr: string | null;
+	article_id: number | null;
+}
+
 // Interface pour une image dans le contexte d'un article.
 // Version légère sans description (pas nécessaire pour les images illustrant un article).
 // Utilisée pour les listes d'images associées à un article.
-export interface ImageForArticle
-	extends Omit<
-		ImageRow,
-		"description" | "is_in_gallery" | "user_id" | "created_at" | "updated_at"
-	> {}
+// = Même format que ImageForArticleRowFromQuery (champs à plat).
+export interface ImageForArticle extends ImageForArticleRowFromQuery {}

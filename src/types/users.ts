@@ -16,9 +16,25 @@ export interface UserRow extends RowDataPacket {
 	updated_at: Date;
 }
 
+// Interface représentant le résultat SQL de findAll() et findById().
+// Correspond exactement aux champs sélectionnés (sans password).
+export interface UserRowFromQuery extends RowDataPacket {
+	id: number;
+	username: string;
+	email: string;
+	firstname: string | null;
+	lastname: string | null;
+	role: "admin" | "editor" | "subscriber";
+	avatar: string | null;
+	bio: string | null;
+	created_at: Date;
+	updated_at: Date;
+}
+
 // Interface publique sans le password (pour les réponses API).
 // Utilisée pour exposer les données utilisateur de manière sécurisée.
-export interface User extends Omit<UserRow, "password"> {}
+// = Même format que UserRowFromQuery (champs à plat, pas de password).
+export interface User extends UserRowFromQuery {}
 
 // Interface avec password (pour l'authentification uniquement).
 // Utilisée lors de la vérification des credentials (login).

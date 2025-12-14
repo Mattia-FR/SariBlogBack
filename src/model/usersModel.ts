@@ -4,6 +4,7 @@ import pool from "./db";
 import type {
 	User,
 	UserRow,
+	UserRowFromQuery,
 	UserWithPassword,
 	UserUpdateData,
 	UserCreateData,
@@ -15,7 +16,7 @@ import type { ResultSetHeader } from "mysql2/promise";
 // Retourne un tableau de User (sans password) pour la sécurité.
 const findAll = async (): Promise<User[]> => {
 	try {
-		const [users] = await pool.query<UserRow[]>(
+		const [users] = await pool.query<UserRowFromQuery[]>(
 			`SELECT id, username, email, firstname, lastname, role, 
               avatar, bio, created_at, updated_at 
       FROM users`,
@@ -32,7 +33,7 @@ const findAll = async (): Promise<User[]> => {
 // Retourne User | null (sans password) pour la sécurité.
 const findById = async (id: number): Promise<User | null> => {
 	try {
-		const [users] = await pool.query<UserRow[]>(
+		const [users] = await pool.query<UserRowFromQuery[]>(
 			`SELECT id, username, email, firstname, lastname, role, 
               avatar, bio, created_at, updated_at 
       FROM users 

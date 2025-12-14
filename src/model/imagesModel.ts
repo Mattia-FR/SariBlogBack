@@ -2,7 +2,12 @@ import pool from "./db";
 // ImageRow est un type qui représente une ligne de résultat d'une requête SELECT.
 // Image contient tous les champs d'une image (description complète, métadonnées).
 // ImageForArticle est une version allégée pour l'affichage dans les articles (sans description complète).
-import type { ImageRow, Image, ImageForArticle } from "../types/images";
+import type {
+	ImageRow,
+	Image,
+	ImageForArticle,
+	ImageForArticleRowFromQuery,
+} from "../types/images";
 
 // Récupère toutes les images de la base de données.
 // Utilisé pour les listes complètes d'images (admin ou gestion).
@@ -63,7 +68,7 @@ const findById = async (id: number): Promise<Image | null> => {
 // Retourne un tableau de ImageForArticle (version allégée sans description complète) pour optimiser les performances.
 const findByArticleId = async (id: number): Promise<ImageForArticle[]> => {
 	try {
-		const [images] = await pool.query<ImageRow[]>(
+		const [images] = await pool.query<ImageForArticleRowFromQuery[]>(
 			`SELECT id, title, path, alt_descr, article_id
       FROM images 
       WHERE article_id = ?`,
