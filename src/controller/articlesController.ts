@@ -11,7 +11,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const articles: ArticleListItem[] = await articlesModel.findAll();
 		res.status(200).json(articles);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les articles:", err);
+		console.error("Erreur lors de la récupération de tous les articles :", err);
 		res.sendStatus(500);
 	}
 };
@@ -34,7 +34,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(article);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article par ID:", err);
+		console.error("Erreur lors de la récupération de l'article par ID :", err);
 		res.sendStatus(500);
 	}
 };
@@ -57,7 +57,7 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(article);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article par slug:", err);
+		console.error("Erreur lors de la récupération de l'article par slug :", err);
 		res.sendStatus(500);
 	}
 };
@@ -69,7 +69,7 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 		const articles: ArticleListItem[] = await articlesModel.findPublished();
 		res.status(200).json(articles);
 	} catch (err) {
-		console.error("Erreur lors de la récupération des articles publiés:", err);
+		console.error("Erreur lors de la récupération des articles publiés :", err);
 		res.sendStatus(500);
 	}
 };
@@ -96,7 +96,7 @@ const readPublishedBySlug = async (
 
 		res.status(200).json(article);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article publié par slug:", err);
+		console.error("Erreur lors de la récupération de l'article publié par slug :", err);
 		res.sendStatus(500);
 	}
 };

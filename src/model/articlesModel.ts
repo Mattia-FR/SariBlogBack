@@ -16,7 +16,7 @@ const findAll = async (): Promise<ArticleListItem[]> => {
 		);
 		return articles;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les articles:", err);
+		console.error("Erreur lors de la récupération de tous les articles :", err);
 		throw err;
 	}
 };
@@ -35,7 +35,7 @@ const findById = async (id: number): Promise<Article | null> => {
 		);
 		return article[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article par ID:", err);
+		console.error("Erreur lors de la récupération de l'article par ID :", err);
 		throw err;
 	}
 };
@@ -56,7 +56,7 @@ const findBySlug = async (slug: string): Promise<Article | null> => {
 		);
 		return article[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article par slug:", err);
+		console.error("Erreur lors de la récupération de l'article par slug :", err);
 		throw err;
 	}
 };
@@ -75,7 +75,7 @@ const findPublished = async (): Promise<ArticleListItem[]> => {
 		);
 		return articles;
 	} catch (err) {
-		console.error("Erreur lors de la récupération des articles publiés:", err);
+		console.error("Erreur lors de la récupération des articles publiés :", err);
 		throw err;
 	}
 };
@@ -96,7 +96,7 @@ const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
 		);
 		return article[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article publié par slug:", err);
+		console.error("Erreur lors de la récupération de l'article publié par slug :", err);
 		throw err;
 	}
 };

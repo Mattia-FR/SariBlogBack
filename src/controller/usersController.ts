@@ -11,7 +11,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const users: User[] = await usersModel.findAll();
 		res.status(200).json(users);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les utilisateurs:", err);
+		console.error("Erreur lors de la récupération de tous les utilisateurs :", err);
 		res.sendStatus(500);
 	}
 };
@@ -34,7 +34,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(user);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'utilisateur par ID:", err);
+		console.error("Erreur lors de la récupération de l'utilisateur par ID :", err);
 		res.sendStatus(500);
 	}
 };

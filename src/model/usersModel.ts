@@ -22,7 +22,7 @@ const findAll = async (): Promise<User[]> => {
 		);
 		return users;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les utilisateurs:", err);
+		console.error("Erreur lors de la récupération de tous les utilisateurs :", err);
 		throw err;
 	}
 };
@@ -41,7 +41,7 @@ const findById = async (id: number): Promise<User | null> => {
 		);
 		return users[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'utilisateur par ID:", err);
+		console.error("Erreur lors de la récupération de l'utilisateur par ID :", err);
 		throw err;
 	}
 };
@@ -58,7 +58,7 @@ const findByEmail = async (email: string): Promise<UserWithPassword | null> => {
 		);
 		return users[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'utilisateur par email:", err);
+		console.error("Erreur lors de la récupération de l'utilisateur par email :", err);
 		throw err;
 	}
 };
@@ -106,7 +106,7 @@ const updatePassword = async (
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		console.error("Erreur lors de la mise à jour du mot de passe:", err);
+		console.error("Erreur lors de la mise à jour du mot de passe :", err);
 		throw err;
 	}
 };
@@ -175,7 +175,7 @@ const create = async (data: UserCreateData): Promise<User> => {
 			}
 		}
 
-		console.error("Erreur lors de la création de l'utilisateur:", err);
+		console.error("Erreur lors de la création de l'utilisateur :", err);
 		throw err;
 	}
 };
@@ -192,7 +192,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		return result.affectedRows > 0;
 	} catch (err) {
 		if (err instanceof Error) {
-			console.error("Erreur lors de la suppression de l'utilisateur:", err.message);
+			console.error("Erreur lors de la suppression de l'utilisateur :", err.message);
 		}
 		throw err;
 	}

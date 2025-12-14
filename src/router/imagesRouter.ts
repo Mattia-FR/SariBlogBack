@@ -21,4 +21,3 @@ router.get("/article/:articleId", readByArticleId);
 router.get("/tag/:tagId", readByTag);
 
 export default router;
-

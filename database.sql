@@ -3,6 +3,25 @@
 -- ============================================
 
 -- ============================================
+-- PARTIE 0 : NETTOYAGE (Suppression des tables existantes)
+-- ============================================
+-- Désactivation temporaire des vérifications de clés étrangères
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Suppression des tables dans l'ordre inverse des dépendances
+DROP TABLE IF EXISTS articles_tags;
+DROP TABLE IF EXISTS images_tags;
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS images;
+DROP TABLE IF EXISTS articles;
+DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS users;
+
+-- Réactivation des vérifications de clés étrangères
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================
 -- PARTIE 1 : SCHÉMA DE LA BASE DE DONNÉES
 -- ============================================
 
@@ -98,7 +117,17 @@ CREATE TABLE images (
     CONSTRAINT fk_images_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Ajout de la FOREIGN KEY circulaire après création de la table images
+-- ============================================
+-- FOREIGN KEY CIRCULAIRE : articles.featured_image_id -> images.id
+-- ============================================
+-- Cette foreign key est ajoutée APRÈS la création de la table images car :
+--   - La table articles est créée en premier (ligne 65)
+--   - La table images est créée ensuite (ligne 103)
+--   - On ne peut pas créer une foreign key vers une table qui n'existe pas encore
+--   - C'est pourquoi on l'ajoute avec ALTER TABLE après la création de images
+-- 
+-- Note : Cette dépendance circulaire est gérée lors de l'insertion des données
+--        (voir commentaires lignes 197-202 et 235-242)
 ALTER TABLE articles
     ADD CONSTRAINT fk_articles_featured_image FOREIGN KEY (featured_image_id) REFERENCES images(id) ON DELETE SET NULL;
 
@@ -176,6 +205,30 @@ INSERT INTO tags (name, slug) VALUES
 ("Croquis", "croquis");
 
 -- ============================================
+-- ARTICLES (10 articles)
+-- ============================================
+-- Note : user_id alterne entre admin (1) et éditeur (2)
+-- 
+-- ⚠️ GESTION DES DÉPENDANCES CIRCULAIRES :
+-- Les articles ont une foreign key vers images (featured_image_id)
+-- Les images ont une foreign key vers articles (article_id)
+-- Pour résoudre cette dépendance circulaire, on procède en 3 étapes :
+--   1. Insérer les articles avec featured_image_id = NULL
+--   2. Insérer les images (qui peuvent maintenant référencer les articles existants)
+--   3. Mettre à jour les articles pour ajouter les featured_image_id (voir ligne 235)
+INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id, published_at, views) VALUES
+("Découvrir l'aquarelle : Guide pour débutants", "decouvrir-aquarelle-guide-debutants", "Premiers pas avec l'aquarelle : matériel, techniques de base et exercices pratiques pour commencer.", "L'aquarelle est une technique fascinante qui permet de créer des œuvres aux couleurs lumineuses et transparentes. Cet article vous guide dans vos premiers pas : choix du matériel, compréhension de l'eau et des pigments, techniques de base comme le lavis et le mouillé sur mouillé. Nous explorerons aussi les erreurs courantes à éviter et des exercices pratiques pour progresser rapidement.", "published", 1, NULL, "2024-01-15 10:00:00", 245),
+("Mon processus créatif : De l'esquisse à l'illustration finale", "processus-creatif-esquisse-illustration", "Plongez dans mon workflow créatif, du premier croquis au rendu numérique final.", "Chaque illustration a son histoire. Dans cet article, je partage mon processus de création étape par étape : la recherche d'inspiration, les croquis initiaux, la composition, le choix de la palette de couleurs, et le travail de rendu. Découvrez comment une simple idée se transforme en œuvre finale, avec des exemples tirés de mes projets récents.", "published", 2, NULL, "2024-02-10 14:30:00", 189),
+("Techniques de portrait : Capturer l'émotion", "techniques-portrait-emotion", "Apprenez à créer des portraits expressifs qui transmettent les émotions et la personnalité.", "Réaliser un portrait qui vit et respire nécessite de maîtriser plusieurs aspects : la structure du visage, la gestion des valeurs, la captation de l'expression, et le traitement des détails. Cet article approfondit ces techniques, que vous travailliez à l'aquarelle, au crayon ou en numérique. Nous verrons comment donner vie à vos portraits et créer une connexion émotionnelle avec le spectateur.", "published", 1, NULL, "2024-03-05 09:15:00", 312),
+("Créer des paysages fantastiques en numérique", "paysages-fantastiques-numerique", "Tutoriel complet pour illustrer des environnements oniriques et épiques.", "Les paysages fantastiques offrent une liberté créative immense. Dans ce tutoriel, je vous montre comment créer des environnements magiques : l'utilisation des lumières, la gestion de l'atmosphère, les techniques de peinture numérique, et la création d'éléments fantastiques. Apprenez à construire des mondes qui transportent le spectateur dans votre univers imaginaire.", "published", 2, NULL, "2024-03-20 11:00:00", 156),
+("Tutoriel : Peindre un dragon étape par étape", "tutoriel-peindre-dragon", "Guide détaillé pour créer une illustration de dragon de la conception au rendu final.", "Les dragons sont des créatures mythiques fascinantes à illustrer. Ce tutoriel vous accompagne dans la création complète d'un dragon : l'étude de l'anatomie reptilienne, la composition dynamique, le travail des écailles et textures, et les effets de lumière. Chaque étape est illustrée avec des exemples pour vous guider dans votre propre création.", "published", 1, NULL, "2024-04-12 16:45:00", 278),
+("La palette de couleurs en illustration fantasy", "palette-couleurs-fantasy", "Découvrez comment choisir et utiliser les couleurs pour créer une ambiance fantastique.", "Les couleurs sont essentielles pour établir l'ambiance d'une illustration fantasy. Cet article explore les palettes de couleurs efficaces : les couleurs chaudes pour la magie, les teintes froides pour les scènes nocturnes, les contrastes pour le drame, et l'harmonie chromatique. Nous verrons comment les couleurs influencent l'émotion et guident le regard du spectateur.", "published", 2, NULL, "2024-05-01 13:20:00", 421),
+("10 Astuces pour améliorer vos croquis", "astuces-ameliorer-croquis", "Conseils pratiques pour développer votre technique de dessin et rendre vos croquis plus expressifs.", "Le croquis est la base de toute bonne illustration. Cet article partage 10 astuces pour améliorer rapidement vos croquis : la gestion de la ligne, la construction des formes, l'observation, le geste rapide, la simplification, et l'expressivité. Que vous travailliez d'observation ou d'imagination, ces conseils vous aideront à développer votre main et votre œil.", "published", 1, NULL, "2024-05-18 10:30:00", 534),
+("Projet personnel : Série de portraits fantastiques", "projet-personnel-portraits-fantasy", "Présentation de ma dernière série de portraits de personnages fantasy avec making-of.", "Je suis ravie de présenter ma nouvelle série de portraits fantasy ! Dans cet article, je partage le processus créatif derrière ces œuvres : l'inspiration tirée de la mythologie, les recherches de personnages, les choix esthétiques, et les défis rencontrés. Découvrez les croquis préparatoires, les études de couleurs, et les illustrations finales de cette série qui explore différents archétypes fantastiques.", "published", 2, NULL, "2024-06-10 15:00:00", 367),
+("Réaliser une illustration botanique à l'aquarelle", "illustration-botanique-aquarelle", "Techniques spécialisées pour illustrer les plantes et fleurs avec précision et beauté.", "L'illustration botanique allie précision scientifique et sens esthétique. Cet article couvre les techniques spécifiques pour peindre les plantes à l'aquarelle : l'observation détaillée, la gestion des textures, la représentation des volumes, et le rendu des couleurs naturelles. Apprenez à capturer la beauté de la nature avec minutie et élégance.", "draft", 1, NULL, NULL, 0),
+("L'art du portrait numérique : Techniques avancées", "art-portrait-numerique-techniques", "Méthodes avancées pour créer des portraits numériques stylisés et expressifs.", "Le portrait numérique offre des possibilités infinies. Cet article approfondit les techniques avancées : l'utilisation des calques de couleur, les modes de fusion, les pinceaux personnalisés, le traitement des textures, et le stylisation. Nous explorerons aussi comment créer une identité visuelle forte dans vos portraits et développer votre style personnel.", "published", 2, NULL, "2024-07-05 12:00:00", 289);
+
+-- ============================================
 -- IMAGES (14 illustrations)
 -- ============================================
 -- Note : user_id alterne entre admin (1) et éditeur (2)
@@ -197,20 +250,18 @@ INSERT INTO images (title, description, path, alt_descr, is_in_gallery, user_id,
 ("Aquarelle botanique", "Illustration de plantes et fleurs à l'aquarelle avec précision scientifique", "/uploads/images/botanique-aquarelle.jpg", "Illustration botanique aquarelle", TRUE, 1, NULL);
 
 -- ============================================
--- ARTICLES (10 articles)
+-- MISE À JOUR : Résolution de la dépendance circulaire
 -- ============================================
--- Note : user_id alterne entre admin (1) et éditeur (2)
-INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id, published_at, views) VALUES
-("Découvrir l'aquarelle : Guide pour débutants", "decouvrir-aquarelle-guide-debutants", "Premiers pas avec l'aquarelle : matériel, techniques de base et exercices pratiques pour commencer.", "L'aquarelle est une technique fascinante qui permet de créer des œuvres aux couleurs lumineuses et transparentes. Cet article vous guide dans vos premiers pas : choix du matériel, compréhension de l'eau et des pigments, techniques de base comme le lavis et le mouillé sur mouillé. Nous explorerons aussi les erreurs courantes à éviter et des exercices pratiques pour progresser rapidement.", "published", 1, 1, "2024-01-15 10:00:00", 245),
-("Mon processus créatif : De l'esquisse à l'illustration finale", "processus-creatif-esquisse-illustration", "Plongez dans mon workflow créatif, du premier croquis au rendu numérique final.", "Chaque illustration a son histoire. Dans cet article, je partage mon processus de création étape par étape : la recherche d'inspiration, les croquis initiaux, la composition, le choix de la palette de couleurs, et le travail de rendu. Découvrez comment une simple idée se transforme en œuvre finale, avec des exemples tirés de mes projets récents.", "published", 2, 3, "2024-02-10 14:30:00", 189),
-("Techniques de portrait : Capturer l'émotion", "techniques-portrait-emotion", "Apprenez à créer des portraits expressifs qui transmettent les émotions et la personnalité.", "Réaliser un portrait qui vit et respire nécessite de maîtriser plusieurs aspects : la structure du visage, la gestion des valeurs, la captation de l'expression, et le traitement des détails. Cet article approfondit ces techniques, que vous travailliez à l'aquarelle, au crayon ou en numérique. Nous verrons comment donner vie à vos portraits et créer une connexion émotionnelle avec le spectateur.", "published", 1, 6, "2024-03-05 09:15:00", 312),
-("Créer des paysages fantastiques en numérique", "paysages-fantastiques-numerique", "Tutoriel complet pour illustrer des environnements oniriques et épiques.", "Les paysages fantastiques offrent une liberté créative immense. Dans ce tutoriel, je vous montre comment créer des environnements magiques : l'utilisation des lumières, la gestion de l'atmosphère, les techniques de peinture numérique, et la création d'éléments fantastiques. Apprenez à construire des mondes qui transportent le spectateur dans votre univers imaginaire.", "published", 2, 7, "2024-03-20 11:00:00", 156),
-("Tutoriel : Peindre un dragon étape par étape", "tutoriel-peindre-dragon", "Guide détaillé pour créer une illustration de dragon de la conception au rendu final.", "Les dragons sont des créatures mythiques fascinantes à illustrer. Ce tutoriel vous accompagne dans la création complète d'un dragon : l'étude de l'anatomie reptilienne, la composition dynamique, le travail des écailles et textures, et les effets de lumière. Chaque étape est illustrée avec des exemples pour vous guider dans votre propre création.", "published", 1, 5, "2024-04-12 16:45:00", 278),
-("La palette de couleurs en illustration fantasy", "palette-couleurs-fantasy", "Découvrez comment choisir et utiliser les couleurs pour créer une ambiance fantastique.", "Les couleurs sont essentielles pour établir l'ambiance d'une illustration fantasy. Cet article explore les palettes de couleurs efficaces : les couleurs chaudes pour la magie, les teintes froides pour les scènes nocturnes, les contrastes pour le drame, et l'harmonie chromatique. Nous verrons comment les couleurs influencent l'émotion et guident le regard du spectateur.", "published", 2, NULL, "2024-05-01 13:20:00", 421),
-("10 Astuces pour améliorer vos croquis", "astuces-ameliorer-croquis", "Conseils pratiques pour développer votre technique de dessin et rendre vos croquis plus expressifs.", "Le croquis est la base de toute bonne illustration. Cet article partage 10 astuces pour améliorer rapidement vos croquis : la gestion de la ligne, la construction des formes, l'observation, le geste rapide, la simplification, et l'expressivité. Que vous travailliez d'observation ou d'imagination, ces conseils vous aideront à développer votre main et votre œil.", "published", 1, 11, "2024-05-18 10:30:00", 534),
-("Projet personnel : Série de portraits fantastiques", "projet-personnel-portraits-fantasy", "Présentation de ma dernière série de portraits de personnages fantasy avec making-of.", "Je suis ravie de présenter ma nouvelle série de portraits fantasy ! Dans cet article, je partage le processus créatif derrière ces œuvres : l'inspiration tirée de la mythologie, les recherches de personnages, les choix esthétiques, et les défis rencontrés. Découvrez les croquis préparatoires, les études de couleurs, et les illustrations finales de cette série qui explore différents archétypes fantastiques.", "published", 2, NULL, "2024-06-10 15:00:00", 367),
-("Réaliser une illustration botanique à l'aquarelle", "illustration-botanique-aquarelle", "Techniques spécialisées pour illustrer les plantes et fleurs avec précision et beauté.", "L'illustration botanique allie précision scientifique et sens esthétique. Cet article couvre les techniques spécifiques pour peindre les plantes à l'aquarelle : l'observation détaillée, la gestion des textures, la représentation des volumes, et le rendu des couleurs naturelles. Apprenez à capturer la beauté de la nature avec minutie et élégance.", "draft", 1, NULL, NULL, 0),
-("L'art du portrait numérique : Techniques avancées", "art-portrait-numerique-techniques", "Méthodes avancées pour créer des portraits numériques stylisés et expressifs.", "Le portrait numérique offre des possibilités infinies. Cet article approfondit les techniques avancées : l'utilisation des calques de couleur, les modes de fusion, les pinceaux personnalisés, le traitement des textures, et le stylisation. Nous explorerons aussi comment créer une identité visuelle forte dans vos portraits et développer votre style personnel.", "published", 2, 13, "2024-07-05 12:00:00", 289);
+-- Maintenant que les images sont insérées, on peut mettre à jour les articles
+-- pour ajouter les featured_image_id qui référencent les images.
+-- Cette étape complète la résolution de la dépendance circulaire entre articles et images.
+UPDATE articles SET featured_image_id = 1 WHERE id = 1;
+UPDATE articles SET featured_image_id = 3 WHERE id = 2;
+UPDATE articles SET featured_image_id = 6 WHERE id = 3;
+UPDATE articles SET featured_image_id = 7 WHERE id = 4;
+UPDATE articles SET featured_image_id = 5 WHERE id = 5;
+UPDATE articles SET featured_image_id = 11 WHERE id = 7;
+UPDATE articles SET featured_image_id = 13 WHERE id = 10;
 
 -- ============================================
 -- RELATIONS : Articles_Tags

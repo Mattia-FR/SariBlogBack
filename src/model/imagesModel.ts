@@ -15,7 +15,7 @@ const findAll = async (): Promise<Image[]> => {
 		);
 		return images;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de toutes les images:", err);
+		console.error("Erreur lors de la récupération de toutes les images :", err);
 		throw err;
 	}
 };
@@ -33,7 +33,7 @@ const findGallery = async (): Promise<Image[]> => {
 		return images;
 	} catch (err) {
 		console.error(
-			"Erreur lors de la récupération des images de la galerie:",
+			"Erreur lors de la récupération des images de la galerie :",
 			err,
 		);
 		throw err;
@@ -53,7 +53,7 @@ const findById = async (id: number): Promise<Image | null> => {
 		);
 		return image[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'image par ID:", err);
+		console.error("Erreur lors de la récupération de l'image par ID :", err);
 		throw err;
 	}
 };
@@ -72,7 +72,7 @@ const findByArticleId = async (id: number): Promise<ImageForArticle[]> => {
 		return images;
 	} catch (err) {
 		console.error(
-			"Erreur lors de la récupération des images par ID d'article:",
+			"Erreur lors de la récupération des images par ID d'article :",
 			err,
 		);
 		throw err;
@@ -95,7 +95,7 @@ const findByTagId = async (id: number): Promise<Image[]> => {
 		return images;
 	} catch (err) {
 		console.error(
-			"Erreur lors de la récupération des images par ID de tag:",
+			"Erreur lors de la récupération des images par ID de tag :",
 			err,
 		);
 		throw err;

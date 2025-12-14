@@ -11,7 +11,7 @@ const browseGallery = async (req: Request, res: Response): Promise<void> => {
 		const images: Image[] = await imagesModel.findGallery();
 		res.status(200).json(images);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de la galerie d'images:", err);
+		console.error("Erreur lors de la récupération de la galerie d'images :", err);
 		res.sendStatus(500);
 	}
 };
@@ -34,7 +34,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(image);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'image par ID:", err);
+		console.error("Erreur lors de la récupération de l'image par ID :", err);
 		res.sendStatus(500);
 	}
 };
@@ -53,7 +53,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 			await imagesModel.findByArticleId(articleId);
 		res.status(200).json(images);
 	} catch (err) {
-		console.error("Erreur lors de la récupération des images par ID d'article:", err);
+		console.error("Erreur lors de la récupération des images par ID d'article :", err);
 		res.sendStatus(500);
 	}
 };
@@ -71,7 +71,7 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 		const images: Image[] = await imagesModel.findByTagId(tagId);
 		res.status(200).json(images);
 	} catch (err) {
-		console.error("Erreur lors de la récupération des images par ID de tag:", err);
+		console.error("Erreur lors de la récupération des images par ID de tag :", err);
 		res.sendStatus(500);
 	}
 };
