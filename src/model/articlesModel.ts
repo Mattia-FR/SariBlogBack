@@ -182,7 +182,7 @@ const findHomepagePreview = async (): Promise<ArticleForList[]> => {
 
 			// Construire l'URL complète de l'image si elle existe
 			const imageUrl = row.image_path
-				? `${IMAGE_BASE_URL}/${row.image_path}`
+				? `${IMAGE_BASE_URL}${row.image_path}`
 				: undefined;
 
 			// Retourner l'article enrichi
