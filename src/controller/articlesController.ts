@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 
 import articlesModel from "../model/articlesModel";
 
-import type { Article, ArticleListItem } from "../types/articles";
+import type { Article, ArticleListItem, ArticleForList } from "../types/articles";
 
 // Liste tous les articles (admin - tous statuts)
 // GET /articles
@@ -63,10 +63,28 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Liste tous les articles publiés (public)
-// GET /articles/published
+// GET /articles/published?limit=4 (optionnel, max 20)
 const browsePublished = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const articles: ArticleListItem[] = await articlesModel.findPublished();
+		// Récupérer le paramètre limit depuis la query string (optionnel)
+		const limitParam = req.query.limit;
+		const limit = limitParam
+			? Number.parseInt(limitParam as string, 10)
+			: undefined;
+
+		// Valider que limit est un nombre positif si fourni
+		if (limit !== undefined) {
+			if (Number.isNaN(limit) || limit < 1) {
+				res.status(400).json({ error: "Le paramètre limit doit être un nombre positif" });
+				return;
+			}
+			if (limit > 20) {
+				res.status(400).json({ error: "Le paramètre limit ne peut pas dépasser 20" });
+				return;
+			}
+		}
+
+		const articles: ArticleListItem[] = await articlesModel.findPublished(limit);
 		res.status(200).json(articles);
 	} catch (err) {
 		console.error("Erreur lors de la récupération des articles publiés :", err);
@@ -101,10 +119,35 @@ const readPublishedBySlug = async (
 	}
 };
 
+/**
+ * Récupère les 4 derniers articles pour la preview homepage
+ * GET /articles/homepage-preview
+ *
+ * Endpoint optimisé qui retourne directement les articles enrichis
+ * avec leurs images et tags en une seule requête.
+ */
+const readHomepagePreview = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
+	try {
+		const articles: ArticleForList[] =
+			await articlesModel.findHomepagePreview();
+		res.status(200).json(articles);
+	} catch (err) {
+		console.error(
+			"Erreur lors de la récupération de la preview homepage :",
+			err,
+		);
+		res.sendStatus(500);
+	}
+};
+
 export {
 	browseAll,
 	readById,
 	readBySlug,
 	browsePublished,
 	readPublishedBySlug,
+	readHomepagePreview,
 };

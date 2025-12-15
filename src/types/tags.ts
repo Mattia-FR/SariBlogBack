@@ -11,3 +11,12 @@ export interface TagRow extends RowDataPacket {
 
 // Interface pour un tag individuel.
 export interface Tag extends TagRow {}
+
+// Interface pour un tag dans une liste (sans RowDataPacket, pour l'enrichissement)
+// Utilisée pour les articles enrichis (homepage, etc.)
+export interface TagForList {
+	id: number;
+	name: string;
+	slug: string;
+	created_at?: Date; // Optionnel car non utilisé pour l'affichage
+}

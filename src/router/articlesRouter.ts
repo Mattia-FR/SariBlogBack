@@ -5,9 +5,13 @@ import {
 	readBySlug,
 	browsePublished,
 	readPublishedBySlug,
+	readHomepagePreview,
 } from "../controller/articlesController";
 
 const router: Router = express.Router();
+
+// Route pour la preview homepage (doit être avant /published/:slug pour éviter les conflits)
+router.get("/homepage-preview", readHomepagePreview);
 
 // Route pour récupérer un article publié par slug (public)
 router.get("/published/:slug", readPublishedBySlug);
