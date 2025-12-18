@@ -76,4 +76,56 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseGallery, readById, readByArticleId, readByTag };
+// Type pour Image enrichie avec URL complète
+interface ImageWithUrl extends Image {
+	imageUrl: string;
+}
+
+/**
+ * Retourne l'image du jour
+ * GET /images/image-of-the-day
+ *
+ * Retourne l'image du jour avec l'URL complète enrichie.
+ * L'image change automatiquement à minuit basée sur le jour de l'année.
+ */
+const readImageOfTheDay = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
+	try {
+		const image = await imagesModel.findImageOfTheDay();
+
+		if (!image) {
+			res.status(404).json({
+				error: "Aucune image disponible dans la galerie",
+			});
+			return;
+		}
+
+		// Enrichir avec l'URL complète
+		const IMAGE_BASE_URL =
+			process.env.IMAGE_BASE_URL || "http://localhost:4242";
+		const imageUrl = `${IMAGE_BASE_URL}${image.path}`;
+
+		const imageWithUrl: ImageWithUrl = {
+			...image,
+			imageUrl,
+		};
+
+		res.status(200).json(imageWithUrl);
+	} catch (err) {
+		console.error(
+			"Erreur lors de la récupération de l'image du jour :",
+			err,
+		);
+		res.sendStatus(500);
+	}
+};
+
+export {
+	browseGallery,
+	readById,
+	readByArticleId,
+	readByTag,
+	readImageOfTheDay,
+};

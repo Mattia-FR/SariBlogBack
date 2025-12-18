@@ -107,4 +107,56 @@ const findByTagId = async (id: number): Promise<Image[]> => {
 	}
 };
 
-export default { findAll, findGallery, findById, findByArticleId, findByTagId };
+/**
+ * Récupère l'image du jour depuis la galerie
+ * Utilise le jour de l'année pour sélectionner une image de manière déterministe
+ * L'image change automatiquement à minuit
+ *
+ * @returns Promise<Image | null> - L'image du jour ou null si aucune image en galerie
+ */
+const findImageOfTheDay = async (): Promise<Image | null> => {
+	try {
+		// 1. Récupérer toutes les images de la galerie, triées par ID (ordre stable)
+		const query = `
+      SELECT id, title, description, path, alt_descr, is_in_gallery,
+             user_id, article_id, created_at, updated_at
+      FROM images
+      WHERE is_in_gallery = TRUE
+      ORDER BY id ASC
+    `;
+
+		const [images] = await pool.query<ImageRow[]>(query);
+
+		if (images.length === 0) {
+			return null;
+		}
+
+		// 2. Calculer le jour de l'année (0-364/365)
+		const today = new Date();
+		const startOfYear = new Date(today.getFullYear(), 0, 1); // 1er janvier
+		const dayOfYear = Math.floor(
+			(today.getTime() - startOfYear.getTime()) / 86400000,
+		); // 86400000 ms = 1 jour
+
+		// 3. Sélectionner l'image basée sur le jour de l'année
+		// Utilise le modulo pour cycler à travers les images
+		const imageIndex = dayOfYear % images.length;
+
+		return images[imageIndex];
+	} catch (err) {
+		console.error(
+			"Erreur lors de la récupération de l'image du jour :",
+			err,
+		);
+		throw err;
+	}
+};
+
+export default {
+	findAll,
+	findGallery,
+	findById,
+	findByArticleId,
+	findByTagId,
+	findImageOfTheDay,
+};

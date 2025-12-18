@@ -4,9 +4,13 @@ import {
 	readById,
 	readByArticleId,
 	readByTag,
+	readImageOfTheDay,
 } from "../controller/imagesController";
 
 const router: Router = express.Router();
+
+// Route pour l'image du jour (doit être avant /:id pour éviter les conflits)
+router.get("/image-of-the-day", readImageOfTheDay);
 
 // Route pour la galerie d'images (public)
 router.get("/gallery", browseGallery);
