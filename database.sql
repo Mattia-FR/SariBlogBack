@@ -36,6 +36,7 @@ CREATE TABLE users (
     role ENUM('admin', 'editor', 'subscriber') DEFAULT 'subscriber',
     avatar VARCHAR(255),
     bio TEXT,
+    bio_short VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT pk_users PRIMARY KEY (id),
@@ -180,9 +181,10 @@ CREATE TABLE images_tags (
 -- sophie.bernard: Lueur29
 -- lucas.roux: Echo77
 -- emma.lucas: Infini00
-INSERT INTO users (username, email, password, firstname, lastname, role) VALUES
+INSERT INTO users (username, email, password, firstname, lastname, role, bio, bio_short) VALUES
 ("admin", "admin@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wrXitaVJXKscrLnTKHAoRg$CG3SGKZbaExxKFUrCI24b8KXxeK9EEoVxcKJqltP+8E", NULL, NULL, "admin"),
-("sari.elliot", "sari.elliot@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$3UEoqgsbyPJJzXheoNhkSw$93PgfgvfYBx1r/oTDzDdvqOp9NBzVPrIqkCXJiQtG0I", "Sari", "Elliot", "editor"),
+("sari.elliot", "sari.elliot@sariblog.com", "...", "Sari", "Elliot", "editor", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d’atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy"
+),
 ("marie.dubois", "marie.dubois@example.com", "$argon2id$v=19$m=65536,t=3,p=4$Pbx61m9Llp/t2INf0ceQUg$5RI+M6uXUAFVGNxGR6mDuhAgXi8iAzBGZcyxRlhdhKk", "Marie", "Dubois", "subscriber"),
 ("pierre.martin", "pierre.martin@example.com", "$argon2id$v=19$m=65536,t=3,p=4$KccoPcAP1pjFg8/Wf6nrtQ$v+4xm1M7L6KejIsuY7XWgZvDPGQ5liPPzpq3Ddm6h+I", "Pierre", "Martin", "subscriber"),
 ("sophie.bernard", "sophie.bernard@example.com", "$argon2id$v=19$m=65536,t=3,p=4$DomqBvS4eYFUolGt8ZHWfg$a5Lp1160MtP+l5Q12KFQQkEOLHtVFijwJKpHIG9k+3U", "Sophie", "Bernard", "subscriber"),

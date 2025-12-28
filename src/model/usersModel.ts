@@ -18,7 +18,7 @@ const findAll = async (): Promise<User[]> => {
 	try {
 		const [users] = await pool.query<UserRowFromQuery[]>(
 			`SELECT id, username, email, firstname, lastname, role, 
-              avatar, bio, created_at, updated_at 
+              avatar, bio, bio_short, created_at, updated_at 
       FROM users`,
 		);
 		return users;
@@ -35,7 +35,7 @@ const findById = async (id: number): Promise<User | null> => {
 	try {
 		const [users] = await pool.query<UserRowFromQuery[]>(
 			`SELECT id, username, email, firstname, lastname, role, 
-              avatar, bio, created_at, updated_at 
+              avatar, bio, bio_short, created_at, updated_at 
       FROM users 
       WHERE id = ?`,
 			[id],
@@ -137,8 +137,8 @@ const create = async (data: UserCreateData): Promise<User> => {
 
 		// Insertion
 		const [result] = await pool.query<ResultSetHeader>(
-			`INSERT INTO users (username, email, password, firstname, lastname, role, avatar, bio)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO users (username, email, password, firstname, lastname, role, avatar, bio, bio_short)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				data.username,
 				data.email,
@@ -148,6 +148,7 @@ const create = async (data: UserCreateData): Promise<User> => {
 				data.role ?? "subscriber",
 				data.avatar ?? null,
 				data.bio ?? null,
+				data.bio_short ?? null,
 			],
 		);
 
@@ -199,10 +200,30 @@ const deleteOne = async (id: number): Promise<boolean> => {
 	}
 };
 
+const findArtist = async (): Promise<User | null> => {
+	try {
+		const [users] = await pool.query<UserRowFromQuery[]>(
+			`SELECT id, username, email, firstname, lastname, role,
+			        avatar, bio, bio_short, created_at, updated_at
+			 FROM users
+			 WHERE role = 'editor'
+			 ORDER BY id ASC
+			 LIMIT 1`,
+		);
+
+		return users[0] || null;
+	} catch (err) {
+		console.error("Erreur lors de la récupération de l'artiste :", err);
+		throw err;
+	}
+};
+
+
 export default {
 	findAll,
 	findById,
 	findByEmail,
+	findArtist,
 	updateData,
 	updatePassword,
 	create,

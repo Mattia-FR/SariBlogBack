@@ -12,6 +12,7 @@ export interface UserRow extends RowDataPacket {
 	role: "admin" | "editor" | "subscriber";
 	avatar: string | null;
 	bio: string | null;
+	bio_short: string | null;
 	created_at: Date;
 	updated_at: Date;
 }
@@ -27,6 +28,7 @@ export interface UserRowFromQuery extends RowDataPacket {
 	role: "admin" | "editor" | "subscriber";
 	avatar: string | null;
 	bio: string | null;
+	bio_short: string | null;
 	created_at: Date;
 	updated_at: Date;
 }
@@ -51,6 +53,7 @@ export interface UserUpdateData {
 	role?: "admin" | "editor" | "subscriber";
 	avatar?: string | null;
 	bio?: string | null;
+	bio_short?: string | null;
 }
 
 // Interface pour la création d'un nouvel utilisateur.
@@ -65,4 +68,5 @@ export interface UserCreateData {
 	role?: "admin" | "editor" | "subscriber";
 	avatar?: string | null;
 	bio?: string | null;
+	bio_short?: string | null;
 }

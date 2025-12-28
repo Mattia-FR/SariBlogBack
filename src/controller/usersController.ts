@@ -39,5 +39,23 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseAll, readById };
+// Récupère l'artiste principale (public)
+// GET /users/artist
+const readArtist = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const artist: User | null = await usersModel.findArtist();
+
+		if (!artist) {
+			res.sendStatus(404);
+			return;
+		}
+
+		res.status(200).json(artist);
+	} catch (err) {
+		console.error("Erreur lors de la récupération de l'artiste :", err);
+		res.sendStatus(500);
+	}
+};
+
+export { browseAll, readById, readArtist };
 
