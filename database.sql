@@ -182,14 +182,13 @@ CREATE TABLE images_tags (
 -- lucas.roux: Echo77
 -- emma.lucas: Infini00
 INSERT INTO users (username, email, password, firstname, lastname, role, bio, bio_short) VALUES
-("admin", "admin@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wrXitaVJXKscrLnTKHAoRg$CG3SGKZbaExxKFUrCI24b8KXxeK9EEoVxcKJqltP+8E", NULL, NULL, "admin"),
-("sari.elliot", "sari.elliot@sariblog.com", "...", "Sari", "Elliot", "editor", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d’atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy"
-),
-("marie.dubois", "marie.dubois@example.com", "$argon2id$v=19$m=65536,t=3,p=4$Pbx61m9Llp/t2INf0ceQUg$5RI+M6uXUAFVGNxGR6mDuhAgXi8iAzBGZcyxRlhdhKk", "Marie", "Dubois", "subscriber"),
-("pierre.martin", "pierre.martin@example.com", "$argon2id$v=19$m=65536,t=3,p=4$KccoPcAP1pjFg8/Wf6nrtQ$v+4xm1M7L6KejIsuY7XWgZvDPGQ5liPPzpq3Ddm6h+I", "Pierre", "Martin", "subscriber"),
-("sophie.bernard", "sophie.bernard@example.com", "$argon2id$v=19$m=65536,t=3,p=4$DomqBvS4eYFUolGt8ZHWfg$a5Lp1160MtP+l5Q12KFQQkEOLHtVFijwJKpHIG9k+3U", "Sophie", "Bernard", "subscriber"),
-("lucas.roux", "lucas.roux@example.com", "$argon2id$v=19$m=65536,t=3,p=4$e1oqHbQdmF4HX25/M2ZyMg$80dg3f1YuntvgLUmAPwVZxa3iiIUJpcCGWa80fPA1U8", "Lucas", "Roux", "subscriber"),
-("emma.lucas", "emma.lucas@example.com", "$argon2id$v=19$m=65536,t=3,p=4$1/fsq6Cbcu/E1j2RHisFwg$DRSwab7yQyqRjqr9txyJHd09NCYpvd7xl3AdwridGEc", "Emma", "Lucas", "subscriber");
+("admin", "admin@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$2eNt3aySYfYyyervEcFtiQ$6wM6Qj0SggDgPTd0Ycnl5KJYZcIjeiRg87Tm2AZTUfI", NULL, NULL, "admin", NULL, NULL),
+("sari.elliot", "sari.elliot@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wkio5piGN9BZtJAdkecJ3Q$tgbsy5tWsPXS5/bs7apwAqRGzupLzIay/rudaEMlPWU", "Sari", "Elliot", "editor", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d’atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy"),
+("marie.dubois", "marie.dubois@example.com", "$argon2id$v=19$m=65536,t=3,p=4$24NWnxaZlg/vEexp8Ye5lA$RHylTbrzv+uTW9FU7rzbNzk39pnTieKqvTisUc0D+Sw", "Marie", "Dubois", "subscriber", NULL, NULL),
+("pierre.martin", "pierre.martin@example.com", "$argon2id$v=19$m=65536,t=3,p=4$XQl79zwa6gatYl2hPNNg7Q$v/bP9N/f43A81EkKdc/abchYtdo4FaqFt9h9W47FF0I", "Pierre", "Martin", "subscriber", NULL, NULL),
+("sophie.bernard", "sophie.bernard@example.com", "$argon2id$v=19$m=65536,t=3,p=4$5O77aH8f1ja8zzWfR8TY4Q$g3B66HUiuT8VNjGgQAtibiG75SXI125k/3f3bPNWBVA", "Sophie", "Bernard", "subscriber", NULL, NULL),
+("lucas.roux", "lucas.roux@example.com", "$argon2id$v=19$m=65536,t=3,p=4$cZ8vo8j1zJtRb75XjycMKg$mYEVFVQTOlQRGoTeGbblXQKbfQDjI/0vollW0UeV/So", "Lucas", "Roux", "subscriber", NULL, NULL),
+("emma.lucas", "emma.lucas@example.com", "$argon2id$v=19$m=65536,t=3,p=4$PgYC4hQgj76Rw6Kt1tjbOA$2cEjNYvBDNQ553TmlTpEVvxZFwdvC+FnI/pBwFzN5Tc", "Emma", "Lucas", "subscriber", NULL, NULL);
 
 -- ============================================
 -- TAGS (10 tags)
