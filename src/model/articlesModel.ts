@@ -166,10 +166,6 @@ const findHomepagePreview = async (): Promise<ArticleForList[]> => {
 
 		const [rows] = await pool.query<HomepagePreviewRow[]>(query);
 
-		// URL de base pour les images (à configurer via variable d'environnement en production)
-		const IMAGE_BASE_URL =
-			process.env.IMAGE_BASE_URL || "http://localhost:4242";
-
 		// Parser les résultats pour construire les objets ArticleForList
 		return rows.map((row) => {
 			// Construire le tableau de tags depuis le GROUP_CONCAT
@@ -180,17 +176,12 @@ const findHomepagePreview = async (): Promise<ArticleForList[]> => {
 							id: Number.parseInt(id, 10),
 							name,
 							slug,
-							// created_at optionnel, non utilisé pour l'affichage
 						} as TagForList;
 					})
 				: [];
 
-			// Construire l'URL complète de l'image si elle existe
-			const imageUrl = row.image_path
-				? `${IMAGE_BASE_URL}${row.image_path}`
-				: undefined;
-
-			// Retourner l'article enrichi
+			// Retourner l'article avec le chemin relatif de l'image
+			// Le controller se chargera de l'enrichir avec l'URL complète
 			return {
 				id: row.id,
 				title: row.title,
@@ -203,7 +194,7 @@ const findHomepagePreview = async (): Promise<ArticleForList[]> => {
 				published_at: row.published_at,
 				views: row.views,
 				featured_image_id: row.featured_image_id,
-				imageUrl,
+				imageUrl: row.image_path || undefined,
 				tags,
 			} as ArticleForList;
 		});

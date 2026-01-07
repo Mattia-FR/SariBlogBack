@@ -54,4 +54,3 @@ export interface ArticleForList extends ArticleListItem {
 		created_at?: Date; // Optionnel car non utilisé pour l'affichage
 	}>;
 }
-
