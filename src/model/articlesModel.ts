@@ -63,7 +63,10 @@ const findBySlug = async (slug: string): Promise<Article | null> => {
 		);
 		return article[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article par slug :", err);
+		console.error(
+			"Erreur lors de la récupération de l'article par slug :",
+			err,
+		);
 		throw err;
 	}
 };
@@ -80,13 +83,13 @@ const findPublished = async (limit?: number): Promise<ArticleListItem[]> => {
       FROM articles 
       WHERE status = 'published'
       ORDER BY published_at DESC`;
-		
+
 		if (limit !== undefined && limit > 0) {
-			query += ` LIMIT ?`;
+			query += " LIMIT ?";
 			const [articles] = await pool.query<ArticleRow[]>(query, [limit]);
 			return articles;
 		}
-		
+
 		const [articles] = await pool.query<ArticleRow[]>(query);
 		return articles;
 	} catch (err) {
@@ -111,11 +114,13 @@ const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
 		);
 		return article[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article publié par slug :", err);
+		console.error(
+			"Erreur lors de la récupération de l'article publié par slug :",
+			err,
+		);
 		throw err;
 	}
 };
-
 
 /**
  * Récupère les 4 derniers articles publiés avec leurs détails complets (image + tags)
@@ -153,8 +158,8 @@ const findHomepagePreview = async (): Promise<ArticleForList[]> => {
 			LEFT JOIN tags t ON at.tag_id = t.id
 			WHERE a.status = 'published'
 			GROUP BY a.id, a.title, a.slug, a.excerpt, a.status, a.user_id,
-			         a.created_at, a.updated_at, a.published_at, a.views,
-			         a.featured_image_id, i.path
+			        a.created_at, a.updated_at, a.published_at, a.views,
+			        a.featured_image_id, i.path
 			ORDER BY a.published_at DESC
 			LIMIT 4
 		`;
