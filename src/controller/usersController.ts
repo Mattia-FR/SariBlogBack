@@ -1,17 +1,41 @@
+// usersController.ts
 import type { Request, Response } from "express";
-
 import usersModel from "../model/usersModel";
-
 import type { User } from "../types/users";
+
+// Configuration de l'URL de base pour les images
+const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
+
+// Type pour les utilisateurs enrichis avec URL complète
+interface UserWithUrl extends User {
+	avatarUrl?: string;
+}
+
+/**
+ * Fonction utilitaire pour enrichir un utilisateur avec l'URL complète de son avatar
+ */
+function enrichUserWithAvatarUrl(user: User): UserWithUrl {
+	if (user.avatar) {
+		return {
+			...user,
+			avatarUrl: `${IMAGE_BASE_URL}${user.avatar}`,
+		};
+	}
+	return user;
+}
 
 // Liste tous les utilisateurs (public)
 // GET /users
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const users: User[] = await usersModel.findAll();
-		res.status(200).json(users);
+		const enrichedUsers = users.map(enrichUserWithAvatarUrl);
+		res.status(200).json(enrichedUsers);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les utilisateurs :", err);
+		console.error(
+			"Erreur lors de la récupération de tous les utilisateurs :",
+			err,
+		);
 		res.sendStatus(500);
 	}
 };
@@ -32,9 +56,13 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		res.status(200).json(user);
+		const enrichedUser = enrichUserWithAvatarUrl(user);
+		res.status(200).json(enrichedUser);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'utilisateur par ID :", err);
+		console.error(
+			"Erreur lors de la récupération de l'utilisateur par ID :",
+			err,
+		);
 		res.sendStatus(500);
 	}
 };
@@ -50,7 +78,8 @@ const readArtist = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		res.status(200).json(artist);
+		const enrichedArtist = enrichUserWithAvatarUrl(artist);
+		res.status(200).json(enrichedArtist);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de l'artiste :", err);
 		res.sendStatus(500);
@@ -58,4 +87,3 @@ const readArtist = async (req: Request, res: Response): Promise<void> => {
 };
 
 export { browseAll, readById, readArtist };
-
