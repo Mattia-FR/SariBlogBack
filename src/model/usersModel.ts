@@ -1,15 +1,46 @@
 import pool from "./db";
-// RowDataPacket est un type de mysql2 qui représente une ligne de résultat d'une requête SELECT.
-// C'est un type vide (marker type) qui marque les objets retournés par les requêtes de sélection.
+import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 import type {
 	User,
-	UserRow,
-	UserRowFromQuery,
 	UserWithPassword,
 	UserUpdateData,
 	UserCreateData,
 } from "../types/users";
-import type { ResultSetHeader } from "mysql2/promise";
+
+// ========================================
+// TYPES INTERNES (Row) - Ne pas exporter
+// ========================================
+
+// Type pour les lignes retournées par SELECT * (avec password)
+interface UserRow extends RowDataPacket {
+	id: number;
+	username: string;
+	email: string;
+	password: string;
+	firstname: string | null;
+	lastname: string | null;
+	role: "admin" | "editor" | "subscriber";
+	avatar: string | null;
+	bio: string | null;
+	bio_short: string | null;
+	created_at: Date;
+	updated_at: Date;
+}
+
+// Type pour les lignes retournées par SELECT sans password
+interface UserRowFromQuery extends RowDataPacket {
+	id: number;
+	username: string;
+	email: string;
+	firstname: string | null;
+	lastname: string | null;
+	role: "admin" | "editor" | "subscriber";
+	avatar: string | null;
+	bio: string | null;
+	bio_short: string | null;
+	created_at: Date;
+	updated_at: Date;
+}
 
 // Récupère tous les utilisateurs de la base de données, sans exposer le password.
 // Utilisé pour les listes publiques ou les pages d'administration.

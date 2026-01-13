@@ -1,38 +1,20 @@
 import type { Request, Response } from "express";
 import imagesModel from "../model/imagesModel";
-import type { Image, ImageForArticle } from "../types/images";
+import type { Image, ImageForArticle, ImageForList } from "../types/images";
 
 // Configuration de l'URL de base pour les images
 const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
 
-// Types pour les images enrichies avec URL complète
-interface ImageWithUrl extends Image {
-	imageUrl: string;
-}
-
-interface ImageForArticleWithUrl extends ImageForArticle {
-	imageUrl: string;
-}
-
 /**
- * Fonction utilitaire pour enrichir une image avec son URL complète
+ * Fonction utilitaire générique pour enrichir une image avec son URL complète
+ * Fonctionne avec Image, ImageForList, ImageForArticle (tous ont path: string)
  */
-function enrichImageWithUrl(image: Image): ImageWithUrl {
+function enrichWithImageUrl<T extends { path: string }>(
+	item: T,
+): T & { imageUrl: string } {
 	return {
-		...image,
-		imageUrl: `${IMAGE_BASE_URL}${image.path}`,
-	};
-}
-
-/**
- * Fonction utilitaire pour enrichir une image d'article avec son URL complète
- */
-function enrichImageForArticleWithUrl(
-	image: ImageForArticle,
-): ImageForArticleWithUrl {
-	return {
-		...image,
-		imageUrl: `${IMAGE_BASE_URL}${image.path}`,
+		...item,
+		imageUrl: `${IMAGE_BASE_URL}${item.path}`,
 	};
 }
 
@@ -40,8 +22,8 @@ function enrichImageForArticleWithUrl(
 // GET /images/gallery
 const browseGallery = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const images: Image[] = await imagesModel.findGallery();
-		const enrichedImages = images.map(enrichImageWithUrl);
+		const images: ImageForList[] = await imagesModel.findGallery();
+		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
 		console.error(
@@ -68,7 +50,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		const enrichedImage = enrichImageWithUrl(image);
+		const enrichedImage = enrichWithImageUrl(image);
 		res.status(200).json(enrichedImage);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de l'image par ID :", err);
@@ -88,7 +70,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 
 		const images: ImageForArticle[] =
 			await imagesModel.findByArticleId(articleId);
-		const enrichedImages = images.map(enrichImageForArticleWithUrl);
+		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
 		console.error(
@@ -110,7 +92,7 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 		}
 
 		const images: Image[] = await imagesModel.findByTagId(tagId);
-		const enrichedImages = images.map(enrichImageWithUrl);
+		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
 		console.error(
@@ -142,7 +124,7 @@ const readImageOfTheDay = async (
 			return;
 		}
 
-		const enrichedImage = enrichImageWithUrl(image);
+		const enrichedImage = enrichWithImageUrl(image);
 		res.status(200).json(enrichedImage);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de l'image du jour :", err);

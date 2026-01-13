@@ -1,46 +1,31 @@
-import type { RowDataPacket } from "mysql2/promise";
+// ========================================
+// TYPES PUBLICS pour les utilisateurs
+// ========================================
 
-// Interface représentant une ligne brute de la table users en base de données.
-// Extends RowDataPacket pour être compatible avec mysql2/promise.
-export interface UserRow extends RowDataPacket {
+// Type pour le rôle d'un utilisateur
+export type UserRole = "admin" | "editor" | "subscriber";
+
+// Interface publique pour un utilisateur (sans password pour sécurité).
+// Utilisée dans les réponses API publiques.
+export interface User {
 	id: number;
 	username: string;
 	email: string;
-	password: string;
 	firstname: string | null;
 	lastname: string | null;
-	role: "admin" | "editor" | "subscriber";
+	role: UserRole;
 	avatar: string | null;
 	bio: string | null;
 	bio_short: string | null;
 	created_at: Date;
 	updated_at: Date;
 }
-
-// Interface représentant le résultat SQL de findAll() et findById().
-// Correspond exactement aux champs sélectionnés (sans password).
-export interface UserRowFromQuery extends RowDataPacket {
-	id: number;
-	username: string;
-	email: string;
-	firstname: string | null;
-	lastname: string | null;
-	role: "admin" | "editor" | "subscriber";
-	avatar: string | null;
-	bio: string | null;
-	bio_short: string | null;
-	created_at: Date;
-	updated_at: Date;
-}
-
-// Interface publique sans le password (pour les réponses API).
-// Utilisée pour exposer les données utilisateur de manière sécurisée.
-// = Même format que UserRowFromQuery (champs à plat, pas de password).
-export interface User extends UserRowFromQuery {}
 
 // Interface avec password (pour l'authentification uniquement).
-// Utilisée lors de la vérification des credentials (login).
-export interface UserWithPassword extends UserRow {}
+// ⚠️ À utiliser UNIQUEMENT dans les fonctions de login/auth, jamais exposée publiquement.
+export interface UserWithPassword extends User {
+	password: string;
+}
 
 // Interface pour la mise à jour partielle des données utilisateur.
 // Tous les champs sont optionnels pour permettre des updates flexibles.
@@ -50,7 +35,7 @@ export interface UserUpdateData {
 	email?: string;
 	firstname?: string | null;
 	lastname?: string | null;
-	role?: "admin" | "editor" | "subscriber";
+	role?: UserRole;
 	avatar?: string | null;
 	bio?: string | null;
 	bio_short?: string | null;
@@ -58,14 +43,14 @@ export interface UserUpdateData {
 
 // Interface pour la création d'un nouvel utilisateur.
 // Les champs obligatoires sont : username, email, password.
-// Le role a une valeur par défaut 'subscriber' en base de données.
+// ⚠️ Le password doit être hashé AVANT insertion !
 export interface UserCreateData {
 	username: string;
 	email: string;
-	password: string; // Doit être hashé avant insertion !
+	password: string; // Doit être hashé avec Argon2 avant insertion !
 	firstname?: string | null;
 	lastname?: string | null;
-	role?: "admin" | "editor" | "subscriber";
+	role?: UserRole;
 	avatar?: string | null;
 	bio?: string | null;
 	bio_short?: string | null;

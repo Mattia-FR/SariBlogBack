@@ -10,23 +10,24 @@ import {
 
 const router: Router = express.Router();
 
-// Route pour la preview homepage (doit être avant /published/:slug pour éviter les conflits)
-router.get("/homepage-preview", readHomepagePreview);
-
-// Route pour récupérer un article publié par slug (public)
-router.get("/published/:slug", readPublishedBySlug);
-
-// Route pour lister tous les articles publiés (public)
-router.get("/published", browsePublished);
-
-// Route pour récupérer un article par slug (admin - tous statuts)
-router.get("/slug/:slug", readBySlug);
-
-// Route pour récupérer un article par son ID (admin - tous statuts)
-router.get("/:id", readById);
+// ⚠️ ORDRE IMPORTANT : Les routes spécifiques doivent être AVANT les routes génériques
+// Sinon "/:id" intercepterait toutes les autres routes
 
 // Route pour lister tous les articles (admin - tous statuts)
+// ✅ Doit être en premier car "/" est une route exacte
 router.get("/", browseAll);
+
+// Routes spécifiques (doivent être avant /:id et /slug/:slug)
+router.get("/homepage-preview", readHomepagePreview);
+router.get("/published", browsePublished);
+
+// Routes avec paramètres spécifiques (avant les routes génériques)
+router.get("/published/:slug", readPublishedBySlug);
+router.get("/slug/:slug", readBySlug);
+
+// Routes génériques (en dernier car elles capturent tout)
+// ⚠️ /:id doit être en dernier car il intercepte n'importe quelle chaîne
+router.get("/:id", readById);
 
 export default router;
 

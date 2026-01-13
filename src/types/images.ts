@@ -1,8 +1,10 @@
-import type { RowDataPacket } from "mysql2/promise";
+// ========================================
+// TYPES PUBLICS pour les images
+// ========================================
 
-// Interface représentant une ligne brute de la table images en base de données.
-// Extends RowDataPacket pour être compatible avec mysql2/promise.
-export interface ImageRow extends RowDataPacket {
+// Interface pour une image complète avec tous les champs.
+// Utilisée pour afficher une image individuelle ou dans la galerie.
+export interface Image {
 	id: number;
 	title: string | null;
 	description: string | null;
@@ -15,13 +17,9 @@ export interface ImageRow extends RowDataPacket {
 	updated_at: Date;
 }
 
-// Interface pour une image complète.
-// Utilisée pour afficher une image individuelle ou dans la galerie (où on veut toutes les infos).
-export interface Image extends ImageRow {}
-
-// Interface représentant le résultat SQL de findByArticleId().
-// Correspond exactement aux champs sélectionnés dans findByArticleId().
-export interface ImageForArticleRowFromQuery extends RowDataPacket {
+// Interface pour une image dans le contexte d'un article (version allégée).
+// Sans description complète (pas nécessaire pour les images illustrant un article).
+export interface ImageForArticle {
 	id: number;
 	title: string | null;
 	path: string;
@@ -29,8 +27,11 @@ export interface ImageForArticleRowFromQuery extends RowDataPacket {
 	article_id: number | null;
 }
 
-// Interface pour une image dans le contexte d'un article.
-// Version légère sans description (pas nécessaire pour les images illustrant un article).
-// Utilisée pour les listes d'images associées à un article.
-// = Même format que ImageForArticleRowFromQuery (champs à plat).
-export interface ImageForArticle extends ImageForArticleRowFromQuery {}
+// Interface pour une image enrichie avec tags (utilisée pour la galerie).
+export interface ImageForList extends Image {
+	tags?: Array<{
+		id: number;
+		name: string;
+		slug: string;
+	}>;
+}

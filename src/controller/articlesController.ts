@@ -10,18 +10,24 @@ import type {
 const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
 
 /**
- * Fonction utilitaire pour enrichir un ArticleForList avec l'URL complète de son image
+ * Fonction utilitaire générique pour enrichir un article (Article ou ArticleForList) 
+ * avec l'URL complète de son image featured.
+ * Transforme image_path (chemin relatif) en imageUrl (URL complète)
+ * et retire image_path pour éviter la redondance.
  */
-function enrichArticleForListWithImageUrl(
-	article: ArticleForList,
-): ArticleForList {
-	if (article.imageUrl) {
+function enrichArticleWithImageUrl<T extends { image_path?: string | null }>(
+	article: T,
+): Omit<T, "image_path"> & { imageUrl?: string } {
+	if (article.image_path) {
+		const { image_path, ...rest } = article;
 		return {
-			...article,
-			imageUrl: `${IMAGE_BASE_URL}${article.imageUrl}`,
+			...rest,
+			imageUrl: `${IMAGE_BASE_URL}${image_path}`,
 		};
 	}
-	return article;
+	// Si pas d'image_path, on retire quand même le champ pour cohérence
+	const { image_path, ...rest } = article;
+	return rest;
 }
 
 // Liste tous les articles (admin - tous statuts)
@@ -52,7 +58,9 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		res.status(200).json(article);
+		// Enrichir avec l'URL complète de l'image featured
+		const enrichedArticle = enrichArticleWithImageUrl(article);
+		res.status(200).json(enrichedArticle);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de l'article par ID :", err);
 		res.sendStatus(500);
@@ -75,7 +83,9 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		res.status(200).json(article);
+		// Enrichir avec l'URL complète de l'image featured
+		const enrichedArticle = enrichArticleWithImageUrl(article);
+		res.status(200).json(enrichedArticle);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article par slug :",
@@ -114,7 +124,7 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 		const articles: ArticleForList[] = await articlesModel.findPublished(limit);
 
 		// Enrichir les articles avec l'URL complète
-		const enrichedArticles = articles.map(enrichArticleForListWithImageUrl);
+		const enrichedArticles = articles.map(enrichArticleWithImageUrl);
 
 		res.status(200).json(enrichedArticles);
 	} catch (err) {
@@ -143,7 +153,9 @@ const readPublishedBySlug = async (
 			return;
 		}
 
-		res.status(200).json(article);
+		// Enrichir avec l'URL complète de l'image featured
+		const enrichedArticle = enrichArticleWithImageUrl(article);
+		res.status(200).json(enrichedArticle);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article publié par slug :",
@@ -169,7 +181,7 @@ const readHomepagePreview = async (
 			await articlesModel.findHomepagePreview();
 
 		// Enrichir les articles avec l'URL complète
-		const enrichedArticles = articles.map(enrichArticleForListWithImageUrl);
+		const enrichedArticles = articles.map(enrichArticleWithImageUrl);
 
 		res.status(200).json(enrichedArticles);
 	} catch (err) {

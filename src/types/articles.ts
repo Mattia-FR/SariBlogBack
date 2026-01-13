@@ -1,56 +1,53 @@
-import type { RowDataPacket } from "mysql2/promise";
+// ========================================
+// TYPES PUBLICS pour les articles
+// ========================================
+// Ces types sont exportés et utilisés dans les controllers et le frontend
 
-// Interface représentant une ligne brute de la table articles en base de données.
-// Extends RowDataPacket pour être compatible avec mysql2/promise.
-export interface ArticleRow extends RowDataPacket {
+// Type pour le statut d'un article
+export type ArticleStatus = "draft" | "published" | "archived";
+
+// Interface pour un article complet (avec le content).
+// Utilisée pour afficher un article individuel.
+// Peut inclure image_path si récupéré via JOIN avec la table images.
+export interface Article {
 	id: number;
 	title: string;
 	slug: string;
 	excerpt: string | null;
 	content: string;
-	status: "draft" | "published" | "archived";
+	status: ArticleStatus;
 	user_id: number;
 	created_at: Date;
 	updated_at: Date;
 	published_at: Date | null;
 	views: number;
 	featured_image_id: number | null;
+	image_path?: string | null; // Chemin relatif de l'image featured (via JOIN)
 }
 
-// Interface pour un article complet (avec le content).
-// Utilisée pour afficher un article individuel.
-export interface Article extends ArticleRow {}
-
-// Interface pour un article dans une liste (sans le content LONGTEXT).
+// Interface pour un article dans une liste (sans le content LONGTEXT pour optimisation).
 // Utilisée pour les listes d'articles où on n'affiche que l'excerpt.
-export interface ArticleListItem extends Omit<ArticleRow, "content"> {}
-
-// Interface pour le résultat de la requête findHomepagePreview
-// Représente une ligne brute avec les données enrichies (image + tags agrégés)
-export interface HomepagePreviewRow extends RowDataPacket {
+export interface ArticleListItem {
 	id: number;
 	title: string;
 	slug: string;
 	excerpt: string | null;
-	status: "draft" | "published" | "archived";
+	status: ArticleStatus;
 	user_id: number;
 	created_at: Date;
 	updated_at: Date;
 	published_at: Date | null;
 	views: number;
 	featured_image_id: number | null;
-	image_path: string | null;
-	tags: string | null; // Format: "id:name:slug|id:name:slug"
 }
 
-// Interface pour un article enrichi avec image et tags (utilisée pour la homepage)
-// Extends ArticleListItem et ajoute les données enrichies
+// Interface pour un article enrichi avec image et tags (utilisée pour les listes publiques).
+// Le model retourne image_path (chemin relatif), le controller le transforme en imageUrl (URL complète).
 export interface ArticleForList extends ArticleListItem {
-	imageUrl?: string;
+	image_path?: string;
 	tags?: Array<{
 		id: number;
 		name: string;
 		slug: string;
-		created_at?: Date; // Optionnel car non utilisé pour l'affichage
 	}>;
 }

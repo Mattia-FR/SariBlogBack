@@ -1,11 +1,24 @@
 import pool from "./db";
-import type {
-	Message,
-	MessageRow,
-	MessageCreateData,
-	MessageUpdateData,
-} from "../types/messages";
-import type { ResultSetHeader } from "mysql2/promise";
+import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+import type { Message, MessageCreateData, MessageUpdateData } from "../types/messages";
+
+// ========================================
+// TYPES INTERNES (Row) - Ne pas exporter
+// ========================================
+
+// Type pour les lignes retournées par les requêtes SELECT
+interface MessageRow extends RowDataPacket {
+	id: number;
+	firstname: string;
+	lastname: string;
+	email: string;
+	ip: string | null;
+	subject: string;
+	text: string;
+	status: "unread" | "read" | "archived";
+	user_id: number | null;
+	created_at: Date;
+}
 
 // Récupère tous les messages (admin)
 const findAll = async (): Promise<Message[]> => {

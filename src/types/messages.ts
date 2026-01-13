@@ -1,7 +1,12 @@
-import type { RowDataPacket } from "mysql2/promise";
+// ========================================
+// TYPES PUBLICS pour les messages
+// ========================================
 
-// Interface représentant une ligne brute de la table messages
-export interface MessageRow extends RowDataPacket {
+// Type pour le statut d'un message
+export type MessageStatus = "unread" | "read" | "archived";
+
+// Interface pour un message complet
+export interface Message {
 	id: number;
 	firstname: string;
 	lastname: string;
@@ -9,13 +14,10 @@ export interface MessageRow extends RowDataPacket {
 	ip: string | null;
 	subject: string;
 	text: string;
-	status: "unread" | "read" | "archived";
+	status: MessageStatus;
 	user_id: number | null;
 	created_at: Date;
 }
-
-// Interface publique pour exposer un message
-export interface Message extends MessageRow {}
 
 // Interface pour créer un nouveau message (formulaire de contact)
 export interface MessageCreateData {
@@ -30,5 +32,5 @@ export interface MessageCreateData {
 
 // Interface pour mettre à jour le statut d'un message (admin uniquement)
 export interface MessageUpdateData {
-	status?: "unread" | "read" | "archived";
+	status?: MessageStatus;
 }

@@ -1,5 +1,23 @@
 import pool from "./db";
-import type { Comment, CommentRowFromQuery } from "../types/comments";
+import type { RowDataPacket } from "mysql2/promise";
+import type { Comment } from "../types/comments";
+
+// ========================================
+// TYPES INTERNES (Row) - Ne pas exporter
+// ========================================
+
+// Type pour les lignes retournées par les requêtes avec JOIN users
+interface CommentRowFromQuery extends RowDataPacket {
+	id: number;
+	text: string;
+	created_at: Date;
+	// Infos de l'utilisateur (via JOIN)
+	user_id: number;
+	username: string;
+	avatar: string | null;
+	firstname: string | null;
+	lastname: string | null;
+}
 
 const findApprovedByArticleId = async (id: number): Promise<Comment[]> => {
   try {

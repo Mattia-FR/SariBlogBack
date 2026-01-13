@@ -1,22 +1,19 @@
-import type { RowDataPacket } from "mysql2/promise";
+// ========================================
+// TYPES PUBLICS pour les tags
+// ========================================
 
-// Interface représentant une ligne brute de la table tags en base de données.
-// Extends RowDataPacket pour être compatible avec mysql2/promise.
-export interface TagRow extends RowDataPacket {
-    id: number;
-    name: string;
-    slug: string;
-    created_at: Date;
+// Interface pour un tag complet
+export interface Tag {
+	id: number;
+	name: string;
+	slug: string;
+	created_at: Date;
 }
 
-// Interface pour un tag individuel.
-export interface Tag extends TagRow {}
-
-// Interface pour un tag dans une liste (sans RowDataPacket, pour l'enrichissement)
-// Utilisée pour les articles enrichis (homepage, etc.)
+// Interface pour un tag dans une liste (version allégée).
+// Utilisée pour les articles et images enrichis avec tags.
 export interface TagForList {
 	id: number;
 	name: string;
 	slug: string;
-	created_at?: Date; // Optionnel car non utilisé pour l'affichage
 }

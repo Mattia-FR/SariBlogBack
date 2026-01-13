@@ -1,13 +1,49 @@
 import pool from "./db";
-// ImageRow est un type qui représente une ligne de résultat d'une requête SELECT.
-// Image contient tous les champs d'une image (description complète, métadonnées).
-// ImageForArticle est une version allégée pour l'affichage dans les articles (sans description complète).
-import type {
-	ImageRow,
-	Image,
-	ImageForArticle,
-	ImageForArticleRowFromQuery,
-} from "../types/images";
+import type { RowDataPacket } from "mysql2/promise";
+import type { Image, ImageForArticle, ImageForList } from "../types/images";
+import type { TagForList } from "../types/tags";
+
+// ========================================
+// TYPES INTERNES (Row) - Ne pas exporter
+// ========================================
+
+// Type pour les lignes retournées par les requêtes SELECT simples
+interface ImageRow extends RowDataPacket {
+	id: number;
+	title: string | null;
+	description: string | null;
+	path: string;
+	alt_descr: string | null;
+	is_in_gallery: boolean;
+	user_id: number;
+	article_id: number | null;
+	created_at: Date;
+	updated_at: Date;
+}
+
+// Type pour les lignes retournées par findByArticleId (version allégée)
+interface ImageForArticleRowFromQuery extends RowDataPacket {
+	id: number;
+	title: string | null;
+	path: string;
+	alt_descr: string | null;
+	article_id: number | null;
+}
+
+// Type pour les lignes retournées par findGallery avec GROUP_CONCAT
+interface GalleryRow extends RowDataPacket {
+	id: number;
+	title: string | null;
+	description: string | null;
+	path: string;
+	alt_descr: string | null;
+	is_in_gallery: boolean;
+	user_id: number;
+	article_id: number | null;
+	created_at: Date;
+	updated_at: Date;
+	tags: string | null; // Format GROUP_CONCAT: "id:name:slug|id:name:slug"
+}
 
 // Récupère toutes les images de la base de données.
 // Utilisé pour les listes complètes d'images (admin ou gestion).
@@ -25,17 +61,77 @@ const findAll = async (): Promise<Image[]> => {
 	}
 };
 
-// Récupère toutes les images de la galerie (is_in_gallery = TRUE).
-// Utilisé pour afficher la galerie publique d'images.
-// Retourne un tableau de Image contenant uniquement les images marquées comme étant dans la galerie.
-const findGallery = async (): Promise<Image[]> => {
+/**
+ * Fonction helper pour parser les rows avec tags
+ * Utilisée par findGallery pour transformer les tags GROUP_CONCAT en tableau
+ */
+function parseImageRows(rows: GalleryRow[]): ImageForList[] {
+	return rows.map((row) => {
+		// Construire le tableau de tags depuis le GROUP_CONCAT
+		const tags: TagForList[] = row.tags
+			? row.tags.split("|").map((tagStr) => {
+					const [id, name, slug] = tagStr.split(":");
+					return {
+						id: Number.parseInt(id, 10),
+						name,
+						slug,
+					} as TagForList;
+				})
+			: [];
+
+		// Retourner l'image avec les tags
+		return {
+			id: row.id,
+			title: row.title,
+			description: row.description,
+			path: row.path,
+			alt_descr: row.alt_descr,
+			is_in_gallery: row.is_in_gallery,
+			user_id: row.user_id,
+			article_id: row.article_id,
+			created_at: row.created_at,
+			updated_at: row.updated_at,
+			tags,
+		} as ImageForList;
+	});
+}
+
+/**
+ * Récupère toutes les images de la galerie (is_in_gallery = TRUE) avec leurs tags
+ * Utilisé pour afficher la galerie publique d'images.
+ * Retourne un tableau de ImageForList avec tags enrichis.
+ *
+ * @returns Promise<ImageForList[]> - Images de la galerie avec tags
+ */
+const findGallery = async (): Promise<ImageForList[]> => {
 	try {
-		const [images] = await pool.query<ImageRow[]>(
-			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, created_at, updated_at
-      FROM images
-      WHERE is_in_gallery = TRUE`,
-		);
-		return images;
+		const query = `
+			SELECT 
+				i.id, 
+				i.title, 
+				i.description, 
+				i.path, 
+				i.alt_descr, 
+				i.is_in_gallery, 
+				i.user_id, 
+				i.article_id, 
+				i.created_at, 
+				i.updated_at,
+				GROUP_CONCAT(
+					DISTINCT CONCAT(t.id, ':', t.name, ':', t.slug) 
+					ORDER BY t.id 
+					SEPARATOR '|'
+				) as tags
+			FROM images i
+			LEFT JOIN images_tags it ON i.id = it.image_id
+			LEFT JOIN tags t ON it.tag_id = t.id
+			WHERE i.is_in_gallery = TRUE
+			GROUP BY i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery, i.user_id, i.article_id, i.created_at, i.updated_at
+			ORDER BY i.created_at DESC
+		`;
+
+		const [rows] = await pool.query<GalleryRow[]>(query);
+		return parseImageRows(rows);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération des images de la galerie :",
@@ -144,10 +240,7 @@ const findImageOfTheDay = async (): Promise<Image | null> => {
 
 		return images[imageIndex];
 	} catch (err) {
-		console.error(
-			"Erreur lors de la récupération de l'image du jour :",
-			err,
-		);
+		console.error("Erreur lors de la récupération de l'image du jour :", err);
 		throw err;
 	}
 };

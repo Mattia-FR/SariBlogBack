@@ -1,7 +1,18 @@
 import pool from "./db";
-// TagRow est un type qui représente une ligne de résultat d'une requête SELECT.
-// Tag contient tous les champs d'un tag (id, name, slug, created_at).
-import type { TagRow, Tag } from "../types/tags";
+import type { RowDataPacket } from "mysql2/promise";
+import type { Tag } from "../types/tags";
+
+// ========================================
+// TYPES INTERNES (Row) - Ne pas exporter
+// ========================================
+
+// Type pour les lignes retournées par les requêtes SELECT
+interface TagRow extends RowDataPacket {
+	id: number;
+	name: string;
+	slug: string;
+	created_at: Date;
+}
 
 // Récupère tous les tags de la base de données.
 // Utilisé pour les listes complètes de tags (admin ou affichage public).

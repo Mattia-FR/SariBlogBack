@@ -1,12 +1,50 @@
 import pool from "./db";
+import type { RowDataPacket } from "mysql2/promise";
 import type {
 	Article,
-	ArticleRow,
 	ArticleListItem,
 	ArticleForList,
-	HomepagePreviewRow,
 } from "../types/articles";
 import type { TagForList } from "../types/tags";
+
+// ========================================
+// TYPES INTERNES (Row) - Ne pas exporter
+// ========================================
+// Ces types avec RowDataPacket sont uniquement pour mysql2 et restent internes au model
+
+// Type pour les lignes retournées par les requêtes SELECT simples
+interface ArticleRow extends RowDataPacket {
+	id: number;
+	title: string;
+	slug: string;
+	excerpt: string | null;
+	content: string;
+	status: "draft" | "published" | "archived";
+	user_id: number;
+	created_at: Date;
+	updated_at: Date;
+	published_at: Date | null;
+	views: number;
+	featured_image_id: number | null;
+	image_path?: string | null; // Présent quand JOIN avec images
+}
+
+// Type pour les lignes retournées par findPublished/findHomepagePreview avec GROUP_CONCAT
+interface HomepagePreviewRow extends RowDataPacket {
+	id: number;
+	title: string;
+	slug: string;
+	excerpt: string | null;
+	status: "draft" | "published" | "archived";
+	user_id: number;
+	created_at: Date;
+	updated_at: Date;
+	published_at: Date | null;
+	views: number;
+	featured_image_id: number | null;
+	image_path: string | null;
+	tags: string | null; // Format GROUP_CONCAT: "id:name:slug|id:name:slug"
+}
 
 // Récupère tous les articles de la base de données, sans le content.
 // Utilisé pour les listes d'articles (admin ou publique).
@@ -25,16 +63,18 @@ const findAll = async (): Promise<ArticleListItem[]> => {
 	}
 };
 
-// Récupère un article par son ID, avec le content complet.
+// Récupère un article par son ID, avec le content complet et l'image featured.
 // Utilisé pour afficher un article individuel.
-// Retourne Article | null (avec content) pour afficher l'article complet.
+// Retourne Article | null (avec content et image_path) pour afficher l'article complet.
 const findById = async (id: number): Promise<Article | null> => {
 	try {
 		const [article] = await pool.query<ArticleRow[]>(
-			`SELECT id, title, slug, excerpt, content, status, user_id, 
-              created_at, updated_at, published_at, views, featured_image_id 
-      FROM articles 
-      WHERE id = ?`,
+			`SELECT a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id, 
+              a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id,
+              i.path as image_path
+      FROM articles a
+      LEFT JOIN images i ON a.featured_image_id = i.id
+      WHERE a.id = ?`,
 			[id],
 		);
 		return article[0] || null;
@@ -44,18 +84,20 @@ const findById = async (id: number): Promise<Article | null> => {
 	}
 };
 
-// Récupère un article par son slug, avec le content complet.
+// Récupère un article par son slug, avec le content complet et l'image featured.
 // Utilisé pour afficher un article individuel via son URL-friendly slug (admin ou preview).
-// Retourne Article | null (avec content) pour afficher l'article complet.
+// Retourne Article | null (avec content et image_path) pour afficher l'article complet.
 // ATTENTION : Ne filtre pas par statut, peut retourner des articles non publiés.
 // Pour l'affichage public, utiliser findPublishedBySlug à la place.
 const findBySlug = async (slug: string): Promise<Article | null> => {
 	try {
 		const [article] = await pool.query<ArticleRow[]>(
-			`SELECT id, title, slug, excerpt, content, status, user_id, 
-              created_at, updated_at, published_at, views, featured_image_id 
-      FROM articles 
-      WHERE slug = ?`,
+			`SELECT a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id, 
+              a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id,
+              i.path as image_path
+      FROM articles a
+      LEFT JOIN images i ON a.featured_image_id = i.id
+      WHERE a.slug = ?`,
 			[slug],
 		);
 		return article[0] || null;
@@ -100,7 +142,7 @@ function parseArticleRows(rows: HomepagePreviewRow[]): ArticleForList[] {
 			published_at: row.published_at,
 			views: row.views,
 			featured_image_id: row.featured_image_id,
-			imageUrl: row.image_path || undefined,
+			image_path: row.image_path || undefined,
 			tags,
 		} as ArticleForList;
 	});
@@ -160,18 +202,20 @@ const findPublished = async (limit?: number): Promise<ArticleForList[]> => {
 	}
 };
 
-// Récupère un article publié par son slug, avec le content complet.
+// Récupère un article publié par son slug, avec le content complet et l'image featured.
 // Utilisé pour afficher un article individuel publié via son URL-friendly slug (affichage public).
-// Retourne Article | null (avec content) uniquement si l'article est publié.
+// Retourne Article | null (avec content et image_path) uniquement si l'article est publié.
 // Combine le filtrage par slug ET par statut 'published' pour la sécurité publique.
 // ATTENTION : Cette fonction garantit qu'aucun article non publié ne sera accessible publiquement.
 const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
 	try {
 		const [article] = await pool.query<ArticleRow[]>(
-			`SELECT id, title, slug, excerpt, content, status, user_id, 
-              created_at, updated_at, published_at, views, featured_image_id 
-      FROM articles 
-      WHERE status = 'published' AND slug = ?`,
+			`SELECT a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id, 
+              a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id,
+              i.path as image_path
+      FROM articles a
+      LEFT JOIN images i ON a.featured_image_id = i.id
+      WHERE a.status = 'published' AND a.slug = ?`,
 			[slug],
 		);
 		return article[0] || null;
