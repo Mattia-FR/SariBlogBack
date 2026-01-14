@@ -14,7 +14,7 @@
 GET http://localhost:4242/
 
 ###############################################################################
-# 📰 ARTICLES (5 endpoints)
+# 📰 ARTICLES (7 endpoints)
 ###############################################################################
 
 ### 1. Liste TOUS les articles (admin - tous statuts)
@@ -29,33 +29,45 @@ GET {{baseUrl}}/articles/slug/decouvrir-aquarelle-guide-debutants
 ### 4. Liste articles PUBLIÉS uniquement (public)
 GET {{baseUrl}}/articles/published
 
-### 5. Article publié par SLUG (public)
+### 5. Liste articles PUBLIÉS avec limite (public - max 20)
+GET {{baseUrl}}/articles/published?limit=4
+
+### 6. Article publié par SLUG (public)
 GET {{baseUrl}}/articles/published/tutoriel-peindre-dragon
 
+### 7. Preview homepage (4 derniers articles publiés)
+GET {{baseUrl}}/articles/homepage-preview
+
 ###############################################################################
-# 🖼️ IMAGES (4 endpoints)
+# 🖼️ IMAGES (5 endpoints)
 ###############################################################################
 
-### 1. Images de la GALERIE (is_in_gallery = TRUE)
+### 1. Image du jour
+GET {{baseUrl}}/images/image-of-the-day
+
+### 2. Images de la GALERIE (is_in_gallery = TRUE)
 GET {{baseUrl}}/images/gallery
 
-### 2. Image par ID
+### 3. Image par ID
 GET {{baseUrl}}/images/1
 
-### 3. Images d'un ARTICLE spécifique
+### 4. Images d'un ARTICLE spécifique
 GET {{baseUrl}}/images/article/1
 
-### 4. Images par TAG
+### 5. Images par TAG
 GET {{baseUrl}}/images/tag/1
 
 ###############################################################################
-# 👥 USERS (2 endpoints)
+# 👥 USERS (3 endpoints)
 ###############################################################################
 
 ### 1. Liste tous les utilisateurs
 GET {{baseUrl}}/users
 
-### 2. Utilisateur par ID
+### 2. Artiste principale
+GET {{baseUrl}}/users/artist
+
+### 3. Utilisateur par ID
 GET {{baseUrl}}/users/1
 
 ###############################################################################
@@ -72,7 +84,56 @@ GET {{baseUrl}}/tags/article/1
 GET {{baseUrl}}/tags/image/1
 
 ###############################################################################
-# 🧪 TESTS D'ERREURS (optionnel)
+# 💬 COMMENTS (1 endpoint)
+###############################################################################
+
+### 1. Commentaires approuvés d'un article
+GET {{baseUrl}}/comments/article/1
+
+###############################################################################
+# 📧 MESSAGES (8 endpoints)
+###############################################################################
+
+### 1. Créer un message de contact (POST - public)
+POST {{baseUrl}}/messages
+Content-Type: application/json
+
+{
+  "firstname": "John",
+  "lastname": "Doe",
+  "email": "john@example.com",
+  "subject": "Question sur votre art",
+  "text": "Bonjour, j'aimerais en savoir plus sur vos techniques..."
+}
+
+### 2. Liste tous les messages (GET - admin)
+GET {{baseUrl}}/messages
+
+### 3. Messages par statut : non lus (GET - admin)
+GET {{baseUrl}}/messages/status/unread
+
+### 4. Messages par statut : lus (GET - admin)
+GET {{baseUrl}}/messages/status/read
+
+### 5. Messages par statut : archivés (GET - admin)
+GET {{baseUrl}}/messages/status/archived
+
+### 6. Message par ID (GET - admin)
+GET {{baseUrl}}/messages/1
+
+### 7. Mettre à jour le statut d'un message (PATCH - admin)
+PATCH {{baseUrl}}/messages/1/status
+Content-Type: application/json
+
+{
+  "status": "read"
+}
+
+### 8. Supprimer un message (DELETE - admin)
+DELETE {{baseUrl}}/messages/1
+
+###############################################################################
+# 🧪 TESTS D'ERREURS
 ###############################################################################
 
 ### Article inexistant (devrait retourner 404)
@@ -81,17 +142,57 @@ GET {{baseUrl}}/articles/99999
 ### Slug inexistant (devrait retourner 404)
 GET {{baseUrl}}/articles/slug/article-qui-nexiste-pas
 
+### Article publié avec slug inexistant (devrait retourner 404)
+GET {{baseUrl}}/articles/published/article-qui-nexiste-pas
+
+### Articles publiés avec limite invalide (devrait retourner 400)
+GET {{baseUrl}}/articles/published?limit=25
+
+### Articles publiés avec limite négative (devrait retourner 400)
+GET {{baseUrl}}/articles/published?limit=-1
+
 ### Image inexistante (devrait retourner 404)
 GET {{baseUrl}}/images/99999
+
+### Article inexistant pour images (devrait retourner tableau vide)
+GET {{baseUrl}}/images/article/99999
+
+### Tag inexistant pour images (devrait retourner tableau vide)
+GET {{baseUrl}}/images/tag/99999
 
 ### User inexistant (devrait retourner 404)
 GET {{baseUrl}}/users/99999
 
-### Article inexistant pour tags (devrait retourner tableau vide ou 404)
+### Article inexistant pour tags (devrait retourner tableau vide)
 GET {{baseUrl}}/tags/article/99999
 
-### Image inexistante pour tags (devrait retourner tableau vide ou 404)
+### Image inexistante pour tags (devrait retourner tableau vide)
 GET {{baseUrl}}/tags/image/99999
+
+### Article inexistant pour commentaires (devrait retourner tableau vide)
+GET {{baseUrl}}/comments/article/99999
+
+### Message inexistant (devrait retourner 404)
+GET {{baseUrl}}/messages/99999
+
+### Message avec statut invalide (devrait retourner 400)
+GET {{baseUrl}}/messages/status/invalid
+
+### Mettre à jour message avec statut invalide (devrait retourner 400)
+PATCH {{baseUrl}}/messages/1/status
+Content-Type: application/json
+
+{
+  "status": "invalid"
+}
+
+### Créer message avec champs manquants (devrait retourner 400)
+POST {{baseUrl}}/messages
+Content-Type: application/json
+
+{
+  "firstname": "John"
+}
 
 ###############################################################################
 # 📝 NOTES D'UTILISATION
@@ -102,10 +203,13 @@ GET {{baseUrl}}/tags/image/99999
 # 3. Le résultat s'affiche dans un panneau à droite
 # 4. Vérifie les status codes :
 #    - 200 = OK
+#    - 201 = Created (POST réussi)
+#    - 204 = No Content (DELETE réussi)
+#    - 400 = Bad Request (erreur de validation)
 #    - 404 = Not Found
 #    - 500 = Erreur serveur
 #
-# 4bis. Slugs d'articles disponibles pour tester :
+# 5. Slugs d'articles disponibles pour tester :
 #    - decouvrir-aquarelle-guide-debutants
 #    - processus-creatif-esquisse-illustration
 #    - techniques-portrait-emotion
@@ -116,28 +220,16 @@ GET {{baseUrl}}/tags/image/99999
 #    - projet-personnel-portraits-fantasy
 #    - art-portrait-numerique-techniques
 #
-# 5. Pour tester plus tard (quand tu auras fait Comments/Messages) :
+# 6. Paramètres pour les endpoints :
+#    - GET /articles/published?limit=X : limite optionnelle (max 20)
+#    - GET /messages/status/:status : statuts possibles = unread, read, archived
+#    - PATCH /messages/:id/status : body doit contenir {"status": "unread|read|archived"}
+#    - POST /messages : body doit contenir firstname, lastname, email, subject, text
 #
-# ### Créer un commentaire (POST)
-# POST {{baseUrl}}/comments
-# Content-Type: application/json
-#
-# {
-#   "article_id": 1,
-#   "author_name": "Test User",
-#   "author_email": "test@example.com",
-#   "content": "Super article, merci !"
-# }
-#
-# ### Créer un message de contact (POST)
-# POST {{baseUrl}}/messages
-# Content-Type: application/json
-#
-# {
-#   "name": "John Doe",
-#   "email": "john@example.com",
-#   "subject": "Question",
-#   "message": "Bonjour, j'ai une question..."
-# }
+# 7. Endpoints publics vs admin :
+#    - Public : articles/published, images, users, tags, comments, POST /messages
+#    - Admin : articles (tous), messages (GET/PATCH/DELETE)
+#    Note : L'authentification n'est pas encore implémentée, tous les endpoints
+#           sont actuellement accessibles sans authentification.
 #
 ###############################################################################
