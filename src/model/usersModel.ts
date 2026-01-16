@@ -42,6 +42,11 @@ interface UserRowFromQuery extends RowDataPacket {
 	updated_at: Date;
 }
 
+// Type pour les lignes retournées par SELECT refresh_token
+interface UserRefreshTokenRow extends RowDataPacket {
+	refresh_token: string | null;
+}
+
 // Récupère tous les utilisateurs de la base de données, sans exposer le password.
 // Utilisé pour les listes publiques ou les pages d'administration.
 // Retourne un tableau de User (sans password) pour la sécurité.
@@ -54,7 +59,10 @@ const findAll = async (): Promise<User[]> => {
 		);
 		return users;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les utilisateurs :", err);
+		console.error(
+			"Erreur lors de la récupération de tous les utilisateurs :",
+			err,
+		);
 		throw err;
 	}
 };
@@ -73,7 +81,10 @@ const findById = async (id: number): Promise<User | null> => {
 		);
 		return users[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'utilisateur par ID :", err);
+		console.error(
+			"Erreur lors de la récupération de l'utilisateur par ID :",
+			err,
+		);
 		throw err;
 	}
 };
@@ -90,7 +101,10 @@ const findByEmail = async (email: string): Promise<UserWithPassword | null> => {
 		);
 		return users[0] || null;
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'utilisateur par email :", err);
+		console.error(
+			"Erreur lors de la récupération de l'utilisateur par email :",
+			err,
+		);
 		throw err;
 	}
 };
@@ -225,7 +239,10 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		return result.affectedRows > 0;
 	} catch (err) {
 		if (err instanceof Error) {
-			console.error("Erreur lors de la suppression de l'utilisateur :", err.message);
+			console.error(
+				"Erreur lors de la suppression de l'utilisateur :",
+				err.message,
+			);
 		}
 		throw err;
 	}
@@ -236,10 +253,10 @@ const findArtist = async (): Promise<User | null> => {
 		const [users] = await pool.query<UserRowFromQuery[]>(
 			`SELECT id, username, email, firstname, lastname, role,
 			        avatar, bio, bio_short, created_at, updated_at
-			 FROM users
-			 WHERE role = 'editor'
-			 ORDER BY id ASC
-			 LIMIT 1`,
+			FROM users
+			WHERE role = 'editor'
+			ORDER BY id ASC
+			LIMIT 1`,
 		);
 
 		return users[0] || null;
@@ -249,6 +266,33 @@ const findArtist = async (): Promise<User | null> => {
 	}
 };
 
+const saveRefreshToken = async (
+	userId: number,
+	refreshToken: string,
+): Promise<void> => {
+	try {
+		await pool.query("UPDATE users SET refresh_token = ? WHERE id = ?", [
+			refreshToken,
+			userId,
+		]);
+	} catch (err) {
+		console.error("Erreur lors de la sauvegarde du refresh token :", err);
+		throw err;
+	}
+};
+
+const findByIdWithRefreshToken = async (id: number): Promise<{ refresh_token: string | null } | null> => {
+	try {
+		const [users] = await pool.query<UserRefreshTokenRow[]>(
+			"SELECT refresh_token FROM users WHERE id = ?",
+			[id],
+		);
+		return users[0] || null;
+	} catch (err) {
+		console.error("Erreur lors de la récupération du refresh token :", err);
+		throw err;
+	}
+};
 
 export default {
 	findAll,
@@ -259,4 +303,6 @@ export default {
 	updatePassword,
 	create,
 	deleteOne,
+	saveRefreshToken,
+	findByIdWithRefreshToken,
 };

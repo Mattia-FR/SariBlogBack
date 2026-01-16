@@ -1,4 +1,5 @@
 import argon2 from 'argon2';
+import { argon2Options } from './src/config/argon2';
 
 async function generateHashes() {
     const users = [
@@ -27,7 +28,7 @@ async function generateHashes() {
         for (let i = 0; i < users.length; i++) {
             const username = users[i];
             const password = passwords[i];
-            const hash = await argon2.hash(password);
+            const hash = await argon2.hash(password, argon2Options);
             
             console.log(`${username}: ${hash}`);
         }
