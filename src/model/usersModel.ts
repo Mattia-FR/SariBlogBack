@@ -294,6 +294,15 @@ const findByIdWithRefreshToken = async (id: number): Promise<{ refresh_token: st
 	}
 };
 
+const deleteRefreshToken = async (userId: number): Promise<void> => {
+    try {
+        await pool.query("UPDATE users SET refresh_token = NULL WHERE id = ?", [userId]);
+    } catch (err) {
+        console.error("Erreur lors de la suppression du refresh token :", err);
+        throw err;
+    }
+};
+
 export default {
 	findAll,
 	findById,
@@ -305,4 +314,5 @@ export default {
 	deleteOne,
 	saveRefreshToken,
 	findByIdWithRefreshToken,
+	deleteRefreshToken,
 };
