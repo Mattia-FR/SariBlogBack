@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import usersModel from "../model/usersModel";
 import argon2 from "argon2";
+import type { User } from "../types/users";
+import { argon2Options } from "../config/argon2";
 
 interface TokenPayload extends jwt.JwtPayload {
 	userId: number;
@@ -60,14 +62,14 @@ export async function login(req: Request, res: Response) {
 			maxAge: 7 * 24 * 60 * 60 * 1000,
 		});
 
-		// 7. Réponse
+		// 7. Construction du User (sans password)
+		const { password: _, ...userWithoutPassword } = user;
+		const publicUser: User = userWithoutPassword;
+
+		// 8. Réponse
 		res.json({
 			accessToken,
-			user: {
-				id: user.id,
-				email: user.email,
-				username: user.username,
-			},
+			user: publicUser,
 		});
 	} catch (err) {
 		console.error("Erreur lors de la connexion :", err);
@@ -131,6 +133,88 @@ export async function refresh(req: Request, res: Response) {
 			return res.sendStatus(401);
 		}
 		console.error("Erreur lors du refresh:", err);
+		return res.sendStatus(500);
+	}
+}
+
+export async function signup(req: Request, res: Response) {
+	try {
+		const { username, email, password, firstname, lastname } = req.body;
+
+		// Validation des champs obligatoires
+		if (!username || !email || !password) {
+			return res
+				.status(400)
+				.json({ error: "Username, email et password sont requis" });
+		}
+
+		// Vérifier les secrets AVANT toute opération
+		const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
+		const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
+		if (!ACCESS_SECRET || !REFRESH_SECRET) {
+			console.error("JWT secrets non définis");
+			return res.sendStatus(500);
+		}
+
+		// 1. Hasher le password avec Argon2
+		const hashedPassword = await argon2.hash(password, argon2Options);
+
+		// 2. Créer l'utilisateur (le model vérifie déjà email/username unique)
+		try {
+			const newUser = await usersModel.create({
+				username,
+				email,
+				password: hashedPassword,
+				firstname: firstname || null,
+				lastname: lastname || null,
+				role: "subscriber", // Par défaut, nouveau compte = subscriber
+			});
+
+			// 3. Auto-login après inscription (créer les tokens)
+			const accessToken = jwt.sign(
+				{ userId: newUser.id, role: newUser.role },
+				ACCESS_SECRET,
+				{ expiresIn: "15m" },
+			);
+
+			const refreshToken = jwt.sign(
+				{ userId: newUser.id, role: newUser.role },
+				REFRESH_SECRET,
+				{ expiresIn: "7d" },
+			);
+
+			// 4. Stockage du refresh token en DB
+			await usersModel.saveRefreshToken(newUser.id, refreshToken);
+
+			// 5. Envoi cookie httpOnly
+			res.cookie("refreshToken", refreshToken, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === "production",
+				sameSite: "strict",
+				maxAge: 7 * 24 * 60 * 60 * 1000,
+			});
+
+			// 6. Réponse avec tokens et user
+			res.status(201).json({
+				accessToken,
+				user: newUser,
+			});
+		} catch (err) {
+			// Gestion des erreurs de duplication
+			if (err instanceof Error) {
+				if (err.message === "EMAIL_EXISTS") {
+					return res.status(409).json({ error: "Cet email est déjà utilisé" });
+				}
+				if (err.message === "USERNAME_EXISTS") {
+					return res
+						.status(409)
+						.json({ error: "Ce nom d'utilisateur est déjà utilisé" });
+				}
+			}
+			throw err; // Relancer les autres erreurs
+		}
+	} catch (err) {
+		console.error("Erreur lors de l'inscription :", err);
 		return res.sendStatus(500);
 	}
 }

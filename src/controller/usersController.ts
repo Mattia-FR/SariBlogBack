@@ -86,4 +86,34 @@ const readArtist = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseAll, readById, readArtist };
+// Récupère l'utilisateur connecté (protégé par authentification)
+// GET /users/me
+// ⚠️ Nécessite le middleware requireAuth qui ajoute req.user
+const readMe = async (req: Request, res: Response): Promise<void> => {
+	try {
+		// req.user est ajouté par le middleware requireAuth
+		if (!req.user || !req.user.userId) {
+			res.sendStatus(401);
+			return;
+		}
+
+		const userId = req.user.userId;
+		const user: User | null = await usersModel.findById(userId);
+
+		if (!user) {
+			res.sendStatus(404);
+			return;
+		}
+
+		const enrichedUser = enrichUserWithAvatarUrl(user);
+		res.status(200).json(enrichedUser);
+	} catch (err) {
+		console.error(
+			"Erreur lors de la récupération de l'utilisateur connecté :",
+			err,
+		);
+		res.sendStatus(500);
+	}
+};
+
+export { browseAll, readById, readArtist, readMe };
