@@ -37,6 +37,7 @@ CREATE TABLE users (
     avatar VARCHAR(255),
     bio TEXT,
     bio_short VARCHAR(255),
+    refresh_token TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT pk_users PRIMARY KEY (id),

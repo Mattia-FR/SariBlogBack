@@ -3,17 +3,13 @@ import jwt from "jsonwebtoken";
 import usersModel from "../model/usersModel";
 import argon2 from "argon2";
 import type { User } from "../types/users";
+import type { TokenPayload } from "../types/auth";
 import { argon2Options } from "../config/argon2";
-
-interface TokenPayload extends jwt.JwtPayload {
-	userId: number;
-	role: string;
-}
 
 export async function login(req: Request, res: Response) {
 	try {
-		const { email, password } = req.body;
-		if (!email || !password) {
+		const { identifier, password } = req.body;
+		if (!identifier || !password) {
 			return res.sendStatus(400);
 		}
 
@@ -25,8 +21,8 @@ export async function login(req: Request, res: Response) {
 			return res.sendStatus(500);
 		}
 
-		// 1. Récupération de l'utilisateur
-		const user = await usersModel.findByEmail(email);
+		// 1. Récupération de l'utilisateur par email OU username
+		const user = await usersModel.findByIdentifier(identifier);
 		if (!user) {
 			return res.sendStatus(401);
 		}

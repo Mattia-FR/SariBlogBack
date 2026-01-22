@@ -109,6 +109,26 @@ const findByEmail = async (email: string): Promise<UserWithPassword | null> => {
 	}
 };
 
+// Récupère un utilisateur par son email OU son nom d'utilisateur, INCLUANT le password.
+// Utilisé uniquement pour l'authentification (login/vérification de mot de passe).
+// Retourne UserWithPassword | null car le password est nécessaire pour vérifier les credentials.
+// ATTENTION : Cette fonction doit être utilisée uniquement dans un contexte d'authentification sécurisé.
+const findByIdentifier = async (identifier: string): Promise<UserWithPassword | null> => {
+	try {
+		const [users] = await pool.query<UserRow[]>(
+			"SELECT * FROM users WHERE email = ? OR username = ?",
+			[identifier, identifier],
+		);
+		return users[0] || null;
+	} catch (err) {
+		console.error(
+			"Erreur lors de la récupération de l'utilisateur par identifier :",
+			err,
+		);
+		throw err;
+	}
+};
+
 // Met à jour les données d'un utilisateur (sauf le password).
 // Utilisé pour modifier le profil utilisateur (bio, email, etc.).
 // Permet des mises à jour partielles : seuls les champs fournis dans 'data' sont modifiés.
@@ -307,6 +327,7 @@ export default {
 	findAll,
 	findById,
 	findByEmail,
+	findByIdentifier,
 	findArtist,
 	updateData,
 	updatePassword,

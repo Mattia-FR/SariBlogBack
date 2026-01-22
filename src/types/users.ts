@@ -55,3 +55,9 @@ export interface UserCreateData {
 	bio?: string | null;
 	bio_short?: string | null;
 }
+
+// Interface pour un utilisateur enrichi avec l'URL complète de son avatar.
+// Utilisée dans les réponses API pour exposer l'URL complète de l'avatar.
+export interface UserWithUrl extends User {
+	avatarUrl?: string;
+}

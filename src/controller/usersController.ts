@@ -1,15 +1,10 @@
 // usersController.ts
 import type { Request, Response } from "express";
 import usersModel from "../model/usersModel";
-import type { User } from "../types/users";
+import type { User, UserWithUrl } from "../types/users";
 
 // Configuration de l'URL de base pour les images
 const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
-
-// Type pour les utilisateurs enrichis avec URL complète
-interface UserWithUrl extends User {
-	avatarUrl?: string;
-}
 
 /**
  * Fonction utilitaire pour enrichir un utilisateur avec l'URL complète de son avatar
