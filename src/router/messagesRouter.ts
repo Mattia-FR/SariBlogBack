@@ -7,11 +7,13 @@ import {
 	editStatus,
 	destroy,
 } from "../controller/messagesController";
+import { optionalAuth } from "../middleware/authMiddleware";
 
 const router: Router = express.Router();
 
 // Route publique pour créer un message (formulaire de contact)
-router.post("/", add);
+// Le middleware optionalAuth permet de détecter si l'utilisateur est connecté sans bloquer les visiteurs
+router.post("/", optionalAuth, add);
 
 // Routes admin (à protéger avec un middleware d'authentification plus tard)
 router.get("/", browseAll);

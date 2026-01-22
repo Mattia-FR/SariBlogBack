@@ -11,6 +11,7 @@ export interface Message {
 	firstname: string;
 	lastname: string;
 	email: string;
+	username: string | null;
 	ip: string | null;
 	subject: string;
 	text: string;
@@ -21,9 +22,10 @@ export interface Message {
 
 // Interface pour créer un nouveau message (formulaire de contact)
 export interface MessageCreateData {
-	firstname: string;
-	lastname: string;
+	firstname?: string | null;
+	lastname?: string | null;
 	email: string;
+	username?: string | null;
 	ip?: string | null;
 	subject: string;
 	text: string;

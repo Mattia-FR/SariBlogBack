@@ -48,9 +48,10 @@ CREATE TABLE users (
 -- Table: Messages (Formulaire de contact)
 CREATE TABLE messages (
     id INT UNSIGNED AUTO_INCREMENT,
-    firstname VARCHAR(50) NOT NULL,
-    lastname VARCHAR(50) NOT NULL,
+    firstname VARCHAR(50),
+    lastname VARCHAR(50),
     email VARCHAR(100) NOT NULL,
+    username VARCHAR(50),
     ip VARCHAR(45),
     subject VARCHAR(200) NOT NULL,
     text TEXT NOT NULL,

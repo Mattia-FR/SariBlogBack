@@ -12,6 +12,7 @@ interface MessageRow extends RowDataPacket {
 	firstname: string;
 	lastname: string;
 	email: string;
+	username: string | null;
 	ip: string | null;
 	subject: string;
 	text: string;
@@ -70,12 +71,13 @@ const findById = async (id: number): Promise<Message | null> => {
 const create = async (data: MessageCreateData): Promise<Message> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
-			`INSERT INTO messages (firstname, lastname, email, ip, subject, text, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO messages (firstname, lastname, email, username, ip, subject, text, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
-				data.firstname,
-				data.lastname,
+				data.firstname ?? null,
+				data.lastname ?? null,
 				data.email,
+				data.username ?? null,
 				data.ip ?? null,
 				data.subject,
 				data.text,
