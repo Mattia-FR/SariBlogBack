@@ -145,7 +145,7 @@ const updateData = async (
 
 	// Vérifie qu'il y a au moins un champ à modifier
 	if (keys.length === 0) {
-		throw new Error("No fields to update");
+		throw new Error("Aucun champ à mettre à jour");
 	}
 
 	// Construit la partie SET de la requête SQL dynamiquement
@@ -219,7 +219,7 @@ const create = async (data: UserCreateData): Promise<User> => {
 
 		const newUser = await findById(result.insertId);
 		if (!newUser) {
-			throw new Error("Failed to retrieve created user");
+			throw new Error("Impossible de récupérer l'utilisateur créé");
 		}
 		return newUser;
 	} catch (err) {

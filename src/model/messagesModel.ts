@@ -87,7 +87,7 @@ const create = async (data: MessageCreateData): Promise<Message> => {
 
 		const newMessage = await findById(result.insertId);
 		if (!newMessage) {
-			throw new Error("Failed to retrieve created message");
+			throw new Error("Impossible de récupérer le message créé");
 		}
 		return newMessage;
 	} catch (err) {

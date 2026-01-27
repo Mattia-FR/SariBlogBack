@@ -4,7 +4,7 @@ const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT } = process.env;
 
 // Validation des variables d'environnement
 if (!DB_HOST || !DB_USER || !DB_PASSWORD || !DB_NAME) {
-	throw new Error("Missing required database environment variables");
+	throw new Error("Variables d'environnement de base de données manquantes");
 }
 
 const pool: Pool = mysql.createPool({

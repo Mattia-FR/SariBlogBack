@@ -51,3 +51,25 @@ export interface ArticleForList extends ArticleListItem {
 		slug: string;
 	}>;
 }
+
+export interface ArticleCreateData {
+	title: string;
+	slug: string;
+	content: string;
+	excerpt?: string | null;
+	status?: "draft" | "published" | "archived";
+	user_id: number;
+	featured_image_id?: number | null;
+	published_at?: Date | null;
+	views?: number;
+}
+
+export interface ArticleUpdateData {
+	title?: string;
+	slug?: string;
+	excerpt?: string | null;
+	content?: string;
+	status?: "draft" | "published" | "archived";
+	featured_image_id?: number | null;
+	published_at?: Date | null;
+}

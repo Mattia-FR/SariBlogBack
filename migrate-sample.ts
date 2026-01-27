@@ -14,14 +14,14 @@ const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
 
 // Validation des variables d'environnement
 if (!DB_HOST || !DB_USER || !DB_PASSWORD || !DB_NAME) {
-    console.error('❌ Missing required database environment variables');
+    console.error('❌ Variables d\'environnement de base de données manquantes');
     process.exit(1);
 }
 
 // Validation du nom de la base de données (sécurité)
 const isValidDbName = /^[a-zA-Z0-9_]+$/.test(DB_NAME);
 if (!isValidDbName) {
-    console.error('❌ Invalid database name format. Only alphanumeric characters and underscores are allowed.');
+    console.error('❌ Format de nom de base de données invalide. Seuls les caractères alphanumériques et les underscores sont autorisés.');
     process.exit(1);
 }
 
@@ -82,7 +82,7 @@ const migrate = async (): Promise<void> => {
             `✅ Database '${DB_NAME}' successfully migrated from '${path.normalize(schema)}' 🆙`
         );
     } catch (err) {
-        console.error('❌ Error updating the database:', err instanceof Error ? err.message : err);
+        console.error('❌ Erreur lors de la mise à jour de la base de données:', err instanceof Error ? err.message : err);
         
         // Afficher les détails de l'erreur SQL si disponibles
         if (err instanceof Error && 'code' in err) {
