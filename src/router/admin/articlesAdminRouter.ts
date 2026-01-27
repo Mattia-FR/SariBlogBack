@@ -6,6 +6,8 @@ import {
 	edit,
 	destroy,
 } from "../../controller/admin/articlesAdminController";
+import { requireAuth } from "../../middleware/authMiddleware";
+import { requireRole } from "../../middleware/roleMiddleware";
 
 const router: Router = express.Router();
 
@@ -18,8 +20,8 @@ router.get("/", browseAll);
 router.get("/:id", readById);
 
 // Coté admin :
-router.post("/", add); // Créer
-router.patch("/:id", edit); // Modifier
-router.delete("/:id", destroy); // Supprimer
+router.post("/", requireAuth, requireRole(["admin", "editor"]), add); // Créer
+router.patch("/:id", requireAuth, requireRole(["admin", "editor"]), edit); // Modifier
+router.delete("/:id", requireAuth, requireRole(["admin", "editor"]), destroy); // Supprimer
 
 export default router;

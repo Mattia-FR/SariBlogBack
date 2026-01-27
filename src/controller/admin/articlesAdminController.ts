@@ -81,7 +81,19 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 
 const add = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const articleData: ArticleCreateData = req.body;
+		// 1. Récupérer l'ID de l'utilisateur authentifié
+		const userId = req.user?.userId;
+		if (!userId) {
+			res.status(401).json({ error: "Non authentifié" });
+			return;
+		}
+
+		// 2. Écraser l'user_id du body par celui du JWT
+		const articleData: ArticleCreateData = {
+			...req.body,
+			user_id: userId,
+		};
+
 		const newArticle: Article = await articlesAdminModel.create(articleData);
 		res.status(201).json(newArticle);
 	} catch (err) {
