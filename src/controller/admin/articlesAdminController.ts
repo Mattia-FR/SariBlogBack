@@ -1,9 +1,8 @@
-// controller/admin/adminArticlesController.ts
 import type { Request, Response } from "express";
 import articlesAdminModel from "../../model/admin/articlesAdminModel";
 import type {
-	Article,
-	ArticleForList,
+	ArticleAdmin,
+	ArticleForAdmin,
 	ArticleCreateData,
 	ArticleUpdateData,
 } from "../../types/articles";
@@ -35,7 +34,7 @@ function enrichArticleWithImageUrl<T extends { image_path?: string | null }>(
  */
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const articles: ArticleForList[] =
+		const articles: ArticleForAdmin[] =
 			await articlesAdminModel.findAllForAdmin();
 
 		// Enrichir les articles avec l'URL complète
@@ -44,7 +43,9 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		res.status(200).json(enrichedArticles);
 	} catch (err) {
 		console.error("Erreur lors de la récupération des articles (admin) :", err);
-		res.sendStatus(500);
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la récupération des articles" });
 	}
 };
 
@@ -60,10 +61,10 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		const article: Article | null =
+		const article: ArticleAdmin | null =
 			await articlesAdminModel.findByIdForAdmin(articleId);
 		if (!article) {
-			res.sendStatus(404);
+			res.status(404).json({ error: "Article non trouvé" });
 			return;
 		}
 
@@ -75,7 +76,9 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de l'article par ID (admin) :",
 			err,
 		);
-		res.sendStatus(500);
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la récupération de l'article" });
 	}
 };
 
@@ -94,11 +97,18 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			user_id: userId,
 		};
 
-		const newArticle: Article = await articlesAdminModel.create(articleData);
+		const newArticle: ArticleAdmin =
+			await articlesAdminModel.create(articleData);
 		res.status(201).json(newArticle);
 	} catch (err) {
 		console.error("Erreur lors de la création de l'article (admin) :", err);
-		res.sendStatus(500);
+
+		if (err instanceof Error && err.message.includes("Duplicate entry")) {
+			res.status(409).json({ error: "Un article avec ce slug existe déjà" });
+			return;
+		}
+
+		res.status(500).json({ error: "Erreur lors de la création de l'article" });
 	}
 };
 
@@ -110,14 +120,28 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 		const articleData: ArticleUpdateData = req.body;
-		const updatedArticle: Article | null = await articlesAdminModel.update(
+		const updatedArticle: ArticleAdmin | null = await articlesAdminModel.update(
 			articleId,
 			articleData,
 		);
+
+		if (!updatedArticle) {
+			res.status(404).json({ error: "Article non trouvé" });
+			return;
+		}
+
 		res.status(200).json(updatedArticle);
 	} catch (err) {
 		console.error("Erreur lors de la mise à jour de l'article (admin) :", err);
-		res.sendStatus(500);
+
+		if (err instanceof Error && err.message.includes("Duplicate entry")) {
+			res.status(409).json({ error: "Un article avec ce slug existe déjà" });
+			return;
+		}
+
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la mise à jour de l'article" });
 	}
 };
 
@@ -130,13 +154,15 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		}
 		const deleted: boolean = await articlesAdminModel.deleteOne(articleId);
 		if (!deleted) {
-			res.sendStatus(404);
+			res.status(404).json({ error: "Article non trouvé" });
 			return;
 		}
 		res.sendStatus(204);
 	} catch (err) {
 		console.error("Erreur lors de la suppression de l'article (admin) :", err);
-		res.sendStatus(500);
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la suppression de l'article" });
 	}
 };
 

@@ -2,8 +2,8 @@
 import pool from "../db";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import type {
-	Article,
-	ArticleForList,
+	ArticleAdmin,
+	ArticleForAdmin,
 	ArticleCreateData,
 	ArticleUpdateData,
 } from "../../types/articles";
@@ -32,21 +32,29 @@ interface ArticleAdminRow extends RowDataPacket {
 }
 
 /**
+ * Fonction helper pour parser les tags
+ * Utilisée par parseArticleAdminRows pour transformer le GROUP_CONCAT en tableau
+ */
+function parseTags(tagsString: string | null | undefined): TagForList[] {
+	if (!tagsString) return [];
+
+	return tagsString.split("|").map((tagStr) => {
+		const [id, name, slug] = tagStr.split(":");
+		return {
+			id: Number.parseInt(id, 10),
+			name,
+			slug,
+		} as TagForList;
+	});
+}
+
+/**
  * Fonction helper pour parser les rows avec images et tags
  * (Similaire à celle du model public)
  */
-function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleForList[] {
+function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleForAdmin[] {
 	return rows.map((row) => {
-		const tags: TagForList[] = row.tags
-			? row.tags.split("|").map((tagStr) => {
-					const [id, name, slug] = tagStr.split(":");
-					return {
-						id: Number.parseInt(id, 10),
-						name,
-						slug,
-					} as TagForList;
-				})
-			: [];
+		const tags = parseTags(row.tags);
 
 		return {
 			id: row.id,
@@ -62,8 +70,8 @@ function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleForList[] {
 			featured_image_id: row.featured_image_id,
 			image_path: row.image_path || undefined,
 			tags,
-			comments_count: row.comments_count, // ← Info supplémentaire pour l'admin
-		} as ArticleForList;
+			comments_count: row.comments_count,
+		};
 	});
 }
 
@@ -72,7 +80,7 @@ function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleForList[] {
  * Utilisé pour la liste admin des articles
  * Retourne articles triés par date de mise à jour (les plus récents en premier)
  */
-const findAllForAdmin = async (): Promise<ArticleForList[]> => {
+const findAllForAdmin = async (): Promise<ArticleForAdmin[]> => {
 	try {
 		const [rows] = await pool.query<ArticleAdminRow[]>(
 			`
@@ -118,7 +126,7 @@ const findAllForAdmin = async (): Promise<ArticleForList[]> => {
  * Récupère un article par son ID avec toutes les infos (admin)
  * Inclut le content complet, image, tags et nombre de commentaires
  */
-const findByIdForAdmin = async (id: number): Promise<Article | null> => {
+const findByIdForAdmin = async (id: number): Promise<ArticleAdmin | null> => {
 	try {
 		const [rows] = await pool.query<ArticleAdminRow[]>(
 			`
@@ -162,16 +170,7 @@ const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 		const row = rows[0];
 
 		// Parser les tags
-		const tags: TagForList[] = row.tags
-			? row.tags.split("|").map((tagStr) => {
-					const [id, name, slug] = tagStr.split(":");
-					return {
-						id: Number.parseInt(id, 10),
-						name,
-						slug,
-					} as TagForList;
-				})
-			: [];
+		const tags = parseTags(row.tags);
 
 		return {
 			id: row.id,
@@ -189,7 +188,7 @@ const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 			image_path: row.image_path || undefined,
 			tags,
 			comments_count: row.comments_count,
-		} as Article;
+		} as ArticleAdmin;
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article par ID (admin) :",
@@ -199,7 +198,7 @@ const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 	}
 };
 
-const create = async (data: ArticleCreateData): Promise<Article> => {
+const create = async (data: ArticleCreateData): Promise<ArticleAdmin> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
 			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id, published_at, views) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -245,7 +244,7 @@ const create = async (data: ArticleCreateData): Promise<Article> => {
 const update = async (
 	id: number,
 	data: ArticleUpdateData,
-): Promise<Article | null> => {
+): Promise<ArticleAdmin | null> => {
 	try {
 		// 1. Liste blanche des champs modifiables (SÉCURITÉ)
 		const allowedFields = [
@@ -279,7 +278,11 @@ const update = async (
 
 		// 5. Construire et exécuter la requête
 		const query = `UPDATE articles SET ${updates.join(", ")} WHERE id = ?`;
-		await pool.query(query, values);
+		const [result] = await pool.query<ResultSetHeader>(query, values);
+
+		if (result.affectedRows === 0) {
+			return null;
+		}
 
 		// 6. Récupérer et retourner l'article mis à jour
 		const updatedArticle = await findByIdForAdmin(id);

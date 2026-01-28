@@ -13,11 +13,11 @@ const router: Router = express.Router();
 
 // Liste tous les articles (tous statuts)
 // GET /admin/articles
-router.get("/", browseAll);
+router.get("/", requireAuth, requireRole(["admin", "editor"]), browseAll);
 
 // Article par ID avec détails complets
 // GET /admin/articles/:id
-router.get("/:id", readById);
+router.get("/:id", requireAuth, requireRole(["admin", "editor"]), readById);
 
 // Coté admin :
 router.post("/", requireAuth, requireRole(["admin", "editor"]), add); // Créer

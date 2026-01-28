@@ -52,6 +52,21 @@ export interface ArticleForList extends ArticleListItem {
 	}>;
 }
 
+// Interface spécifique pour l'administration avec infos supplémentaires
+export interface ArticleForAdmin extends ArticleForList {
+	comments_count?: number;
+}
+
+// Interface pour un article complet côté admin (avec content + infos admin)
+export interface ArticleAdmin extends Article {
+	tags?: Array<{
+		id: number;
+		name: string;
+		slug: string;
+	}>;
+	comments_count?: number;
+}
+
 export interface ArticleCreateData {
 	title: string;
 	slug: string;
