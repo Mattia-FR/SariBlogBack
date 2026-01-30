@@ -1,6 +1,10 @@
 import pool from "./db";
 import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
-import type { Message, MessageCreateData, MessageUpdateData } from "../types/messages";
+import type {
+	Message,
+	MessageCreateData,
+	MessageUpdateData,
+} from "../types/messages";
 
 // ========================================
 // TYPES INTERNES (Row) - Ne pas exporter
@@ -9,8 +13,8 @@ import type { Message, MessageCreateData, MessageUpdateData } from "../types/mes
 // Type pour les lignes retournées par les requêtes SELECT
 interface MessageRow extends RowDataPacket {
 	id: number;
-	firstname: string;
-	lastname: string;
+	firstname: string | null;
+	lastname: string | null;
 	email: string;
 	username: string | null;
 	ip: string | null;
@@ -99,9 +103,13 @@ const create = async (data: MessageCreateData): Promise<Message> => {
 // Met à jour le statut d'un message (admin)
 const updateStatus = async (
 	id: number,
-	status: "unread" | "read" | "archived",
+	data: MessageUpdateData,
 ): Promise<Message | null> => {
 	try {
+		const { status } = data;
+		if (status == null || !["unread", "read", "archived"].includes(status)) {
+			throw new Error("Statut invalide ou manquant");
+		}
 		const [result] = await pool.query<ResultSetHeader>(
 			"UPDATE messages SET status = ? WHERE id = ?",
 			[status, id],

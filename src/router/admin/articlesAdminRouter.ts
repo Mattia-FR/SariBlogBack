@@ -7,21 +7,26 @@ import {
 	destroy,
 } from "../../controller/admin/articlesAdminController";
 import { requireAuth } from "../../middleware/authMiddleware";
-import { requireRole } from "../../middleware/roleMiddleware";
+import { requireEditor } from "../../middleware/roleMiddleware";
+import { readBySlug } from "../../controller/articlesController";
 
 const router: Router = express.Router();
 
 // Liste tous les articles (tous statuts)
 // GET /admin/articles
-router.get("/", requireAuth, requireRole(["admin", "editor"]), browseAll);
+router.get("/", requireAuth, requireEditor, browseAll);
+
+// Article par slug
+// GET /admin/articles/slug/:slug
+router.get("/slug/:slug", requireAuth, requireEditor, readBySlug);
 
 // Article par ID avec détails complets
 // GET /admin/articles/:id
-router.get("/:id", requireAuth, requireRole(["admin", "editor"]), readById);
+router.get("/:id", requireAuth, requireEditor, readById);
 
-// Coté admin :
-router.post("/", requireAuth, requireRole(["admin", "editor"]), add); // Créer
-router.patch("/:id", requireAuth, requireRole(["admin", "editor"]), edit); // Modifier
-router.delete("/:id", requireAuth, requireRole(["admin", "editor"]), destroy); // Supprimer
+// CRUD :
+router.post("/", requireAuth, requireEditor, add); // Créer
+router.patch("/:id", requireAuth, requireEditor, edit); // Modifier
+router.delete("/:id", requireAuth, requireEditor, destroy); // Supprimer
 
 export default router;

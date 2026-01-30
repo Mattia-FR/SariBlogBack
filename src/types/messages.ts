@@ -1,15 +1,11 @@
-// ========================================
-// TYPES PUBLICS pour les messages
-// ========================================
-
 // Type pour le statut d'un message
 export type MessageStatus = "unread" | "read" | "archived";
 
 // Interface pour un message complet
 export interface Message {
 	id: number;
-	firstname: string;
-	lastname: string;
+	firstname: string | null;
+	lastname: string | null;
 	email: string;
 	username: string | null;
 	ip: string | null;
