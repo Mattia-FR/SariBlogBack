@@ -99,7 +99,8 @@ const add = async (req: Request, res: Response): Promise<void> => {
 
 		const newArticle: ArticleAdmin =
 			await articlesAdminModel.create(articleData);
-		res.status(201).json(newArticle);
+		const enrichedArticle = enrichArticleWithImageUrl(newArticle);
+		res.status(201).json(enrichedArticle);
 	} catch (err) {
 		console.error("Erreur lors de la création de l'article (admin) :", err);
 
@@ -130,7 +131,8 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		res.status(200).json(updatedArticle);
+		const enrichedArticle = enrichArticleWithImageUrl(updatedArticle);
+		res.status(200).json(enrichedArticle);
 	} catch (err) {
 		console.error("Erreur lors de la mise à jour de l'article (admin) :", err);
 

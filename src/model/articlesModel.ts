@@ -202,6 +202,29 @@ const findPublished = async (limit?: number): Promise<ArticleForList[]> => {
 	}
 };
 
+// Récupère un article publié par son ID, avec le content complet et l'image featured.
+// Utilisé pour l'affichage public d'un article par ID (uniquement si status = 'published').
+const findPublishedById = async (id: number): Promise<Article | null> => {
+	try {
+		const [article] = await pool.query<ArticleRow[]>(
+			`SELECT a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id, 
+              a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id,
+              i.path as image_path
+      FROM articles a
+      LEFT JOIN images i ON a.featured_image_id = i.id
+      WHERE a.status = 'published' AND a.id = ?`,
+			[id],
+		);
+		return article[0] || null;
+	} catch (err) {
+		console.error(
+			"Erreur lors de la récupération de l'article publié par ID :",
+			err,
+		);
+		throw err;
+	}
+};
+
 // Récupère un article publié par son slug, avec le content complet et l'image featured.
 // Utilisé pour afficher un article individuel publié via son URL-friendly slug (affichage public).
 // Retourne Article | null (avec content et image_path) uniquement si l'article est publié.
@@ -244,6 +267,7 @@ export default {
 	findById,
 	findBySlug,
 	findPublished,
+	findPublishedById,
 	findPublishedBySlug,
 	findHomepagePreview,
 };

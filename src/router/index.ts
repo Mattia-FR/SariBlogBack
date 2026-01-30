@@ -12,6 +12,7 @@ import { requireEditor } from "../middleware/roleMiddleware";
 
 const router: Router = express.Router();
 
+// Routes publiques
 router.use("/articles", articlesRouter);
 router.use("/images", imagesRouter);
 router.use("/users", usersRouter);
@@ -20,6 +21,7 @@ router.use("/comments", commentsRouter);
 router.use("/messages", messagesRouter);
 router.use("/auth", authRouter);
 
+// Routes privées
 router.use("/admin", requireAuth, requireEditor, adminRouter);
 
 export default router;

@@ -10,7 +10,7 @@ import type {
 const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
 
 /**
- * Fonction utilitaire générique pour enrichir un article (Article ou ArticleForList) 
+ * Fonction utilitaire générique pour enrichir un article (Article ou ArticleForList)
  * avec l'URL complète de son image featured.
  * Transforme image_path (chemin relatif) en imageUrl (URL complète)
  * et retire image_path pour éviter la redondance.
@@ -133,8 +133,39 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
+// Récupère un article publié par ID (public)
+// GET /articles/published/id/:id
+const readPublishedById = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
+	try {
+		const articleId: number = Number.parseInt(req.params.id, 10);
+		if (Number.isNaN(articleId)) {
+			res.status(400).json({ error: "ID invalide" });
+			return;
+		}
+
+		const article: Article | null =
+			await articlesModel.findPublishedById(articleId);
+		if (!article) {
+			res.sendStatus(404);
+			return;
+		}
+
+		const enrichedArticle = enrichArticleWithImageUrl(article);
+		res.status(200).json(enrichedArticle);
+	} catch (err) {
+		console.error(
+			"Erreur lors de la récupération de l'article publié par ID :",
+			err,
+		);
+		res.sendStatus(500);
+	}
+};
+
 // Récupère un article publié par slug (public)
-// GET /articles/published/:slug
+// GET /articles/published/slug/:slug
 const readPublishedBySlug = async (
 	req: Request,
 	res: Response,
@@ -198,6 +229,7 @@ export {
 	readById,
 	readBySlug,
 	browsePublished,
+	readPublishedById,
 	readPublishedBySlug,
 	readHomepagePreview,
 };
