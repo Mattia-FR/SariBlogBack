@@ -1,18 +1,23 @@
-// models/articlesAdminModel.ts
+/**
+ * Modèle admin des articles.
+ * CRUD complet : liste (avec tags + comments_count), détail, création, mise à jour, suppression.
+ * Convertit les lignes BDD (Date, image_path) en Article (dates string, imageUrl).
+ */
 import pool from "../db";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import type {
-	ArticleAdmin,
-	ArticleForAdmin,
+	Article,
 	ArticleCreateData,
 	ArticleUpdateData,
 } from "../../types/articles";
-import type { TagForList } from "../../types/tags";
+import type { Tag } from "../../types/tags";
 
 // ========================================
 // TYPES INTERNES (Row) - Ne pas exporter
 // ========================================
+// Ces types avec RowDataPacket sont uniquement pour mysql2 et restent internes au model.
 
+// Type pour les lignes retournées par les requêtes admin (avec GROUP_CONCAT tags et COUNT commentaires).
 interface ArticleAdminRow extends RowDataPacket {
 	id: number;
 	title: string;
@@ -27,15 +32,22 @@ interface ArticleAdminRow extends RowDataPacket {
 	views: number;
 	featured_image_id: number | null;
 	image_path?: string | null;
-	tags?: string | null; // Pour GROUP_CONCAT
-	comments_count?: number; // Nombre de commentaires
+	tags?: string | null; // Format GROUP_CONCAT: "id:name:slug|id:name:slug"
+	comments_count?: number;
 }
 
-/**
- * Fonction helper pour parser les tags
- * Utilisée par parseArticleAdminRows pour transformer le GROUP_CONCAT en tableau
- */
-function parseTags(tagsString: string | null | undefined): TagForList[] {
+// ========================================
+// HELPERS
+// ========================================
+
+/** Convertit une Date ou null en string ISO ou null. */
+function toDateString(value: Date | null): string | null {
+	if (value === null) return null;
+	return value instanceof Date ? value.toISOString() : String(value);
+}
+
+/** Parse la chaîne GROUP_CONCAT des tags en tableau Tag[]. */
+function parseTags(tagsString: string | null | undefined): Tag[] {
 	if (!tagsString) return [];
 
 	return tagsString.split("|").map((tagStr) => {
@@ -44,15 +56,15 @@ function parseTags(tagsString: string | null | undefined): TagForList[] {
 			id: Number.parseInt(id, 10),
 			name,
 			slug,
-		} as TagForList;
+		} as Tag;
 	});
 }
 
-/**
- * Fonction helper pour parser les rows avec images et tags
- * (Similaire à celle du model public)
- */
-function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleForAdmin[] {
+/** Type pour un article admin : Article + comments_count (optionnel). */
+type ArticleWithCommentsCount = Article & { comments_count?: number };
+
+/** Parse les rows admin (avec tags et comments_count) en ArticleWithCommentsCount[]. */
+function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleWithCommentsCount[] {
 	return rows.map((row) => {
 		const tags = parseTags(row.tags);
 
@@ -63,24 +75,24 @@ function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleForAdmin[] {
 			excerpt: row.excerpt,
 			status: row.status,
 			user_id: row.user_id,
-			created_at: row.created_at,
-			updated_at: row.updated_at,
-			published_at: row.published_at,
+			created_at: toDateString(row.created_at)!,
+			updated_at: toDateString(row.updated_at)!,
+			published_at: toDateString(row.published_at),
 			views: row.views,
 			featured_image_id: row.featured_image_id,
-			image_path: row.image_path || undefined,
+			imageUrl: row.image_path ?? undefined,
 			tags,
 			comments_count: row.comments_count,
 		};
 	});
 }
 
-/**
- * Récupère TOUS les articles (tous statuts) avec leurs détails complets
- * Utilisé pour la liste admin des articles
- * Retourne articles triés par date de mise à jour (les plus récents en premier)
- */
-const findAllForAdmin = async (): Promise<ArticleForAdmin[]> => {
+// ========================================
+// FONCTIONS
+// ========================================
+
+// Récupère tous les articles (tous statuts) avec tags et nombre de commentaires. Tri par updated_at DESC.
+const findAllForAdmin = async (): Promise<ArticleWithCommentsCount[]> => {
 	try {
 		const [rows] = await pool.query<ArticleAdminRow[]>(
 			`
@@ -122,11 +134,8 @@ const findAllForAdmin = async (): Promise<ArticleForAdmin[]> => {
 	}
 };
 
-/**
- * Récupère un article par son ID avec toutes les infos (admin)
- * Inclut le content complet, image, tags et nombre de commentaires
- */
-const findByIdForAdmin = async (id: number): Promise<ArticleAdmin | null> => {
+// Récupère un article par ID avec content, image, tags et nombre de commentaires (admin).
+const findByIdForAdmin = async (id: number): Promise<ArticleWithCommentsCount | null> => {
 	try {
 		const [rows] = await pool.query<ArticleAdminRow[]>(
 			`
@@ -168,8 +177,6 @@ const findByIdForAdmin = async (id: number): Promise<ArticleAdmin | null> => {
 		}
 
 		const row = rows[0];
-
-		// Parser les tags
 		const tags = parseTags(row.tags);
 
 		return {
@@ -180,15 +187,15 @@ const findByIdForAdmin = async (id: number): Promise<ArticleAdmin | null> => {
 			content: row.content,
 			status: row.status,
 			user_id: row.user_id,
-			created_at: row.created_at,
-			updated_at: row.updated_at,
-			published_at: row.published_at,
+			created_at: toDateString(row.created_at)!,
+			updated_at: toDateString(row.updated_at)!,
+			published_at: toDateString(row.published_at),
 			views: row.views,
 			featured_image_id: row.featured_image_id,
-			image_path: row.image_path || undefined,
+			imageUrl: row.image_path ?? undefined,
 			tags,
 			comments_count: row.comments_count,
-		} as ArticleAdmin;
+		};
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article par ID (admin) :",
@@ -198,20 +205,21 @@ const findByIdForAdmin = async (id: number): Promise<ArticleAdmin | null> => {
 	}
 };
 
-const create = async (data: ArticleCreateData): Promise<ArticleAdmin> => {
+// Crée un nouvel article. published_at accepté en string (ISO) ou null. Retourne l'article créé avec tags et comments_count.
+const create = async (data: ArticleCreateData): Promise<ArticleWithCommentsCount> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
 			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id, published_at, views) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			[
 				data.title,
 				data.slug,
-				data.excerpt || null,
+				data.excerpt ?? null,
 				data.content,
-				data.status || "draft",
+				data.status ?? "draft",
 				data.user_id,
-				data.featured_image_id || null,
-				data.published_at || null,
-				data.views ?? 0,
+				data.featured_image_id ?? null,
+				data.published_at ?? null,
+				0,
 			],
 		);
 
@@ -226,27 +234,12 @@ const create = async (data: ArticleCreateData): Promise<ArticleAdmin> => {
 	}
 };
 
-// const update = async (id, data) => {
-// 	const keys = Object.keys(data);
-// 	const values = Object.values(data);
-
-// 	if (keys.length === 0) {
-// 		throw new Error("Aucun champ à mettre à jour");
-// 	}
-
-// 	const fields = keys.map((k) => `${k} = ?`).join(", ");
-// 	values.push(id);
-
-// 	await pool.query(`UPDATE articles SET ${fields} WHERE id = ?`, values);
-// 	return findByIdForAdmin(id);
-// };
-
+// Met à jour un article (liste blanche de champs). published_at en string ou null. Retourne l'article mis à jour ou null si non trouvé.
 const update = async (
 	id: number,
 	data: ArticleUpdateData,
-): Promise<ArticleAdmin | null> => {
+): Promise<ArticleWithCommentsCount | null> => {
 	try {
-		// 1. Liste blanche des champs modifiables (SÉCURITÉ)
 		const allowedFields = [
 			"title",
 			"slug",
@@ -257,7 +250,6 @@ const update = async (
 			"published_at",
 		];
 
-		// 2. Filtrer uniquement les champs autorisés présents dans data
 		const updates: string[] = [];
 		const values: unknown[] = [];
 
@@ -268,15 +260,12 @@ const update = async (
 			}
 		}
 
-		// 3. Vérifier qu'il y a au moins un champ à mettre à jour
 		if (updates.length === 0) {
 			throw new Error("Aucun champ à mettre à jour");
 		}
 
-		// 4. Ajouter l'ID à la fin pour le WHERE
 		values.push(id);
 
-		// 5. Construire et exécuter la requête
 		const query = `UPDATE articles SET ${updates.join(", ")} WHERE id = ?`;
 		const [result] = await pool.query<ResultSetHeader>(query, values);
 
@@ -284,7 +273,6 @@ const update = async (
 			return null;
 		}
 
-		// 6. Récupérer et retourner l'article mis à jour
 		const updatedArticle = await findByIdForAdmin(id);
 		return updatedArticle;
 	} catch (err) {
@@ -293,6 +281,7 @@ const update = async (
 	}
 };
 
+// Supprime un article par ID. Retourne true si une ligne a été supprimée.
 const deleteOne = async (id: number): Promise<boolean> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(

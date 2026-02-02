@@ -1,7 +1,5 @@
-// Type pour le statut d'un message
 export type MessageStatus = "unread" | "read" | "archived";
 
-// Interface pour un message complet
 export interface Message {
 	id: number;
 	firstname: string | null;
@@ -13,10 +11,9 @@ export interface Message {
 	text: string;
 	status: MessageStatus;
 	user_id: number | null;
-	created_at: Date;
+	created_at: string;
 }
 
-// Interface pour créer un nouveau message (formulaire de contact)
 export interface MessageCreateData {
 	firstname?: string | null;
 	lastname?: string | null;
@@ -28,7 +25,6 @@ export interface MessageCreateData {
 	user_id?: number | null;
 }
 
-// Interface pour mettre à jour le statut d'un message (admin uniquement)
 export interface MessageUpdateData {
 	status?: MessageStatus;
 }

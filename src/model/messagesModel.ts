@@ -1,3 +1,8 @@
+/**
+ * Modèle des messages (formulaire de contact).
+ * Gère la lecture (admin), création (public), mise à jour du statut, suppression.
+ * Convertit les lignes BDD (Date) en Message (created_at en string).
+ */
 import pool from "./db";
 import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 import type {
@@ -9,8 +14,9 @@ import type {
 // ========================================
 // TYPES INTERNES (Row) - Ne pas exporter
 // ========================================
+// Ces types avec RowDataPacket sont uniquement pour mysql2 et restent internes au model.
 
-// Type pour les lignes retournées par les requêtes SELECT
+// Type pour les lignes retournées par les requêtes SELECT.
 interface MessageRow extends RowDataPacket {
 	id: number;
 	firstname: string | null;
@@ -25,29 +31,45 @@ interface MessageRow extends RowDataPacket {
 	created_at: Date;
 }
 
-// Récupère tous les messages (admin)
+// ========================================
+// HELPERS
+// ========================================
+
+/** Convertit une row en Message (created_at en string). */
+function rowToMessage(row: MessageRow): Message {
+	return {
+		...row,
+		created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+	};
+}
+
+// ========================================
+// FONCTIONS
+// ========================================
+
+// Récupère tous les messages (admin). Tri par created_at DESC. Retourne Message[] (created_at string).
 const findAll = async (): Promise<Message[]> => {
 	try {
-		const [messages] = await pool.query<MessageRow[]>(
+		const [rows] = await pool.query<MessageRow[]>(
 			"SELECT * FROM messages ORDER BY created_at DESC",
 		);
-		return messages;
+		return rows.map(rowToMessage);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de tous les messages :", err);
 		throw err;
 	}
 };
 
-// Récupère les messages par statut (admin)
+// Récupère les messages par statut (admin). Retourne Message[] (created_at string).
 const findByStatus = async (
 	status: "unread" | "read" | "archived",
 ): Promise<Message[]> => {
 	try {
-		const [messages] = await pool.query<MessageRow[]>(
+		const [rows] = await pool.query<MessageRow[]>(
 			"SELECT * FROM messages WHERE status = ? ORDER BY created_at DESC",
 			[status],
 		);
-		return messages;
+		return rows.map(rowToMessage);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération des messages par statut :",
@@ -57,21 +79,22 @@ const findByStatus = async (
 	}
 };
 
-// Récupère un message par ID (admin)
+// Récupère un message par ID (admin). Retourne Message | null (created_at string).
 const findById = async (id: number): Promise<Message | null> => {
 	try {
-		const [messages] = await pool.query<MessageRow[]>(
+		const [rows] = await pool.query<MessageRow[]>(
 			"SELECT * FROM messages WHERE id = ?",
 			[id],
 		);
-		return messages[0] || null;
+		if (!rows[0]) return null;
+		return rowToMessage(rows[0]);
 	} catch (err) {
 		console.error("Erreur lors de la récupération du message par ID :", err);
 		throw err;
 	}
 };
 
-// Crée un nouveau message (public - formulaire de contact)
+// Crée un nouveau message (formulaire de contact). Retourne Message (created_at string).
 const create = async (data: MessageCreateData): Promise<Message> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
@@ -100,7 +123,7 @@ const create = async (data: MessageCreateData): Promise<Message> => {
 	}
 };
 
-// Met à jour le statut d'un message (admin)
+// Met à jour le statut d'un message (admin). Retourne Message | null (created_at string).
 const updateStatus = async (
 	id: number,
 	data: MessageUpdateData,
@@ -126,7 +149,7 @@ const updateStatus = async (
 	}
 };
 
-// Supprime un message (admin)
+// Supprime un message par ID (admin). Retourne true si supprimé.
 const deleteOne = async (id: number): Promise<boolean> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(

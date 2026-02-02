@@ -1,15 +1,15 @@
-// usersController.ts
+/**
+ * Controller des utilisateurs (lecture publique et /me).
+ * Enrichit les User avec avatarUrl (URL complète de l'avatar) avant envoi.
+ */
 import type { Request, Response } from "express";
 import usersModel from "../model/usersModel";
-import type { User, UserWithUrl } from "../types/users";
+import type { User } from "../types/users";
 
-// Configuration de l'URL de base pour les images
 const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
 
-/**
- * Fonction utilitaire pour enrichir un utilisateur avec l'URL complète de son avatar
- */
-function enrichUserWithAvatarUrl(user: User): UserWithUrl {
+/** Enrichit un utilisateur avec l'URL complète de son avatar (User → User avec avatarUrl). */
+function enrichUserWithAvatarUrl(user: User): User {
 	if (user.avatar) {
 		return {
 			...user,
@@ -19,7 +19,7 @@ function enrichUserWithAvatarUrl(user: User): UserWithUrl {
 	return user;
 }
 
-// Liste tous les utilisateurs (public)
+// Liste tous les utilisateurs (sans password). Retourne User[] avec avatarUrl.
 // GET /users
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -35,7 +35,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Récupère un utilisateur par ID (public)
+// Récupère un utilisateur par ID (sans password). Retourne User avec avatarUrl.
 // GET /users/:id
 const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -62,7 +62,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Récupère l'artiste principale (public)
+// Récupère l'artiste principal (premier utilisateur avec role = 'editor'). Retourne User avec avatarUrl.
 // GET /users/artist
 const readArtist = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -81,12 +81,10 @@ const readArtist = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Récupère l'utilisateur connecté (protégé par authentification)
+// Récupère l'utilisateur connecté (req.user fourni par le middleware requireAuth). Retourne User avec avatarUrl.
 // GET /users/me
-// ⚠️ Nécessite le middleware requireAuth qui ajoute req.user
 const readMe = async (req: Request, res: Response): Promise<void> => {
 	try {
-		// req.user est ajouté par le middleware requireAuth
 		if (!req.user || !req.user.userId) {
 			res.sendStatus(401);
 			return;

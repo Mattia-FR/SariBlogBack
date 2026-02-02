@@ -1,28 +1,26 @@
+/**
+ * Controller des images (lecture publique).
+ * Enrichit les Image avec imageUrl (URL complète depuis path) avant envoi.
+ */
 import type { Request, Response } from "express";
 import imagesModel from "../model/imagesModel";
-import type { Image, ImageForArticle, ImageForList } from "../types/images";
+import type { Image } from "../types/images";
 
-// Configuration de l'URL de base pour les images
 const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
 
-/**
- * Fonction utilitaire générique pour enrichir une image avec son URL complète
- * Fonctionne avec Image, ImageForList, ImageForArticle (tous ont path: string)
- */
-function enrichWithImageUrl<T extends { path: string }>(
-	item: T,
-): T & { imageUrl: string } {
+/** Enrichit une image avec l'URL complète (path → imageUrl). */
+function enrichWithImageUrl(item: Image): Image & { imageUrl: string } {
 	return {
 		...item,
 		imageUrl: `${IMAGE_BASE_URL}${item.path}`,
 	};
 }
 
-// Liste toutes les images de la galerie (public)
+// Liste les images de la galerie (is_in_gallery = TRUE) avec tags. Retourne Image[] + imageUrl.
 // GET /images/gallery
 const browseGallery = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const images: ImageForList[] = await imagesModel.findGallery();
+		const images: Image[] = await imagesModel.findGallery();
 		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
@@ -34,7 +32,7 @@ const browseGallery = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Récupère une image par ID (public)
+// Récupère une image par ID. Retourne Image + imageUrl.
 // GET /images/:id
 const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -58,7 +56,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Récupère toutes les images associées à un article par son ID (public)
+// Récupère les images associées à un article par ID. Retourne Image[] + imageUrl.
 // GET /images/article/:articleId
 const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -68,8 +66,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		const images: ImageForArticle[] =
-			await imagesModel.findByArticleId(articleId);
+		const images: Image[] = await imagesModel.findByArticleId(articleId);
 		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
@@ -81,7 +78,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Récupère toutes les images associées à un tag par son ID (public)
+// Récupère les images associées à un tag par ID. Retourne Image[] + imageUrl.
 // GET /images/tag/:tagId
 const readByTag = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -103,13 +100,8 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-/**
- * Retourne l'image du jour
- * GET /images/image-of-the-day
- *
- * Retourne l'image du jour avec l'URL complète enrichie.
- * L'image change automatiquement à minuit basée sur le jour de l'année.
- */
+// Récupère l'image du jour (galerie, déterministe par jour de l'année). Retourne Image + imageUrl.
+// GET /images/image-of-the-day
 const readImageOfTheDay = async (
 	req: Request,
 	res: Response,

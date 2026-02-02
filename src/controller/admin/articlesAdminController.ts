@@ -1,46 +1,26 @@
+/**
+ * Controller admin des articles.
+ * CRUD : liste, détail, création, mise à jour, suppression.
+ * Les articles renvoyés par le model sont déjà au format Article (dates string, imageUrl).
+ */
 import type { Request, Response } from "express";
 import articlesAdminModel from "../../model/admin/articlesAdminModel";
 import type {
-	ArticleAdmin,
-	ArticleForAdmin,
+	Article,
 	ArticleCreateData,
 	ArticleUpdateData,
 } from "../../types/articles";
 
-// Configuration de l'URL de base pour les images
-const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
+// Type pour un article admin : Article + comments_count (optionnel).
+type ArticleWithCommentsCount = Article & { comments_count?: number };
 
-/**
- * Fonction utilitaire pour enrichir un article avec l'URL complète de son image
- * (Réutilisée du controller public)
- */
-function enrichArticleWithImageUrl<T extends { image_path?: string | null }>(
-	article: T,
-): Omit<T, "image_path"> & { imageUrl?: string } {
-	if (article.image_path) {
-		const { image_path, ...rest } = article;
-		return {
-			...rest,
-			imageUrl: `${IMAGE_BASE_URL}${image_path}`,
-		};
-	}
-	const { image_path, ...rest } = article;
-	return rest;
-}
-
-/**
- * Liste TOUS les articles (tous statuts) - Admin
- * GET /admin/articles
- */
+// Liste tous les articles (tous statuts) avec tags et comments_count.
+// GET /admin/articles
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const articles: ArticleForAdmin[] =
+		const articles: ArticleWithCommentsCount[] =
 			await articlesAdminModel.findAllForAdmin();
-
-		// Enrichir les articles avec l'URL complète
-		const enrichedArticles = articles.map(enrichArticleWithImageUrl);
-
-		res.status(200).json(enrichedArticles);
+		res.status(200).json(articles);
 	} catch (err) {
 		console.error("Erreur lors de la récupération des articles (admin) :", err);
 		res
@@ -49,10 +29,8 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-/**
- * Récupère un article par ID avec toutes les infos - Admin
- * GET /admin/articles/:id
- */
+// Récupère un article par ID avec content, imageUrl, tags et comments_count.
+// GET /admin/articles/:id
 const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.id, 10);
@@ -61,16 +39,14 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		const article: ArticleAdmin | null =
+		const article: ArticleWithCommentsCount | null =
 			await articlesAdminModel.findByIdForAdmin(articleId);
 		if (!article) {
 			res.status(404).json({ error: "Article non trouvé" });
 			return;
 		}
 
-		// Enrichir avec l'URL complète de l'image featured
-		const enrichedArticle = enrichArticleWithImageUrl(article);
-		res.status(200).json(enrichedArticle);
+		res.status(200).json(article);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article par ID (admin) :",
@@ -82,25 +58,24 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
+// Crée un nouvel article. user_id pris du JWT. Body : ArticleCreateData (sans user_id).
+// POST /admin/articles
 const add = async (req: Request, res: Response): Promise<void> => {
 	try {
-		// 1. Récupérer l'ID de l'utilisateur authentifié
 		const userId = req.user?.userId;
 		if (!userId) {
 			res.status(401).json({ error: "Non authentifié" });
 			return;
 		}
 
-		// 2. Écraser l'user_id du body par celui du JWT
 		const articleData: ArticleCreateData = {
 			...req.body,
 			user_id: userId,
 		};
 
-		const newArticle: ArticleAdmin =
+		const newArticle: ArticleWithCommentsCount =
 			await articlesAdminModel.create(articleData);
-		const enrichedArticle = enrichArticleWithImageUrl(newArticle);
-		res.status(201).json(enrichedArticle);
+		res.status(201).json(newArticle);
 	} catch (err) {
 		console.error("Erreur lors de la création de l'article (admin) :", err);
 
@@ -113,6 +88,8 @@ const add = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
+// Met à jour un article. Body : ArticleUpdateData (champs partiels).
+// PUT /admin/articles/:id
 const edit = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.id, 10);
@@ -121,18 +98,15 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 		const articleData: ArticleUpdateData = req.body;
-		const updatedArticle: ArticleAdmin | null = await articlesAdminModel.update(
-			articleId,
-			articleData,
-		);
+		const updatedArticle: ArticleWithCommentsCount | null =
+			await articlesAdminModel.update(articleId, articleData);
 
 		if (!updatedArticle) {
 			res.status(404).json({ error: "Article non trouvé" });
 			return;
 		}
 
-		const enrichedArticle = enrichArticleWithImageUrl(updatedArticle);
-		res.status(200).json(enrichedArticle);
+		res.status(200).json(updatedArticle);
 	} catch (err) {
 		console.error("Erreur lors de la mise à jour de l'article (admin) :", err);
 
@@ -147,6 +121,8 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
+// Supprime un article par ID.
+// DELETE /admin/articles/:id
 const destroy = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.id, 10);

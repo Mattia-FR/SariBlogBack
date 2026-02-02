@@ -1,12 +1,5 @@
-// ========================================
-// TYPES PUBLICS pour les utilisateurs
-// ========================================
-
-// Type pour le rôle d'un utilisateur
 export type UserRole = "admin" | "editor" | "subscriber";
 
-// Interface publique pour un utilisateur (sans password pour sécurité).
-// Utilisée dans les réponses API publiques.
 export interface User {
 	id: number;
 	username: string;
@@ -17,19 +10,27 @@ export interface User {
 	avatar: string | null;
 	bio: string | null;
 	bio_short: string | null;
-	created_at: Date;
-	updated_at: Date;
+	created_at: string;
+	updated_at: string;
+	avatarUrl?: string; // Optionnel : enrichi
 }
 
-// Interface avec password (pour l'authentification uniquement).
-// ⚠️ À utiliser UNIQUEMENT dans les fonctions de login/auth, jamais exposée publiquement.
 export interface UserWithPassword extends User {
 	password: string;
 }
 
-// Interface pour la mise à jour partielle des données utilisateur.
-// Tous les champs sont optionnels pour permettre des updates flexibles.
-// Le password n'est pas inclus (géré par une fonction dédiée).
+export interface UserCreateData {
+	username: string;
+	email: string;
+	password: string;
+	firstname?: string | null;
+	lastname?: string | null;
+	role?: UserRole;
+	avatar?: string | null;
+	bio?: string | null;
+	bio_short?: string | null;
+}
+
 export interface UserUpdateData {
 	username?: string;
 	email?: string;
@@ -39,25 +40,4 @@ export interface UserUpdateData {
 	avatar?: string | null;
 	bio?: string | null;
 	bio_short?: string | null;
-}
-
-// Interface pour la création d'un nouvel utilisateur.
-// Les champs obligatoires sont : username, email, password.
-// ⚠️ Le password doit être hashé AVANT insertion !
-export interface UserCreateData {
-	username: string;
-	email: string;
-	password: string; // Doit être hashé avec Argon2 avant insertion !
-	firstname?: string | null;
-	lastname?: string | null;
-	role?: UserRole;
-	avatar?: string | null;
-	bio?: string | null;
-	bio_short?: string | null;
-}
-
-// Interface pour un utilisateur enrichi avec l'URL complète de son avatar.
-// Utilisée dans les réponses API pour exposer l'URL complète de l'avatar.
-export interface UserWithUrl extends User {
-	avatarUrl?: string;
 }

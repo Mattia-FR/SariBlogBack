@@ -1,40 +1,16 @@
+/**
+ * Controller des articles (public et admin lecture).
+ * Les articles renvoyés par le model sont déjà au format Article (dates string, imageUrl).
+ */
 import type { Request, Response } from "express";
 import articlesModel from "../model/articlesModel";
-import type {
-	Article,
-	ArticleListItem,
-	ArticleForList,
-} from "../types/articles";
+import type { Article } from "../types/articles";
 
-// Configuration de l'URL de base pour les images
-const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
-
-/**
- * Fonction utilitaire générique pour enrichir un article (Article ou ArticleForList)
- * avec l'URL complète de son image featured.
- * Transforme image_path (chemin relatif) en imageUrl (URL complète)
- * et retire image_path pour éviter la redondance.
- */
-function enrichArticleWithImageUrl<T extends { image_path?: string | null }>(
-	article: T,
-): Omit<T, "image_path"> & { imageUrl?: string } {
-	if (article.image_path) {
-		const { image_path, ...rest } = article;
-		return {
-			...rest,
-			imageUrl: `${IMAGE_BASE_URL}${image_path}`,
-		};
-	}
-	// Si pas d'image_path, on retire quand même le champ pour cohérence
-	const { image_path, ...rest } = article;
-	return rest;
-}
-
-// Liste tous les articles (admin - tous statuts)
+// Liste tous les articles (admin - tous statuts). Retourne Article[] sans content.
 // GET /articles
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const articles: ArticleListItem[] = await articlesModel.findAll();
+		const articles: Article[] = await articlesModel.findAll();
 		res.status(200).json(articles);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de tous les articles :", err);
@@ -42,7 +18,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Récupère un article par ID (admin - tous statuts)
+// Récupère un article par ID (admin - tous statuts). Retourne Article avec content et imageUrl.
 // GET /articles/:id
 const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -58,16 +34,14 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		// Enrichir avec l'URL complète de l'image featured
-		const enrichedArticle = enrichArticleWithImageUrl(article);
-		res.status(200).json(enrichedArticle);
+		res.status(200).json(article);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de l'article par ID :", err);
 		res.sendStatus(500);
 	}
 };
 
-// Récupère un article par slug (admin - tous statuts)
+// Récupère un article par slug (admin - tous statuts). Retourne Article avec content et imageUrl.
 // GET /articles/slug/:slug
 const readBySlug = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -83,9 +57,7 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		// Enrichir avec l'URL complète de l'image featured
-		const enrichedArticle = enrichArticleWithImageUrl(article);
-		res.status(200).json(enrichedArticle);
+		res.status(200).json(article);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article par slug :",
@@ -95,17 +67,15 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Liste tous les articles publiés (public)
-// GET /articles/published?limit=4 (optionnel, max 20)
+// Liste les articles publiés (public). Option limit (max 20). Retourne Article[] avec imageUrl et tags.
+// GET /articles/published?limit=4
 const browsePublished = async (req: Request, res: Response): Promise<void> => {
 	try {
-		// Récupérer le paramètre limit depuis la query string (optionnel)
 		const limitParam = req.query.limit;
 		const limit = limitParam
 			? Number.parseInt(limitParam as string, 10)
 			: undefined;
 
-		// Valider que limit est un nombre positif si fourni
 		if (limit !== undefined) {
 			if (Number.isNaN(limit) || limit < 1) {
 				res
@@ -121,19 +91,15 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 			}
 		}
 
-		const articles: ArticleForList[] = await articlesModel.findPublished(limit);
-
-		// Enrichir les articles avec l'URL complète
-		const enrichedArticles = articles.map(enrichArticleWithImageUrl);
-
-		res.status(200).json(enrichedArticles);
+		const articles: Article[] = await articlesModel.findPublished(limit);
+		res.status(200).json(articles);
 	} catch (err) {
 		console.error("Erreur lors de la récupération des articles publiés :", err);
 		res.sendStatus(500);
 	}
 };
 
-// Récupère un article publié par ID (public)
+// Récupère un article publié par ID (public). Retourne Article avec content et imageUrl.
 // GET /articles/published/id/:id
 const readPublishedById = async (
 	req: Request,
@@ -153,8 +119,7 @@ const readPublishedById = async (
 			return;
 		}
 
-		const enrichedArticle = enrichArticleWithImageUrl(article);
-		res.status(200).json(enrichedArticle);
+		res.status(200).json(article);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article publié par ID :",
@@ -164,7 +129,7 @@ const readPublishedById = async (
 	}
 };
 
-// Récupère un article publié par slug (public)
+// Récupère un article publié par slug (public). Retourne Article avec content et imageUrl.
 // GET /articles/published/slug/:slug
 const readPublishedBySlug = async (
 	req: Request,
@@ -184,9 +149,7 @@ const readPublishedBySlug = async (
 			return;
 		}
 
-		// Enrichir avec l'URL complète de l'image featured
-		const enrichedArticle = enrichArticleWithImageUrl(article);
-		res.status(200).json(enrichedArticle);
+		res.status(200).json(article);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article publié par slug :",
@@ -196,25 +159,15 @@ const readPublishedBySlug = async (
 	}
 };
 
-/**
- * Récupère les 4 derniers articles pour la preview homepage
- * GET /articles/homepage-preview
- *
- * Endpoint optimisé qui retourne directement les articles enrichis
- * avec leurs images et tags en une seule requête.
- */
+// Récupère les 4 derniers articles publiés pour la preview homepage (imageUrl + tags).
+// GET /articles/homepage-preview
 const readHomepagePreview = async (
 	req: Request,
 	res: Response,
 ): Promise<void> => {
 	try {
-		const articles: ArticleForList[] =
-			await articlesModel.findHomepagePreview();
-
-		// Enrichir les articles avec l'URL complète
-		const enrichedArticles = articles.map(enrichArticleWithImageUrl);
-
-		res.status(200).json(enrichedArticles);
+		const articles: Article[] = await articlesModel.findHomepagePreview();
+		res.status(200).json(articles);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de la preview homepage :",

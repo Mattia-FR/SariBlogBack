@@ -1,18 +1,19 @@
+/**
+ * Modèle des articles.
+ * Gère la lecture des articles (liste, détail, publiés, homepage).
+ * Convertit les lignes BDD (Date, image_path) en Article (dates string, imageUrl).
+ */
 import pool from "./db";
 import type { RowDataPacket } from "mysql2/promise";
-import type {
-	Article,
-	ArticleListItem,
-	ArticleForList,
-} from "../types/articles";
-import type { TagForList } from "../types/tags";
+import type { Article } from "../types/articles";
+import type { Tag } from "../types/tags";
 
 // ========================================
 // TYPES INTERNES (Row) - Ne pas exporter
 // ========================================
-// Ces types avec RowDataPacket sont uniquement pour mysql2 et restent internes au model
+// Ces types avec RowDataPacket sont uniquement pour mysql2 et restent internes au model.
 
-// Type pour les lignes retournées par les requêtes SELECT simples
+// Type pour les lignes retournées par les requêtes SELECT simples (avec ou sans JOIN image).
 interface ArticleRow extends RowDataPacket {
 	id: number;
 	title: string;
@@ -29,8 +30,8 @@ interface ArticleRow extends RowDataPacket {
 	image_path?: string | null; // Présent quand JOIN avec images
 }
 
-// Type pour les lignes retournées par findPublished/findHomepagePreview avec GROUP_CONCAT
-interface HomepagePreviewRow extends RowDataPacket {
+// Type pour les lignes retournées par findPublished / findHomepagePreview (avec GROUP_CONCAT tags).
+interface ArticleWithTagsRow extends RowDataPacket {
 	id: number;
 	title: string;
 	slug: string;
@@ -46,29 +47,57 @@ interface HomepagePreviewRow extends RowDataPacket {
 	tags: string | null; // Format GROUP_CONCAT: "id:name:slug|id:name:slug"
 }
 
-// Récupère tous les articles de la base de données, sans le content.
-// Utilisé pour les listes d'articles (admin ou publique).
-// Retourne un tableau de ArticleListItem (sans content LONGTEXT) pour optimiser les performances.
-const findAll = async (): Promise<ArticleListItem[]> => {
+// ========================================
+// HELPERS
+// ========================================
+
+/** Convertit une Date ou null en string ISO ou null (pour aligner le type Article). */
+function toDateString(value: Date | null): string | null {
+	if (value === null) return null;
+	return value instanceof Date ? value.toISOString() : String(value);
+}
+
+/** Convertit une row BDD (Date, image_path) en Article (dates string, imageUrl). Option content pour findAll (sans content). */
+function rowToArticle(
+	row: ArticleRow,
+	options?: { content?: string },
+): Article {
+	const { image_path, ...rest } = row;
+	return {
+		...rest,
+		content: options?.content !== undefined ? options.content : row.content,
+		created_at: toDateString(row.created_at)!,
+		updated_at: toDateString(row.updated_at)!,
+		published_at: toDateString(row.published_at),
+		imageUrl: image_path ?? undefined,
+	};
+}
+
+// ========================================
+// FONCTIONS
+// ========================================
+
+// Récupère tous les articles sans le content (optimisation listes). Retourne Article[].
+const findAll = async (): Promise<Article[]> => {
 	try {
-		const [articles] = await pool.query<ArticleRow[]>(
+		const [rows] = await pool.query<ArticleRow[]>(
 			`SELECT id, title, slug, excerpt, status, user_id, 
               created_at, updated_at, published_at, views, featured_image_id 
       FROM articles`,
 		);
-		return articles;
+		return rows.map((row) =>
+			rowToArticle({ ...row, content: "" } as ArticleRow, { content: undefined }),
+		);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de tous les articles :", err);
 		throw err;
 	}
 };
 
-// Récupère un article par son ID, avec le content complet et l'image featured.
-// Utilisé pour afficher un article individuel.
-// Retourne Article | null (avec content et image_path) pour afficher l'article complet.
+// Récupère un article par son ID avec content et image featured. Tous statuts (admin). Retourne Article | null.
 const findById = async (id: number): Promise<Article | null> => {
 	try {
-		const [article] = await pool.query<ArticleRow[]>(
+		const [articles] = await pool.query<ArticleRow[]>(
 			`SELECT a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id, 
               a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id,
               i.path as image_path
@@ -77,21 +106,18 @@ const findById = async (id: number): Promise<Article | null> => {
       WHERE a.id = ?`,
 			[id],
 		);
-		return article[0] || null;
+		if (!articles[0]) return null;
+		return rowToArticle(articles[0]);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de l'article par ID :", err);
 		throw err;
 	}
 };
 
-// Récupère un article par son slug, avec le content complet et l'image featured.
-// Utilisé pour afficher un article individuel via son URL-friendly slug (admin ou preview).
-// Retourne Article | null (avec content et image_path) pour afficher l'article complet.
-// ATTENTION : Ne filtre pas par statut, peut retourner des articles non publiés.
-// Pour l'affichage public, utiliser findPublishedBySlug à la place.
+// Récupère un article par son slug avec content et image. Tous statuts (admin / preview). Pour le public, utiliser findPublishedBySlug.
 const findBySlug = async (slug: string): Promise<Article | null> => {
 	try {
-		const [article] = await pool.query<ArticleRow[]>(
+		const [articles] = await pool.query<ArticleRow[]>(
 			`SELECT a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id, 
               a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id,
               i.path as image_path
@@ -100,7 +126,8 @@ const findBySlug = async (slug: string): Promise<Article | null> => {
       WHERE a.slug = ?`,
 			[slug],
 		);
-		return article[0] || null;
+		if (!articles[0]) return null;
+		return rowToArticle(articles[0]);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article par slug :",
@@ -110,26 +137,20 @@ const findBySlug = async (slug: string): Promise<Article | null> => {
 	}
 };
 
-/**
- * Fonction helper pour parser les rows avec images et tags
- * Utilisée par findPublished et findHomepagePreview pour éviter la duplication
- */
-function parseArticleRows(rows: HomepagePreviewRow[]): ArticleForList[] {
+// Parse les rows avec GROUP_CONCAT tags en Article[] (dates string, imageUrl, tags).
+function parseArticleRows(rows: ArticleWithTagsRow[]): Article[] {
 	return rows.map((row) => {
-		// Construire le tableau de tags depuis le GROUP_CONCAT
-		const tags: TagForList[] = row.tags
+		const tags: Tag[] = row.tags
 			? row.tags.split("|").map((tagStr) => {
 					const [id, name, slug] = tagStr.split(":");
 					return {
 						id: Number.parseInt(id, 10),
 						name,
 						slug,
-					} as TagForList;
+					} as Tag;
 				})
 			: [];
 
-		// Retourner l'article avec le chemin relatif de l'image
-		// Le controller se chargera de l'enrichir avec l'URL complète
 		return {
 			id: row.id,
 			title: row.title,
@@ -137,39 +158,24 @@ function parseArticleRows(rows: HomepagePreviewRow[]): ArticleForList[] {
 			excerpt: row.excerpt,
 			status: row.status,
 			user_id: row.user_id,
-			created_at: row.created_at,
-			updated_at: row.updated_at,
-			published_at: row.published_at,
+			created_at: toDateString(row.created_at)!,
+			updated_at: toDateString(row.updated_at)!,
+			published_at: toDateString(row.published_at),
 			views: row.views,
 			featured_image_id: row.featured_image_id,
-			image_path: row.image_path || undefined,
+			imageUrl: row.image_path || undefined,
 			tags,
-		} as ArticleForList;
+		};
 	});
 }
 
-/**
- * Récupère tous les articles publiés (status = 'published') avec leurs détails complets (image + tags)
- * Utilisé pour les listes d'articles publiques (page d'accueil, liste des articles).
- * Retourne un tableau de ArticleForList avec image et tags enrichis.
- *
- * @param limit - Nombre maximum d'articles à retourner (optionnel). Si non fourni, retourne tous les articles.
- * @returns Promise<ArticleForList[]> - Articles publiés avec image et tags
- */
-const findPublished = async (limit?: number): Promise<ArticleForList[]> => {
+// Récupère les articles publiés (status = 'published') avec image et tags. Option limit. Retourne Article[].
+const findPublished = async (limit?: number): Promise<Article[]> => {
 	try {
 		let query = `
 			SELECT 
-				a.id, 
-				a.title, 
-				a.slug, 
-				a.excerpt, 
-				a.status, 
-				a.user_id,
-				a.created_at, 
-				a.updated_at, 
-				a.published_at, 
-				a.views,
+				a.id, a.title, a.slug, a.excerpt, a.status, a.user_id,
+				a.created_at, a.updated_at, a.published_at, a.views,
 				a.featured_image_id,
 				i.path as image_path,
 				GROUP_CONCAT(
@@ -190,11 +196,11 @@ const findPublished = async (limit?: number): Promise<ArticleForList[]> => {
 
 		if (limit !== undefined && limit > 0) {
 			query += " LIMIT ?";
-			const [rows] = await pool.query<HomepagePreviewRow[]>(query, [limit]);
+			const [rows] = await pool.query<ArticleWithTagsRow[]>(query, [limit]);
 			return parseArticleRows(rows);
 		}
 
-		const [rows] = await pool.query<HomepagePreviewRow[]>(query);
+		const [rows] = await pool.query<ArticleWithTagsRow[]>(query);
 		return parseArticleRows(rows);
 	} catch (err) {
 		console.error("Erreur lors de la récupération des articles publiés :", err);
@@ -202,11 +208,10 @@ const findPublished = async (limit?: number): Promise<ArticleForList[]> => {
 	}
 };
 
-// Récupère un article publié par son ID, avec le content complet et l'image featured.
-// Utilisé pour l'affichage public d'un article par ID (uniquement si status = 'published').
+// Récupère un article publié par ID (avec content). Public uniquement si status = 'published'.
 const findPublishedById = async (id: number): Promise<Article | null> => {
 	try {
-		const [article] = await pool.query<ArticleRow[]>(
+		const [articles] = await pool.query<ArticleRow[]>(
 			`SELECT a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id, 
               a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id,
               i.path as image_path
@@ -215,7 +220,8 @@ const findPublishedById = async (id: number): Promise<Article | null> => {
       WHERE a.status = 'published' AND a.id = ?`,
 			[id],
 		);
-		return article[0] || null;
+		if (!articles[0]) return null;
+		return rowToArticle(articles[0]);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article publié par ID :",
@@ -225,14 +231,10 @@ const findPublishedById = async (id: number): Promise<Article | null> => {
 	}
 };
 
-// Récupère un article publié par son slug, avec le content complet et l'image featured.
-// Utilisé pour afficher un article individuel publié via son URL-friendly slug (affichage public).
-// Retourne Article | null (avec content et image_path) uniquement si l'article est publié.
-// Combine le filtrage par slug ET par statut 'published' pour la sécurité publique.
-// ATTENTION : Cette fonction garantit qu'aucun article non publié ne sera accessible publiquement.
+// Récupère un article publié par slug (avec content). Public. Garantit qu'aucun brouillon n'est exposé.
 const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
 	try {
-		const [article] = await pool.query<ArticleRow[]>(
+		const [articles] = await pool.query<ArticleRow[]>(
 			`SELECT a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id, 
               a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id,
               i.path as image_path
@@ -241,7 +243,8 @@ const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
       WHERE a.status = 'published' AND a.slug = ?`,
 			[slug],
 		);
-		return article[0] || null;
+		if (!articles[0]) return null;
+		return rowToArticle(articles[0]);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'article publié par slug :",
@@ -251,14 +254,8 @@ const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
 	}
 };
 
-/**
- * Récupère les 4 derniers articles publiés pour la preview homepage
- * Optimisé spécifiquement pour le composant ArticlesPreview de la homepage.
- * Réutilise findPublished avec limit=4.
- *
- * @returns Promise<ArticleForList[]> - 4 articles maximum avec image et tags
- */
-const findHomepagePreview = async (): Promise<ArticleForList[]> => {
+// Récupère les 4 derniers articles publiés pour la preview homepage. Réutilise findPublished(4).
+const findHomepagePreview = async (): Promise<Article[]> => {
 	return findPublished(4);
 };
 

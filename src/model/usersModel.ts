@@ -1,3 +1,8 @@
+/**
+ * Modèle des utilisateurs.
+ * Gère la lecture, création, mise à jour (profil, password), tokens refresh.
+ * Convertit les lignes BDD (Date) en User (created_at, updated_at en string).
+ */
 import pool from "./db";
 import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 import type {
@@ -10,8 +15,9 @@ import type {
 // ========================================
 // TYPES INTERNES (Row) - Ne pas exporter
 // ========================================
+// Ces types avec RowDataPacket sont uniquement pour mysql2 et restent internes au model.
 
-// Type pour les lignes retournées par SELECT * (avec password)
+// Type pour les lignes retournées par SELECT * (avec password).
 interface UserRow extends RowDataPacket {
 	id: number;
 	username: string;
@@ -27,7 +33,7 @@ interface UserRow extends RowDataPacket {
 	updated_at: Date;
 }
 
-// Type pour les lignes retournées par SELECT sans password
+// Type pour les lignes retournées par SELECT sans password.
 interface UserRowFromQuery extends RowDataPacket {
 	id: number;
 	username: string;
@@ -42,22 +48,42 @@ interface UserRowFromQuery extends RowDataPacket {
 	updated_at: Date;
 }
 
+// ========================================
+// HELPERS
+// ========================================
+
+/** Convertit une row (sans password) en User (dates string). */
+function rowToUser(row: UserRowFromQuery): User {
+	return {
+		...row,
+		created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+		updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
+	};
+}
+
+/** Convertit une row (avec password) en UserWithPassword (dates string). */
+function rowToUserWithPassword(row: UserRow): UserWithPassword {
+	return {
+		...row,
+		created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+		updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
+	};
+}
+
 // Type pour les lignes retournées par SELECT refresh_token
 interface UserRefreshTokenRow extends RowDataPacket {
 	refresh_token: string | null;
 }
 
-// Récupère tous les utilisateurs de la base de données, sans exposer le password.
-// Utilisé pour les listes publiques ou les pages d'administration.
-// Retourne un tableau de User (sans password) pour la sécurité.
+// Récupère tous les utilisateurs sans exposer le password. Retourne User[] (dates string).
 const findAll = async (): Promise<User[]> => {
 	try {
-		const [users] = await pool.query<UserRowFromQuery[]>(
+		const [rows] = await pool.query<UserRowFromQuery[]>(
 			`SELECT id, username, email, firstname, lastname, role, 
               avatar, bio, bio_short, created_at, updated_at 
       FROM users`,
 		);
-		return users;
+		return rows.map(rowToUser);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de tous les utilisateurs :",
@@ -67,19 +93,18 @@ const findAll = async (): Promise<User[]> => {
 	}
 };
 
-// Récupère un utilisateur par son ID, sans exposer le password.
-// Utilisé pour afficher les profils utilisateurs publiquement.
-// Retourne User | null (sans password) pour la sécurité.
+// Récupère un utilisateur par ID sans password. Retourne User | null (dates string).
 const findById = async (id: number): Promise<User | null> => {
 	try {
-		const [users] = await pool.query<UserRowFromQuery[]>(
+		const [rows] = await pool.query<UserRowFromQuery[]>(
 			`SELECT id, username, email, firstname, lastname, role, 
               avatar, bio, bio_short, created_at, updated_at 
       FROM users 
       WHERE id = ?`,
 			[id],
 		);
-		return users[0] || null;
+		if (!rows[0]) return null;
+		return rowToUser(rows[0]);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'utilisateur par ID :",
@@ -89,17 +114,15 @@ const findById = async (id: number): Promise<User | null> => {
 	}
 };
 
-// Récupère un utilisateur par son email, INCLUANT le password.
-// Utilisé uniquement pour l'authentification (login/vérification de mot de passe).
-// Retourne UserWithPassword | null car le password est nécessaire pour vérifier les credentials.
-// ATTENTION : Cette fonction doit être utilisée uniquement dans un contexte d'authentification sécurisé.
+// Récupère un utilisateur par email avec password (auth uniquement). Retourne UserWithPassword | null (dates string).
 const findByEmail = async (email: string): Promise<UserWithPassword | null> => {
 	try {
-		const [users] = await pool.query<UserRow[]>(
+		const [rows] = await pool.query<UserRow[]>(
 			"SELECT * FROM users WHERE email = ?",
 			[email],
 		);
-		return users[0] || null;
+		if (!rows[0]) return null;
+		return rowToUserWithPassword(rows[0]);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'utilisateur par email :",
@@ -109,17 +132,15 @@ const findByEmail = async (email: string): Promise<UserWithPassword | null> => {
 	}
 };
 
-// Récupère un utilisateur par son email OU son nom d'utilisateur, INCLUANT le password.
-// Utilisé uniquement pour l'authentification (login/vérification de mot de passe).
-// Retourne UserWithPassword | null car le password est nécessaire pour vérifier les credentials.
-// ATTENTION : Cette fonction doit être utilisée uniquement dans un contexte d'authentification sécurisé.
+// Récupère un utilisateur par email ou username avec password (auth). Retourne UserWithPassword | null (dates string).
 const findByIdentifier = async (identifier: string): Promise<UserWithPassword | null> => {
 	try {
-		const [users] = await pool.query<UserRow[]>(
+		const [rows] = await pool.query<UserRow[]>(
 			"SELECT * FROM users WHERE email = ? OR username = ?",
 			[identifier, identifier],
 		);
-		return users[0] || null;
+		if (!rows[0]) return null;
+		return rowToUserWithPassword(rows[0]);
 	} catch (err) {
 		console.error(
 			"Erreur lors de la récupération de l'utilisateur par identifier :",
@@ -129,10 +150,7 @@ const findByIdentifier = async (identifier: string): Promise<UserWithPassword | 
 	}
 };
 
-// Met à jour les données d'un utilisateur (sauf le password).
-// Utilisé pour modifier le profil utilisateur (bio, email, etc.).
-// Permet des mises à jour partielles : seuls les champs fournis dans 'data' sont modifiés.
-// Retourne l'utilisateur mis à jour (sans password) ou null si l'utilisateur n'existe pas.
+// Met à jour les données d'un utilisateur (sauf password). Mise à jour partielle. Retourne User | null (dates string).
 const updateData = async (
 	id: number,
 	data: UserUpdateData,
@@ -157,10 +175,7 @@ const updateData = async (
 	return findById(id);
 };
 
-// Met à jour le mot de passe d'un utilisateur.
-// Utilisé pour le changement de mot de passe (profil utilisateur ou réinitialisation).
-// ATTENTION : Le password doit être hashé (Argon2) AVANT d'appeler cette fonction.
-// Retourne true si le password a été modifié, false si l'utilisateur n'existe pas.
+// Met à jour le mot de passe (doit être hashé Argon2 avant appel). Retourne true si modifié.
 const updatePassword = async (
 	id: number,
 	hashedPassword: string,
@@ -177,11 +192,7 @@ const updatePassword = async (
 	}
 };
 
-// Crée un nouvel utilisateur dans la base de données.
-// Utilisé pour l'inscription et la création de comptes utilisateurs.
-// Vérifie que l'email et le username ne sont pas déjà utilisés avant l'insertion.
-// Le password doit être hashé (Argon2) AVANT d'appeler cette fonction.
-// Retourne l'utilisateur créé (sans password) ou lance une erreur EMAIL_EXISTS/USERNAME_EXISTS.
+// Crée un nouvel utilisateur. Password doit être hashé (Argon2). Vérifie email/username uniques. Retourne User (dates string) ou lance EMAIL_EXISTS/USERNAME_EXISTS.
 const create = async (data: UserCreateData): Promise<User> => {
 	try {
 		// Vérifier email ET username en une seule requête
@@ -247,9 +258,7 @@ const create = async (data: UserCreateData): Promise<User> => {
 	}
 };
 
-// Supprime un utilisateur de la base de données par son ID.
-// Utilisé pour la suppression de comptes utilisateurs.
-// Retourne true si l'utilisateur a été supprimé, false s'il n'existait pas.
+// Supprime un utilisateur par ID. Retourne true si supprimé.
 const deleteOne = async (id: number): Promise<boolean> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
@@ -268,9 +277,10 @@ const deleteOne = async (id: number): Promise<boolean> => {
 	}
 };
 
+// Récupère l'artiste principal (premier utilisateur avec role = 'editor'). Retourne User | null (dates string).
 const findArtist = async (): Promise<User | null> => {
 	try {
-		const [users] = await pool.query<UserRowFromQuery[]>(
+		const [rows] = await pool.query<UserRowFromQuery[]>(
 			`SELECT id, username, email, firstname, lastname, role,
 			        avatar, bio, bio_short, created_at, updated_at
 			FROM users
@@ -279,13 +289,15 @@ const findArtist = async (): Promise<User | null> => {
 			LIMIT 1`,
 		);
 
-		return users[0] || null;
+		if (!rows[0]) return null;
+		return rowToUser(rows[0]);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de l'artiste :", err);
 		throw err;
 	}
 };
 
+// Enregistre le refresh token d'un utilisateur (pour auth).
 const saveRefreshToken = async (
 	userId: number,
 	refreshToken: string,
@@ -301,6 +313,7 @@ const saveRefreshToken = async (
 	}
 };
 
+// Récupère le refresh_token d'un utilisateur par ID (pour auth).
 const findByIdWithRefreshToken = async (id: number): Promise<{ refresh_token: string | null } | null> => {
 	try {
 		const [users] = await pool.query<UserRefreshTokenRow[]>(
@@ -314,6 +327,7 @@ const findByIdWithRefreshToken = async (id: number): Promise<{ refresh_token: st
 	}
 };
 
+// Supprime le refresh token d'un utilisateur (logout).
 const deleteRefreshToken = async (userId: number): Promise<void> => {
     try {
         await pool.query("UPDATE users SET refresh_token = NULL WHERE id = ?", [userId]);
