@@ -11,6 +11,7 @@ import type {
 	ArticleUpdateData,
 } from "../../types/articles";
 import type { Tag } from "../../types/tags";
+import { buildImageUrl } from "../../utils/imageUrl";
 
 // ========================================
 // TYPES INTERNES (Row) - Ne pas exporter
@@ -64,7 +65,9 @@ function parseTags(tagsString: string | null | undefined): Tag[] {
 type ArticleWithCommentsCount = Article & { comments_count?: number };
 
 /** Parse les rows admin (avec tags et comments_count) en ArticleWithCommentsCount[]. */
-function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleWithCommentsCount[] {
+function parseArticleAdminRows(
+	rows: ArticleAdminRow[],
+): ArticleWithCommentsCount[] {
 	return rows.map((row) => {
 		const tags = parseTags(row.tags);
 
@@ -75,12 +78,12 @@ function parseArticleAdminRows(rows: ArticleAdminRow[]): ArticleWithCommentsCoun
 			excerpt: row.excerpt,
 			status: row.status,
 			user_id: row.user_id,
-			created_at: toDateString(row.created_at)!,
-			updated_at: toDateString(row.updated_at)!,
+			created_at: row.created_at.toISOString(),
+			updated_at: row.updated_at.toISOString(),
 			published_at: toDateString(row.published_at),
 			views: row.views,
 			featured_image_id: row.featured_image_id,
-			imageUrl: row.image_path ?? undefined,
+			imageUrl: buildImageUrl(row.image_path),
 			tags,
 			comments_count: row.comments_count,
 		};
@@ -135,7 +138,9 @@ const findAllForAdmin = async (): Promise<ArticleWithCommentsCount[]> => {
 };
 
 // Récupère un article par ID avec content, image, tags et nombre de commentaires (admin).
-const findByIdForAdmin = async (id: number): Promise<ArticleWithCommentsCount | null> => {
+const findByIdForAdmin = async (
+	id: number,
+): Promise<ArticleWithCommentsCount | null> => {
 	try {
 		const [rows] = await pool.query<ArticleAdminRow[]>(
 			`
@@ -187,12 +192,12 @@ const findByIdForAdmin = async (id: number): Promise<ArticleWithCommentsCount | 
 			content: row.content,
 			status: row.status,
 			user_id: row.user_id,
-			created_at: toDateString(row.created_at)!,
-			updated_at: toDateString(row.updated_at)!,
+			created_at: row.created_at.toISOString(),
+			updated_at: row.updated_at.toISOString(),
 			published_at: toDateString(row.published_at),
 			views: row.views,
 			featured_image_id: row.featured_image_id,
-			imageUrl: row.image_path ?? undefined,
+			imageUrl: buildImageUrl(row.image_path),
 			tags,
 			comments_count: row.comments_count,
 		};
@@ -206,7 +211,9 @@ const findByIdForAdmin = async (id: number): Promise<ArticleWithCommentsCount | 
 };
 
 // Crée un nouvel article. published_at accepté en string (ISO) ou null. Retourne l'article créé avec tags et comments_count.
-const create = async (data: ArticleCreateData): Promise<ArticleWithCommentsCount> => {
+const create = async (
+	data: ArticleCreateData,
+): Promise<ArticleWithCommentsCount> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
 			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id, published_at, views) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",

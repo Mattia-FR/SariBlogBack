@@ -5,16 +5,13 @@
 import type { Request, Response } from "express";
 import usersModel from "../model/usersModel";
 import type { User } from "../types/users";
-
-const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
+import { buildImageUrl } from "../utils/imageUrl";
 
 /** Enrichit un utilisateur avec l'URL complète de son avatar (User → User avec avatarUrl). */
 function enrichUserWithAvatarUrl(user: User): User {
-	if (user.avatar) {
-		return {
-			...user,
-			avatarUrl: `${IMAGE_BASE_URL}${user.avatar}`,
-		};
+	const avatarUrl = buildImageUrl(user.avatar);
+	if (avatarUrl) {
+		return { ...user, avatarUrl };
 	}
 	return user;
 }

@@ -7,6 +7,7 @@ import pool from "./db";
 import type { RowDataPacket } from "mysql2/promise";
 import type { Article } from "../types/articles";
 import type { Tag } from "../types/tags";
+import { buildImageUrl } from "../utils/imageUrl";
 
 // ========================================
 // TYPES INTERNES (Row) - Ne pas exporter
@@ -66,10 +67,10 @@ function rowToArticle(
 	return {
 		...rest,
 		content: options?.content !== undefined ? options.content : row.content,
-		created_at: toDateString(row.created_at)!,
-		updated_at: toDateString(row.updated_at)!,
+		created_at: row.created_at.toISOString(),
+		updated_at: row.updated_at.toISOString(),
 		published_at: toDateString(row.published_at),
-		imageUrl: image_path ?? undefined,
+		imageUrl: buildImageUrl(image_path),
 	};
 }
 
@@ -86,7 +87,9 @@ const findAll = async (): Promise<Article[]> => {
       FROM articles`,
 		);
 		return rows.map((row) =>
-			rowToArticle({ ...row, content: "" } as ArticleRow, { content: undefined }),
+			rowToArticle({ ...row, content: "" } as ArticleRow, {
+				content: undefined,
+			}),
 		);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de tous les articles :", err);
@@ -158,12 +161,12 @@ function parseArticleRows(rows: ArticleWithTagsRow[]): Article[] {
 			excerpt: row.excerpt,
 			status: row.status,
 			user_id: row.user_id,
-			created_at: toDateString(row.created_at)!,
-			updated_at: toDateString(row.updated_at)!,
+			created_at: row.created_at.toISOString(),
+			updated_at: row.updated_at.toISOString(),
 			published_at: toDateString(row.published_at),
 			views: row.views,
 			featured_image_id: row.featured_image_id,
-			imageUrl: row.image_path || undefined,
+			imageUrl: buildImageUrl(row.image_path),
 			tags,
 		};
 	});

@@ -5,14 +5,13 @@
 import type { Request, Response } from "express";
 import imagesModel from "../model/imagesModel";
 import type { Image } from "../types/images";
-
-const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
+import { buildImageUrl } from "../utils/imageUrl";
 
 /** Enrichit une image avec l'URL complète (path → imageUrl). */
 function enrichWithImageUrl(item: Image): Image & { imageUrl: string } {
 	return {
 		...item,
-		imageUrl: `${IMAGE_BASE_URL}${item.path}`,
+		imageUrl: buildImageUrl(item.path) ?? item.path,
 	};
 }
 
