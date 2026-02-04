@@ -1,6 +1,7 @@
 # Sariblog Backend API
 
-> API REST pour un blog/portfolio CMS destiné à une illustratrice. Gestion d'articles, images (galerie), tags multi-catégories, commentaires et utilisateurs.
+> API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice.
+> Premier projet fullstack complet réalisé en solo sur 3 mois.
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
@@ -16,7 +17,7 @@
 - [Architecture](#-architecture)
 - [Installation](#-installation)
 - [Configuration](#-configuration)
-- [API Endpoints](#-api-endpoints)
+- [API Endpoints](#-api-endpoints) (auth, publics, admin)
 - [Base de données](#-base-de-données)
 - [Tests](#-tests)
 - [Sécurité](#-sécurité)
@@ -25,8 +26,15 @@
 
 ## 🎯 À propos
 
-**Sariblog Backend** est l'API REST du projet Sariblog, un système de gestion de contenu (CMS) conçu pour une illustratrice. Ce backend fournit tous les endpoints nécessaires pour gérer un blog/portfolio avec :
+API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premier projet fullstack complet réalisé en solo sur 3 mois, servant également de support pour ma validation du titre RNCP de développeur web.
 
+**Objectifs d'apprentissage :**
+- Architecture backend complète (MVC, API REST)
+- Système d'authentification JWT sécurisé
+- Gestion de base de données relationnelle (MySQL)
+- Découverte de Zod, Helmet, Argon2, Slugify, Cookie-parser
+
+**Fonctionnalités :**
 - Articles de blog avec statuts (draft, published, archived)
 - Galerie d'images avec système de tags et image du jour
 - Commentaires modérés
@@ -40,108 +48,114 @@
 
 ### ✅ Implémentées
 
-- **Articles** : Consultation des articles publiés (6 endpoints)
-  - Preview pour homepage
-  - Liste paginée des articles publiés
-  - Récupération par slug ou ID
-  - Enrichissement avec images et tags
+- **Articles** : Consultation des articles publiés (4 endpoints publics) + CRUD admin (6 endpoints)
+  - Public : preview homepage, liste paginée publiés, par ID, par slug
+  - Admin : liste tous statuts, par slug/ID, création, modification, suppression
 
 - **Images** : Galerie d'images avec filtrage (5 endpoints)
-  - Galerie publique
-  - Image du jour
-  - Filtrage par tag
-  - Images associées aux articles
-  - Récupération par ID
+  - Galerie publique, image du jour, par tag, par article, par ID
 
 - **Tags** : Système de tags multi-catégories (3 endpoints)
-  - Liste complète des tags
-  - Tags par article
-  - Tags par image
+  - Liste complète, tags par article, tags par image
 
 - **Commentaires** : Système de commentaires modérés (1 endpoint)
-  - Commentaires approuvés uniquement
-  - Informations utilisateur incluses
+  - Commentaires approuvés d'un article (avec infos utilisateur)
 
-- **Utilisateurs** : Profils publics (3 endpoints)
-  - Liste des utilisateurs
-  - Profil de l'artiste principale
-  - Profil détaillé par ID
-  - Mots de passe exclus des réponses
+- **Utilisateurs** : Profils publics (3 endpoints) + profil connecté (1 endpoint)
+  - Liste, artiste principale, par ID ; `/users/me` pour l'utilisateur connecté
 
-- **Messages** : Formulaire de contact et gestion (6 endpoints)
-  - Création de message (public)
-  - Liste des messages (admin)
-  - Liste par statut (admin)
-  - Récupération par ID (admin)
-  - Mise à jour du statut (admin)
-  - Suppression (admin)
+- **Messages** : Formulaire de contact (1 endpoint public) + gestion admin (5 endpoints)
+  - Public : création de message (avec optionalAuth pour lier l'utilisateur si connecté)
+  - Admin : liste, par statut, par ID, mise à jour statut, suppression
 
-**Total : 24 endpoints disponibles (18 publics, 6 admin)**
+- **Authentification** : JWT avec refresh (4 endpoints)
+  - Login, signup, refresh (cookie), logout
+
+**Total : 33 endpoints (21 publics + auth, 1 authentifié `/users/me`, 11 admin sous `/api/admin`)**
 
 ## 🛠️ Technologies
 
 | Catégorie | Technologie | Version |
-|-----------|-----------|---------|
+|-----------|-------------|---------|
 | **Runtime** | Node.js | 18+ |
 | **Language** | TypeScript | 5.7.3 |
 | **Framework** | Express | 5.1.0 |
 | **Base de données** | MySQL | 8.0+ |
 | **Driver DB** | mysql2 | 3.15.3 |
 | **Sécurité** | Argon2 | 0.44.0 |
+| **Auth** | jsonwebtoken | 9.0.3 |
+| **Validation** | Zod | 4.1.x |
+| **Utilitaires** | dotenv, cookie-parser, slugify | - |
 | **Sécurité HTTP** | Helmet | 8.1.0 |
 | **CORS** | cors | 2.8.5 |
-| **Dev** | Nodemon | 3.1.10 |
-| **Dev** | ts-node | 10.9.2 |
+| **Dev** | Nodemon, ts-node | 3.1.x / 10.9.x |
 
 ## 📁 Architecture
 
 ```
 Back/
 ├── src/
-│   ├── app.ts                    # Configuration Express (middlewares, CORS, static files)
+│   ├── app.ts                       # Configuration Express (middlewares, CORS, static files)
 │   ├── config/
-│   │   └── helmet.ts            # Configuration Helmet (sécurité HTTP)
-│   ├── controller/              # Contrôleurs (24 handlers)
-│   │   ├── articlesController.ts    (6 handlers)
-│   │   ├── imagesController.ts      (5 handlers)
-│   │   ├── usersController.ts       (3 handlers)
-│   │   ├── tagsController.ts        (3 handlers)
-│   │   ├── commentsController.ts    (1 handler)
-│   │   └── messagesController.ts    (6 handlers)
-│   ├── model/                   # Modèles d'accès aux données
-│   │   ├── db.ts                # Pool de connexions MySQL
-│   │   ├── articlesModel.ts     (6 fonctions - lecture seule)
-│   │   ├── imagesModel.ts       (5 fonctions - lecture seule)
-│   │   ├── usersModel.ts        (7 fonctions - CRUD complet)
-│   │   ├── tagsModel.ts         (3 fonctions - lecture seule)
-│   │   ├── commentsModel.ts     (1 fonction - lecture seule)
-│   │   └── messagesModel.ts     (6 fonctions - CRUD complet)
-│   ├── router/                  # Routers Express
-│   │   ├── index.ts             # Router principal (préfixe /api)
-│   │   ├── articlesRouter.ts    (6 routes)
-│   │   ├── imagesRouter.ts      (5 routes)
-│   │   ├── usersRouter.ts       (3 routes)
-│   │   ├── tagsRouter.ts        (3 routes)
-│   │   ├── commentsRouter.ts    (1 route)
-│   │   └── messagesRouter.ts    (6 routes)
-│   ├── types/                   # Définitions TypeScript
+│   │   ├── helmet.ts                # Configuration Helmet (sécurité HTTP)
+│   │   └── argon2.ts                # Options de hashage Argon2 (OWASP)
+│   ├── controller/
+│   │   ├── articlesController.ts    # Articles publics (4 handlers)
+│   │   ├── imagesController.ts      # Images (5 handlers)
+│   │   ├── usersController.ts       # Utilisateurs (4 handlers)
+│   │   ├── tagsController.ts        # Tags (3 handlers)
+│   │   ├── commentsController.ts    # Commentaires (1 handler)
+│   │   ├── messagesController.ts    # Formulaire contact (1 handler)
+│   │   ├── authController.ts        # Authentification (login, signup, refresh, logout)
+│   │   └── admin/
+│   │       ├── articlesAdminController.ts  # CRUD articles (6 handlers)
+│   │       └── messagesAdminController.ts  # Gestion messages (5 handlers)
+│   ├── model/
+│   │   ├── db.ts                    # Pool de connexions MySQL
+│   │   ├── articlesModel.ts
+│   │   ├── imagesModel.ts
+│   │   ├── usersModel.ts
+│   │   ├── tagsModel.ts
+│   │   ├── commentsModel.ts
+│   │   ├── messagesModel.ts
+│   │   └── admin/
+│   │       └── articlesAdminModel.ts
+│   ├── router/
+│   │   ├── index.ts                 # Router principal (préfixe /api)
+│   │   ├── articlesRouter.ts        # Routes publiques articles
+│   │   ├── imagesRouter.ts
+│   │   ├── usersRouter.ts
+│   │   ├── tagsRouter.ts
+│   │   ├── commentsRouter.ts
+│   │   ├── messagesRouter.ts
+│   │   ├── authRouter.ts            # Auth (login, signup, refresh, logout)
+│   │   └── admin/
+│   │       ├── index.ts             # Montage sous /api/admin (protégé)
+│   │       ├── articlesAdminRouter.ts
+│   │       └── messagesAdminRouter.ts
+│   ├── middleware/
+│   │   ├── authMiddleware.ts        # requireAuth, optionalAuth (JWT)
+│   │   └── roleMiddleware.ts        # requireEditor, requireAdmin
+│   ├── types/
 │   │   ├── articles.ts
 │   │   ├── images.ts
 │   │   ├── users.ts
 │   │   ├── tags.ts
 │   │   ├── comments.ts
-│   │   └── messages.ts
-│   └── middleware/              # Middlewares
+│   │   ├── messages.ts
+│   │   └── auth.ts
+│   └── utils/
+│       ├── imageUrl.ts
+│       └── slug.ts
 ├── uploads/
-│   └── images/                  # Fichiers images uploadés (servis statiquement)
+│   └── images/                      # Fichiers images (servis statiquement)
 ├── tests/
-│   └── api.http                 # Tests REST Client (VS Code)
-├── database.sql                 # Schéma complet + données de test
-├── generate-argon2-hashes.ts    # Utilitaire de hashage Argon2
-├── migrate-sample.ts            # Utilitaire de migration
-├── index.ts                     # Point d'entrée (port 4242)
+│   └── api.http                     # Tests REST Client (VS Code)
+├── database.sql                     # Schéma complet + données de test
+├── index.ts                         # Point d'entrée (port 4242)
 ├── package.json
 ├── tsconfig.json
+├── .env.sample
 └── README.md
 ```
 
@@ -150,7 +164,7 @@ Back/
 - **Séparation des responsabilités** : Modèles → Contrôleurs → Routers
 - **TypeScript strict** : Typage complet pour la sécurité du code
 - **Pool de connexions** : Gestion optimisée des connexions MySQL
-- **Structure modulaire** : Un module par entité métier
+- **Structure modulaire** : Un module par entité métier ; routes admin regroupées sous `/api/admin` avec authentification JWT et rôles (éditeur / admin)
 
 ## 🚀 Installation
 
@@ -177,18 +191,23 @@ npm install
 
 3. **Configurer les variables d'environnement**
 
-Créez un fichier `.env` à la racine du projet :
+Copiez `.env.sample` vers `.env` et renseignez les valeurs :
 
 ```env
-PORT=4242
 DB_HOST=localhost
 DB_USER=votre_utilisateur
 DB_PASSWORD=votre_mot_de_passe
 DB_NAME=sariblog
 DB_PORT=3306
+PORT=4242
+
+# JWT (obligatoire pour l'auth) : générer deux secrets avec :
+# node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+ACCESS_TOKEN_SECRET=une_longue_chaîne_aléatoire_secrète_1
+REFRESH_TOKEN_SECRET=une_autre_longue_chaîne_aléatoire_secrète_2
 ```
 
-> ⚠️ **Important** : Les variables `DB_HOST`, `DB_USER`, `DB_PASSWORD` et `DB_NAME` sont **obligatoires**. Le serveur refusera de démarrer si elles sont manquantes.
+> ⚠️ **Important** : Les variables `DB_*` et les deux secrets JWT (`ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`) sont **obligatoires** pour le bon fonctionnement (auth et démarrage).
 
 4. **Créer et importer la base de données**
 
@@ -219,16 +238,25 @@ Vous pouvez tester l'API en accédant à `http://localhost:4242/` qui retourne u
 
 **Base URL** : `http://localhost:4242/api`
 
-### Articles (`/api/articles`)
+### Authentification (`/api/auth`)
+
+| Méthode | Endpoint | Description | Accès |
+|---------|----------|-------------|-------|
+| `POST` | `/auth/login` | Connexion (identifier + password) ; retourne accessToken, définit cookie refreshToken | Public |
+| `POST` | `/auth/signup` | Inscription (username, email, password, firstname, lastname) | Public |
+| `POST` | `/auth/refresh` | Rafraîchir l'access token (utilise le cookie refreshToken) | Public (cookie) |
+| `POST` | `/auth/logout` | Déconnexion (invalide le refresh token, supprime le cookie) | Public |
+
+Pour les routes protégées, envoyer le header : `Authorization: Bearer <accessToken>`.
+
+### Articles (`/api/articles`) — publics
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
 | `GET` | `/articles/homepage-preview` | 4 derniers articles publiés (enrichis avec images et tags) | Public |
 | `GET` | `/articles/published` | Liste des articles publiés (`?limit=N`, max 20) | Public |
-| `GET` | `/articles/published/:slug` | Article publié par slug (avec contenu complet) | Public |
-| `GET` | `/articles` | Liste tous les articles (tous statuts, sans contenu) | Admin |
-| `GET` | `/articles/:id` | Article par ID (tous statuts, avec contenu) | Admin |
-| `GET` | `/articles/slug/:slug` | Article par slug (tous statuts, avec contenu) | Admin |
+| `GET` | `/articles/published/id/:id` | Article publié par ID (avec contenu complet) | Public |
+| `GET` | `/articles/published/slug/:slug` | Article publié par slug (avec contenu complet) | Public |
 
 ### Images (`/api/images`)
 
@@ -246,6 +274,7 @@ Vous pouvez tester l'API en accédant à `http://localhost:4242/` qui retourne u
 |---------|----------|-------------|-------|
 | `GET` | `/users` | Liste tous les utilisateurs (sans mots de passe) | Public |
 | `GET` | `/users/artist` | Profil de l'artiste principale (sans mot de passe) | Public |
+| `GET` | `/users/me` | Profil de l'utilisateur connecté | Authentifié |
 | `GET` | `/users/:id` | Profil utilisateur par ID (sans mot de passe) | Public |
 
 ### Tags (`/api/tags`)
@@ -266,12 +295,32 @@ Vous pouvez tester l'API en accédant à `http://localhost:4242/` qui retourne u
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
-| `POST` | `/messages` | Créer un message via formulaire de contact | Public |
-| `GET` | `/messages` | Liste tous les messages | Admin |
-| `GET` | `/messages/status/:status` | Liste les messages par statut (`unread`, `read`, `archived`) | Admin |
-| `GET` | `/messages/:id` | Récupère un message par ID | Admin |
-| `PATCH` | `/messages/:id/status` | Met à jour le statut d'un message | Admin |
-| `DELETE` | `/messages/:id` | Supprime un message | Admin |
+| `POST` | `/messages` | Créer un message via formulaire de contact (optionalAuth : lie l'utilisateur si connecté) | Public |
+
+### Admin (`/api/admin`) — protégé (JWT + rôle éditeur ou admin)
+
+Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <accessToken>` et un rôle **admin** ou **editor**.
+
+#### Articles admin (`/api/admin/articles`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/articles` | Liste tous les articles (tous statuts) |
+| `GET` | `/admin/articles/slug/:slug` | Article par slug (tous statuts) |
+| `GET` | `/admin/articles/:id` | Article par ID (détails complets) |
+| `POST` | `/admin/articles` | Créer un article |
+| `PATCH` | `/admin/articles/:id` | Modifier un article |
+| `DELETE` | `/admin/articles/:id` | Supprimer un article |
+
+#### Messages admin (`/api/admin/messages`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/messages` | Liste tous les messages |
+| `GET` | `/admin/messages/status/:status` | Messages par statut (`unread`, `read`, `archived`) |
+| `GET` | `/admin/messages/:id` | Message par ID |
+| `PATCH` | `/admin/messages/:id/status` | Mettre à jour le statut |
+| `DELETE` | `/admin/messages/:id` | Supprimer un message |
 
 ### Fichiers statiques
 
@@ -282,11 +331,14 @@ Vous pouvez tester l'API en accédant à `http://localhost:4242/` qui retourne u
 ### Exemples de requêtes
 
 ```bash
+# Connexion (récupérer l'accessToken pour les routes admin)
+curl -X POST http://localhost:4242/api/auth/login -H "Content-Type: application/json" -d "{\"identifier\":\"admin@example.com\",\"password\":\"votre_mot_de_passe\"}"
+
 # Récupérer les 4 derniers articles pour la homepage
 curl http://localhost:4242/api/articles/homepage-preview
 
 # Récupérer un article publié par slug
-curl http://localhost:4242/api/articles/published/decouvrir-aquarelle-guide-debutants
+curl http://localhost:4242/api/articles/published/slug/decouvrir-aquarelle-guide-debutants
 
 # Récupérer l'image du jour
 curl http://localhost:4242/api/images/image-of-the-day
@@ -299,6 +351,9 @@ curl http://localhost:4242/api/users/artist
 
 # Récupérer les tags d'un article
 curl http://localhost:4242/api/tags/article/1
+
+# Route admin (avec token)
+curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/admin/articles
 ```
 
 ## 🗄️ Base de données
@@ -347,13 +402,15 @@ Le projet inclut un fichier `tests/api.http` avec des tests pour tous les endpoi
 **Utilisation** :
 
 1. Installer l'extension **REST Client** dans VS Code
-2. Ouvrir `tests/api.http`
-3. Cliquer sur "Send Request" au-dessus de chaque requête
+2. Démarrer le serveur : `npm run dev` dans `Back/`
+3. Ouvrir `tests/api.http`
+4. Pour les routes admin : exécuter d'abord la requête **POST /auth/login**, copier l'`accessToken` de la réponse et le coller dans la variable `@accessToken` en tête de fichier
+5. Cliquer sur "Send Request" au-dessus de chaque requête
 
 Le fichier contient :
-- Tests pour tous les endpoints (24 routes)
-- Tests d'erreurs (404, validation)
-- Variables globales (`@baseUrl`)
+- Tests pour tous les endpoints (auth, publics, admin)
+- Variables globales (`@baseUrl`, `@adminUrl`, `@accessToken`)
+- Exemples de codes HTTP (200, 401, 403, 404)
 
 ### Exemple de test
 
@@ -369,10 +426,12 @@ GET {{baseUrl}}/articles/homepage-preview
 
 ### ✅ Implémenté
 
-- **Hashage des mots de passe** : Argon2id (algorithme recommandé par l'OWASP)
+- **Hashage des mots de passe** : Argon2id (options OWASP dans `src/config/argon2.ts`)
+- **Authentification JWT** : Access token (Bearer) + refresh token (cookie HttpOnly) ; secrets en variables d'environnement
+- **Rôles** : Middlewares `requireAuth`, `requireEditor`, `requireAdmin` pour protéger les routes admin
 - **CORS** : Activé pour les requêtes cross-origin
 - **Helmet** : Headers de sécurité HTTP configurés
-- **Validation des variables d'environnement** : Le serveur refuse de démarrer si les variables DB sont manquantes
+- **Validation** : Schémas Zod pour les entrées (auth, etc.)
 - **Exclusion des mots de passe** : Les mots de passe ne sont jamais retournés dans les réponses API
 
 ## 📝 Scripts disponibles
@@ -380,10 +439,6 @@ GET {{baseUrl}}/articles/homepage-preview
 ```bash
 # Démarrage en mode développement (avec hot reload)
 npm run dev
-
-# Utilitaires
-ts-node generate-argon2-hashes.ts  # Génération de hash Argon2
-ts-node migrate-sample.ts          # Migration de données
 ```
 
 ## 👤 Auteur

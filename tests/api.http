@@ -1,10 +1,37 @@
 ###############################################################################
 # SARIBLOG - Tests API REST Client
-# Place ce fichier dans : backend/tests/api.http
+# Fichier : Back/tests/api.http
+###############################################################################
+# 📝 NOTES D'UTILISATION
+###############################################################################
+#
+# 🚀 DÉMARRAGE
+# 1. Installer l'extension REST Client (par Huachao Mao) dans VS Code
+# 2. Démarrer le serveur : npm run dev (dans Back/)
+# 3. Cliquer sur "Send Request" au-dessus de chaque requête
+#    (ou Ctrl+Alt+R / Cmd+Alt+R avec le curseur sur la requête)
+#
+# 🔐 AUTHENTIFICATION (pour tester les routes admin et /users/me)
+# 1. Aller à la section "AUTH" ci-dessous (ligne ~44)
+# 2. Dans la requête "POST {{baseUrl}}/auth/login", remplacer les identifiants par les vôtres
+# 3. Cliquer sur "Send Request" pour vous connecter
+# 4. Dans la réponse, copier la valeur de "accessToken"
+# 5. La coller dans la variable @accessToken (ligne ~34)
+# 6. Les routes admin fonctionneront automatiquement avec ce token
+#
+# 📊 CODES HTTP COURANTS
+# - 200 = Succès
+# - 401 = Non authentifié (token manquant/invalide)
+# - 403 = Non autorisé (rôle insuffisant)
+# - 404 = Ressource introuvable
+#
 ###############################################################################
 
 ### Variables globales
 @baseUrl = http://localhost:4242/api
+@adminUrl = http://localhost:4242/api/admin
+# Après login, copier l'accessToken ici pour tester les routes admin et /users/me
+@accessToken = votre_access_token_ici
 
 ###############################################################################
 # 🏠 TEST SERVEUR
@@ -14,32 +41,100 @@
 GET http://localhost:4242/
 
 ###############################################################################
-# 📰 ARTICLES (7 endpoints)
+# 🔐 AUTH (login, signup, refresh, logout)
+###############################################################################
+
+### 1. Connexion (login) - récupère accessToken + user, définit cookie refreshToken
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "admin@example.com",
+  "password": "votre_mot_de_passe"
+}
+
+### 2. Inscription (signup)
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "nouveau_user",
+  "email": "nouveau@example.com",
+  "password": "MotDePasse123!",
+  "firstname": "Jean",
+  "lastname": "Dupont"
+}
+
+### 3. Rafraîchir l'access token (utilise le cookie refreshToken)
+POST {{baseUrl}}/auth/refresh
+
+### 4. Déconnexion (logout) - invalide le refresh token et supprime le cookie
+POST {{baseUrl}}/auth/logout
+
+###############################################################################
+# 📰 ARTICLES (public)
+###############################################################################
+
+### 1. Preview homepage (4 derniers articles publiés)
+GET {{baseUrl}}/articles/homepage-preview
+
+### 2. Liste articles PUBLIÉS uniquement (public)
+GET {{baseUrl}}/articles/published
+
+### 3. Liste articles PUBLIÉS avec limite (public - max 20)
+GET {{baseUrl}}/articles/published?limit=4
+
+### 4. Article publié par ID (public)
+GET {{baseUrl}}/articles/published/id/1
+
+### 5. Article publié par SLUG (public)
+GET {{baseUrl}}/articles/published/slug/tutoriel-peindre-dragon
+
+###############################################################################
+# 📰 ARTICLES ADMIN (authentification requise : Authorization Bearer)
 ###############################################################################
 
 ### 1. Liste TOUS les articles (admin - tous statuts)
-GET {{baseUrl}}/articles
+GET {{adminUrl}}/articles
+Authorization: Bearer {{accessToken}}
 
-### 2. Article par ID (admin - tous statuts)
-GET {{baseUrl}}/articles/1
+### 2. Article par SLUG (admin)
+GET {{adminUrl}}/articles/slug/decouvrir-aquarelle-guide-debutants
+Authorization: Bearer {{accessToken}}
 
-### 3. Article par SLUG (admin - tous statuts)
-GET {{baseUrl}}/articles/slug/decouvrir-aquarelle-guide-debutants
+### 3. Article par ID (admin - détails complets)
+GET {{adminUrl}}/articles/1
+Authorization: Bearer {{accessToken}}
 
-### 4. Liste articles PUBLIÉS uniquement (public)
-GET {{baseUrl}}/articles/published
+### 4. Créer un article (POST - admin)
+POST {{adminUrl}}/articles
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
 
-### 5. Liste articles PUBLIÉS avec limite (public - max 20)
-GET {{baseUrl}}/articles/published?limit=4
+{
+  "title": "Nouvel article",
+  "slug": "nouvel-article",
+  "content": "Contenu de l'article...",
+  "status": "draft",
+  "featured_image_id": 1
+}
 
-### 6. Article publié par SLUG (public)
-GET {{baseUrl}}/articles/published/tutoriel-peindre-dragon
+### 5. Modifier un article (PATCH - admin)
+PATCH {{adminUrl}}/articles/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
 
-### 7. Preview homepage (4 derniers articles publiés)
-GET {{baseUrl}}/articles/homepage-preview
+{
+  "title": "Titre modifié",
+  "status": "published"
+}
+
+### 6. Supprimer un article (DELETE - admin)
+DELETE {{adminUrl}}/articles/1
+Authorization: Bearer {{accessToken}}
 
 ###############################################################################
-# 🖼️ IMAGES (5 endpoints)
+# 🖼️ IMAGES (public)
 ###############################################################################
 
 ### 1. Image du jour
@@ -48,30 +143,34 @@ GET {{baseUrl}}/images/image-of-the-day
 ### 2. Images de la GALERIE (is_in_gallery = TRUE)
 GET {{baseUrl}}/images/gallery
 
-### 3. Image par ID
-GET {{baseUrl}}/images/1
-
-### 4. Images d'un ARTICLE spécifique
+### 3. Images d'un ARTICLE spécifique
 GET {{baseUrl}}/images/article/1
 
-### 5. Images par TAG
+### 4. Images par TAG
 GET {{baseUrl}}/images/tag/1
 
+### 5. Image par ID
+GET {{baseUrl}}/images/1
+
 ###############################################################################
-# 👥 USERS (3 endpoints)
+# 👥 USERS (public + 1 route protégée)
 ###############################################################################
 
-### 1. Liste tous les utilisateurs
+### 1. Liste tous les utilisateurs (public)
 GET {{baseUrl}}/users
 
-### 2. Artiste principale
+### 2. Artiste principale (public)
 GET {{baseUrl}}/users/artist
 
-### 3. Utilisateur par ID
+### 3. Utilisateur connecté (protégé - nécessite Bearer token)
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+
+### 4. Utilisateur par ID (public)
 GET {{baseUrl}}/users/1
 
 ###############################################################################
-# 🏷️ TAGS (3 endpoints)
+# 🏷️ TAGS (public)
 ###############################################################################
 
 ### 1. Liste tous les tags
@@ -84,17 +183,17 @@ GET {{baseUrl}}/tags/article/1
 GET {{baseUrl}}/tags/image/1
 
 ###############################################################################
-# 💬 COMMENTS (1 endpoint)
+# 💬 COMMENTS (public)
 ###############################################################################
 
-### 1. Commentaires approuvés d'un article
+### Commentaires approuvés d'un article
 GET {{baseUrl}}/comments/article/1
 
 ###############################################################################
-# 📧 MESSAGES (8 endpoints)
+# 📧 MESSAGES (public : POST uniquement)
 ###############################################################################
 
-### 1. Créer un message de contact (POST - public)
+### Créer un message de contact (POST - public)
 POST {{baseUrl}}/messages
 Content-Type: application/json
 
@@ -106,46 +205,54 @@ Content-Type: application/json
   "text": "Bonjour, j'aimerais en savoir plus sur vos techniques..."
 }
 
-### 2. Liste tous les messages (GET - admin)
-GET {{baseUrl}}/messages
+###############################################################################
+# 📧 MESSAGES ADMIN (authentification requise : Authorization Bearer)
+###############################################################################
 
-### 3. Messages par statut : non lus (GET - admin)
-GET {{baseUrl}}/messages/status/unread
+### 1. Liste tous les messages (GET - admin)
+GET {{adminUrl}}/messages
+Authorization: Bearer {{accessToken}}
 
-### 4. Messages par statut : lus (GET - admin)
-GET {{baseUrl}}/messages/status/read
+### 2. Messages par statut : non lus (GET - admin)
+GET {{adminUrl}}/messages/status/unread
+Authorization: Bearer {{accessToken}}
 
-### 5. Messages par statut : archivés (GET - admin)
-GET {{baseUrl}}/messages/status/archived
+### 3. Messages par statut : lus (GET - admin)
+GET {{adminUrl}}/messages/status/read
+Authorization: Bearer {{accessToken}}
 
-### 6. Message par ID (GET - admin)
-GET {{baseUrl}}/messages/1
+### 4. Messages par statut : archivés (GET - admin)
+GET {{adminUrl}}/messages/status/archived
+Authorization: Bearer {{accessToken}}
 
-### 7. Mettre à jour le statut d'un message (PATCH - admin)
-PATCH {{baseUrl}}/messages/1/status
+### 5. Message par ID (GET - admin)
+GET {{adminUrl}}/messages/1
+Authorization: Bearer {{accessToken}}
+
+### 6. Mettre à jour le statut d'un message (PATCH - admin)
+PATCH {{adminUrl}}/messages/1/status
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
   "status": "read"
 }
 
-### 8. Supprimer un message (DELETE - admin)
-DELETE {{baseUrl}}/messages/1
+### 7. Supprimer un message (DELETE - admin)
+DELETE {{adminUrl}}/messages/1
+Authorization: Bearer {{accessToken}}
 
 ###############################################################################
 # 🧪 TESTS D'ERREURS
 ###############################################################################
 
-### Article inexistant (devrait retourner 404)
-GET {{baseUrl}}/articles/99999
+### Article publié par ID inexistant (devrait retourner 404)
+GET {{baseUrl}}/articles/published/id/99999
 
-### Slug inexistant (devrait retourner 404)
-GET {{baseUrl}}/articles/slug/article-qui-nexiste-pas
+### Article publié par slug inexistant (devrait retourner 404)
+GET {{baseUrl}}/articles/published/slug/article-qui-nexiste-pas
 
-### Article publié avec slug inexistant (devrait retourner 404)
-GET {{baseUrl}}/articles/published/article-qui-nexiste-pas
-
-### Articles publiés avec limite invalide (devrait retourner 400)
+### Articles publiés avec limite invalide > 20 (devrait retourner 400)
 GET {{baseUrl}}/articles/published?limit=25
 
 ### Articles publiés avec limite négative (devrait retourner 400)
@@ -173,13 +280,16 @@ GET {{baseUrl}}/tags/image/99999
 GET {{baseUrl}}/comments/article/99999
 
 ### Message inexistant (devrait retourner 404)
-GET {{baseUrl}}/messages/99999
+GET {{adminUrl}}/messages/99999
+Authorization: Bearer {{accessToken}}
 
-### Message avec statut invalide (devrait retourner 400)
-GET {{baseUrl}}/messages/status/invalid
+### Messages par statut invalide (devrait retourner 400)
+GET {{adminUrl}}/messages/status/invalid
+Authorization: Bearer {{accessToken}}
 
 ### Mettre à jour message avec statut invalide (devrait retourner 400)
-PATCH {{baseUrl}}/messages/1/status
+PATCH {{adminUrl}}/messages/1/status
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -194,42 +304,6 @@ Content-Type: application/json
   "firstname": "John"
 }
 
-###############################################################################
-# 📝 NOTES D'UTILISATION
-###############################################################################
-# 
-# 1. Assure-toi que ton serveur tourne (npm run dev dans backend/)
-# 2. Clique sur "Send Request" au-dessus de chaque requête
-# 3. Le résultat s'affiche dans un panneau à droite
-# 4. Vérifie les status codes :
-#    - 200 = OK
-#    - 201 = Created (POST réussi)
-#    - 204 = No Content (DELETE réussi)
-#    - 400 = Bad Request (erreur de validation)
-#    - 404 = Not Found
-#    - 500 = Erreur serveur
-#
-# 5. Slugs d'articles disponibles pour tester :
-#    - decouvrir-aquarelle-guide-debutants
-#    - processus-creatif-esquisse-illustration
-#    - techniques-portrait-emotion
-#    - paysages-fantastiques-numerique
-#    - tutoriel-peindre-dragon
-#    - palette-couleurs-fantasy
-#    - astuces-ameliorer-croquis
-#    - projet-personnel-portraits-fantasy
-#    - art-portrait-numerique-techniques
-#
-# 6. Paramètres pour les endpoints :
-#    - GET /articles/published?limit=X : limite optionnelle (max 20)
-#    - GET /messages/status/:status : statuts possibles = unread, read, archived
-#    - PATCH /messages/:id/status : body doit contenir {"status": "unread|read|archived"}
-#    - POST /messages : body doit contenir firstname, lastname, email, subject, text
-#
-# 7. Endpoints publics vs admin :
-#    - Public : articles/published, images, users, tags, comments, POST /messages
-#    - Admin : articles (tous), messages (GET/PATCH/DELETE)
-#    Note : L'authentification n'est pas encore implémentée, tous les endpoints
-#           sont actuellement accessibles sans authentification.
-#
-###############################################################################
+### Route admin sans token (devrait retourner 401)
+GET {{adminUrl}}/articles
+# Pas de header Authorization
