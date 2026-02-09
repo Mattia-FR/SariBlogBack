@@ -4,13 +4,14 @@
  */
 import type { Request, Response } from "express";
 import articlesModel from "../model/articlesModel";
+import articlesAdminModel from "../model/admin/articlesAdminModel";
 import type { Article } from "../types/articles";
 
 // Liste tous les articles (admin - tous statuts). Retourne Article[] sans content.
 // GET /articles
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const articles: Article[] = await articlesModel.findAll();
+		const articles: Article[] = await articlesAdminModel.findAllForAdmin();
 		res.status(200).json(articles);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de tous les articles :", err);
@@ -28,7 +29,8 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		const article: Article | null = await articlesModel.findById(articleId);
+		const article: Article | null =
+			await articlesAdminModel.findByIdForAdmin(articleId);
 		if (!article) {
 			res.sendStatus(404);
 			return;
@@ -51,7 +53,8 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		const article: Article | null = await articlesModel.findBySlug(slug);
+		const article: Article | null =
+			await articlesAdminModel.findBySlugForAdmin(slug);
 		if (!article) {
 			res.sendStatus(404);
 			return;
@@ -91,7 +94,10 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 			}
 		}
 
-		const articles: Article[] = await articlesModel.findPublished(limit);
+		let articles: Article[] = await articlesModel.findPublished();
+		if (limit !== undefined) {
+			articles = articles.slice(0, limit);
+		}
 		res.status(200).json(articles);
 	} catch (err) {
 		console.error("Erreur lors de la récupération des articles publiés :", err);

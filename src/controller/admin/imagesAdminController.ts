@@ -1,10 +1,10 @@
 /**
  * Controller admin des images.
  * CRUD simple : liste toutes les images, détail par ID, création, mise à jour, suppression.
- * Réutilise imagesModel (pas de model admin dédié). Enrichit les réponses avec imageUrl.
+ * Utilise imagesAdminModel. Enrichit les réponses avec imageUrl.
  */
 import type { Request, Response } from "express";
-import imagesModel from "../../model/imagesModel";
+import imagesAdminModel from "../../model/admin/imagesAdminModel";
 import type { Image, ImageUpdateData } from "../../types/images";
 import { buildImageUrl } from "../../utils/imageUrl";
 
@@ -19,7 +19,7 @@ function enrichWithImageUrl(item: Image): Image & { imageUrl: string } {
 // GET /admin/images
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const images: Image[] = await imagesModel.findAll();
+		const images: Image[] = await imagesAdminModel.findAll();
 		const enriched = images.map(enrichWithImageUrl);
 		res.status(200).json(enriched);
 	} catch (err) {
@@ -37,7 +37,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
-		const image: Image | null = await imagesModel.findById(id);
+		const image: Image | null = await imagesAdminModel.findById(id);
 		if (!image) {
 			res.sendStatus(404);
 			return;
@@ -67,7 +67,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "Le champ path est requis" });
 			return;
 		}
-		const image = await imagesModel.create({
+		const image = await imagesAdminModel.create({
 			path: path.trim(),
 			user_id: userId,
 			title: title ?? null,
@@ -104,7 +104,7 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		if (article_id !== undefined)
 			data.article_id = article_id != null ? Number(article_id) : null;
 
-		const image = await imagesModel.update(id, data);
+		const image = await imagesAdminModel.update(id, data);
 		if (!image) {
 			res.sendStatus(404);
 			return;
@@ -125,7 +125,7 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
-		const deleted = await imagesModel.deleteOne(id);
+		const deleted = await imagesAdminModel.deleteOne(id);
 		if (!deleted) {
 			res.sendStatus(404);
 			return;

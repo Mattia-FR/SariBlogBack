@@ -1,251 +1,169 @@
-/**
- * Modèle admin des articles.
- * CRUD complet : liste (avec tags + comments_count), détail, création, mise à jour, suppression.
- * Convertit les lignes BDD (Date, image_path) en Article (dates string, imageUrl).
- */
 import pool from "../db";
-import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import type {
 	Article,
 	ArticleCreateData,
 	ArticleUpdateData,
 } from "../../types/articles";
-import type { Tag } from "../../types/tags";
+import type { ResultSetHeader } from "mysql2/promise";
 import { buildImageUrl } from "../../utils/imageUrl";
+import { toDateString } from "../../utils/dateHelpers";
 
-// ========================================
-// TYPES INTERNES (Row) - Ne pas exporter
-// ========================================
-// Ces types avec RowDataPacket sont uniquement pour mysql2 et restent internes au model.
+// J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
+// Grâce aux transformations (toDateString, imageUrl, tags), le frontend reçoit toujours des objets strictement conformes à l’interface Article.
+// Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n’apporteraient rien pour ce projet.
 
-// Type pour les lignes retournées par les requêtes admin (avec GROUP_CONCAT tags et COUNT commentaires).
-interface ArticleAdminRow extends RowDataPacket {
-	id: number;
-	title: string;
-	slug: string;
-	excerpt: string | null;
-	content: string;
-	status: "draft" | "published" | "archived";
-	user_id: number;
-	created_at: Date;
-	updated_at: Date;
-	published_at: Date | null;
-	views: number;
-	featured_image_id: number | null;
-	image_path?: string | null;
-	tags?: string | null; // Format GROUP_CONCAT: "id:name:slug|id:name:slug"
-	comments_count?: number;
-}
-
-// ========================================
-// HELPERS
-// ========================================
-
-/** Convertit une Date ou null en string ISO ou null. */
-function toDateString(value: Date | null): string | null {
-	if (value === null) return null;
-	return value instanceof Date ? value.toISOString() : String(value);
-}
-
-/** Parse la chaîne GROUP_CONCAT des tags en tableau Tag[]. */
-function parseTags(tagsString: string | null | undefined): Tag[] {
-	if (!tagsString) return [];
-
-	return tagsString.split("|").map((tagStr) => {
-		const [id, name, slug] = tagStr.split(":");
-		return {
-			id: Number.parseInt(id, 10),
-			name,
-			slug,
-		} as Tag;
-	});
-}
-
-/** Type pour un article admin : Article + comments_count (optionnel). */
-type ArticleWithCommentsCount = Article & { comments_count?: number };
-
-/** Parse les rows admin (avec tags et comments_count) en ArticleWithCommentsCount[]. */
-function parseArticleAdminRows(
-	rows: ArticleAdminRow[],
-): ArticleWithCommentsCount[] {
-	return rows.map((row) => {
-		const tags = parseTags(row.tags);
-
-		return {
-			id: row.id,
-			title: row.title,
-			slug: row.slug,
-			excerpt: row.excerpt,
-			status: row.status,
-			user_id: row.user_id,
-			created_at: row.created_at.toISOString(),
-			updated_at: row.updated_at.toISOString(),
-			published_at: toDateString(row.published_at),
-			views: row.views,
-			featured_image_id: row.featured_image_id,
-			imageUrl: buildImageUrl(row.image_path),
-			tags,
-			comments_count: row.comments_count,
-		};
-	});
-}
-
-// ========================================
-// FONCTIONS
-// ========================================
-
-// Récupère tous les articles (tous statuts) avec tags et nombre de commentaires. Tri par updated_at DESC.
-const findAllForAdmin = async (): Promise<ArticleWithCommentsCount[]> => {
+const findAllForAdmin = async (): Promise<Article[]> => {
 	try {
-		const [rows] = await pool.query<ArticleAdminRow[]>(
-			`
-      SELECT 
-        a.id, 
-        a.title, 
-        a.slug, 
-        a.excerpt, 
-        a.status, 
-        a.user_id,
-        a.created_at, 
-        a.updated_at, 
-        a.published_at, 
-        a.views,
-        a.featured_image_id,
-        i.path as image_path,
-        GROUP_CONCAT(
-          DISTINCT CONCAT(t.id, ':', t.name, ':', t.slug) 
-          ORDER BY t.id 
-          SEPARATOR '|'
-        ) as tags,
-        COUNT(DISTINCT c.id) as comments_count
-      FROM articles a
-      LEFT JOIN images i ON a.featured_image_id = i.id
-      LEFT JOIN articles_tags at ON a.id = at.article_id
-      LEFT JOIN tags t ON at.tag_id = t.id
-      LEFT JOIN comments c ON a.id = c.article_id
-      GROUP BY a.id, a.title, a.slug, a.excerpt, a.status, a.user_id,
-              a.created_at, a.updated_at, a.published_at, a.views,
-              a.featured_image_id, i.path
-      ORDER BY a.updated_at DESC
-      `,
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [articles]: any = await pool.query(
+			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
+			FROM articles a
+			LEFT JOIN images i ON a.featured_image_id = i.id
+			ORDER BY a.created_at DESC`,
 		);
 
-		return parseArticleAdminRows(rows);
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [tags]: any = await pool.query(
+			`SELECT at.article_id, t.id, t.name, t.slug
+			FROM articles_tags at
+			LEFT JOIN tags t ON at.tag_id = t.id`,
+		);
+
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		return articles.map((article: any) => ({
+			...article,
+			imageUrl: buildImageUrl(article.image_path),
+			tags: tags
+				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+				.filter((t: any) => t.article_id === article.id)
+				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
+			created_at: toDateString(article.created_at),
+			updated_at: toDateString(article.updated_at),
+			published_at: toDateString(article.published_at),
+		}));
 	} catch (err) {
-		console.error("Erreur lors de la récupération des articles (admin) :", err);
+		console.error(err);
 		throw err;
 	}
 };
 
-// Récupère un article par ID avec content, image, tags et nombre de commentaires (admin).
-const findByIdForAdmin = async (
-	id: number,
-): Promise<ArticleWithCommentsCount | null> => {
+const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 	try {
-		const [rows] = await pool.query<ArticleAdminRow[]>(
-			`
-      SELECT 
-        a.id, 
-        a.title, 
-        a.slug, 
-        a.excerpt,
-        a.content,
-        a.status, 
-        a.user_id,
-        a.created_at, 
-        a.updated_at, 
-        a.published_at, 
-        a.views,
-        a.featured_image_id,
-        i.path as image_path,
-        GROUP_CONCAT(
-          DISTINCT CONCAT(t.id, ':', t.name, ':', t.slug) 
-          ORDER BY t.id 
-          SEPARATOR '|'
-        ) as tags,
-        COUNT(DISTINCT c.id) as comments_count
-      FROM articles a
-      LEFT JOIN images i ON a.featured_image_id = i.id
-      LEFT JOIN articles_tags at ON a.id = at.article_id
-      LEFT JOIN tags t ON at.tag_id = t.id
-      LEFT JOIN comments c ON a.id = c.article_id
-      WHERE a.id = ?
-      GROUP BY a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id,
-              a.created_at, a.updated_at, a.published_at, a.views,
-              a.featured_image_id, i.path
-      `,
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			`SELECT a.*, i.path as image_path
+			FROM articles a
+			LEFT JOIN images i ON a.featured_image_id = i.id
+			WHERE a.id = ?`,
 			[id],
 		);
 
-		if (rows.length === 0) {
-			return null;
-		}
+		if (!rows[0]) return null;
 
-		const row = rows[0];
-		const tags = parseTags(row.tags);
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [tags]: any = await pool.query(
+			`SELECT t.id, t.name, t.slug
+			FROM articles_tags at
+			LEFT JOIN tags t ON at.tag_id = t.id
+			WHERE at.article_id = ?`,
+			[id],
+		);
+
+		const article = rows[0];
 
 		return {
-			id: row.id,
-			title: row.title,
-			slug: row.slug,
-			excerpt: row.excerpt,
-			content: row.content,
-			status: row.status,
-			user_id: row.user_id,
-			created_at: row.created_at.toISOString(),
-			updated_at: row.updated_at.toISOString(),
-			published_at: toDateString(row.published_at),
-			views: row.views,
-			featured_image_id: row.featured_image_id,
-			imageUrl: buildImageUrl(row.image_path),
-			tags,
-			comments_count: row.comments_count,
+			...article,
+			imageUrl: buildImageUrl(article.image_path),
+			tags: tags,
+			created_at: toDateString(article.created_at),
+			updated_at: toDateString(article.updated_at),
+			published_at: toDateString(article.published_at),
 		};
 	} catch (err) {
-		console.error(
-			"Erreur lors de la récupération de l'article par ID (admin) :",
-			err,
-		);
+		console.error(err);
 		throw err;
 	}
 };
 
-// Crée un nouvel article. published_at accepté en string (ISO) ou null. Retourne l'article créé avec tags et comments_count.
-const create = async (
-	data: ArticleCreateData,
-): Promise<ArticleWithCommentsCount> => {
+const findBySlugForAdmin = async (slug: string): Promise<Article | null> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			`SELECT a.*, i.path as image_path
+			FROM articles a
+			LEFT JOIN images i ON a.featured_image_id = i.id
+			WHERE a.slug = ?`,
+			[slug],
+		);
+
+		if (!rows[0]) return null;
+
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [tags]: any = await pool.query(
+			`SELECT t.id, t.name, t.slug
+			FROM articles_tags at
+			LEFT JOIN tags t ON at.tag_id = t.id
+			WHERE at.article_id = ?`,
+			[rows[0].id],
+		);
+
+		const article = rows[0];
+
+		return {
+			...article,
+			imageUrl: buildImageUrl(article.image_path),
+			tags: tags,
+			created_at: toDateString(article.created_at),
+			updated_at: toDateString(article.updated_at),
+			published_at: toDateString(article.published_at),
+		};
+	} catch (err) {
+		console.error(err);
+		throw err;
+	}
+};
+
+const create = async (data: ArticleCreateData): Promise<Article> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
-			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id, published_at, views) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			[
 				data.title,
 				data.slug,
-				data.excerpt ?? null,
+				data.excerpt,
 				data.content,
-				data.status ?? "draft",
+				data.status,
 				data.user_id,
-				data.featured_image_id ?? null,
-				data.published_at ?? null,
-				0,
+				data.featured_image_id,
 			],
 		);
 
-		const newArticle = await findByIdForAdmin(result.insertId);
-		if (!newArticle) {
-			throw new Error("Impossible de récupérer l'article créé");
-		}
-		return newArticle;
+		return {
+			id: result.insertId,
+			...data,
+			status: data.status ?? "draft",
+			views: 0,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+			published_at: data.published_at ? toDateString(data.published_at) : null,
+			imageUrl: buildImageUrl(
+				data.featured_image_id ? `/images/${data.featured_image_id}` : null,
+			),
+			tags: [],
+			excerpt: data.excerpt ?? null,
+			featured_image_id: data.featured_image_id ?? null,
+		};
 	} catch (err) {
-		console.error("Erreur lors de la création de l'article (admin) :", err);
+		console.error(err);
 		throw err;
 	}
 };
 
-// Met à jour un article (liste blanche de champs). published_at en string ou null. Retourne l'article mis à jour ou null si non trouvé.
 const update = async (
 	id: number,
 	data: ArticleUpdateData,
-): Promise<ArticleWithCommentsCount | null> => {
+): Promise<Article | null> => {
 	try {
 		const allowedFields = [
 			"title",
@@ -258,7 +176,8 @@ const update = async (
 		];
 
 		const updates: string[] = [];
-		const values: unknown[] = [];
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const values: any[] = [];
 
 		for (const field of allowedFields) {
 			if (field in data) {
@@ -274,6 +193,7 @@ const update = async (
 		values.push(id);
 
 		const query = `UPDATE articles SET ${updates.join(", ")} WHERE id = ?`;
+
 		const [result] = await pool.query<ResultSetHeader>(query, values);
 
 		if (result.affectedRows === 0) {
@@ -283,12 +203,11 @@ const update = async (
 		const updatedArticle = await findByIdForAdmin(id);
 		return updatedArticle;
 	} catch (err) {
-		console.error("Erreur lors de la mise à jour de l'article (admin) :", err);
+		console.error(err);
 		throw err;
 	}
 };
 
-// Supprime un article par ID. Retourne true si une ligne a été supprimée.
 const deleteOne = async (id: number): Promise<boolean> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
@@ -297,12 +216,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		if (err instanceof Error) {
-			console.error(
-				"Erreur lors de la suppression de l'article :",
-				err.message,
-			);
-		}
+		console.error(err);
 		throw err;
 	}
 };
@@ -310,6 +224,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 export default {
 	findAllForAdmin,
 	findByIdForAdmin,
+	findBySlugForAdmin,
 	create,
 	update,
 	deleteOne,

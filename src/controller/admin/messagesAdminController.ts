@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
-import messagesModel from "../../model/messagesModel";
+import messagesAdminModel from "../../model/admin/messagesAdminModel";
 import type { Message } from "../../types/messages";
 
 // Liste tous les messages
 // GET /messages
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const messages: Message[] = await messagesModel.findAll();
+		const messages: Message[] = await messagesAdminModel.findAll();
 		res.status(200).json(messages);
 	} catch (err) {
 		console.error("Erreur lors de la récupération de tous les messages :", err);
@@ -23,7 +23,7 @@ const browseByStatus = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "Statut invalide" });
 			return;
 		}
-		const messages: Message[] = await messagesModel.findByStatus(
+		const messages: Message[] = await messagesAdminModel.findByStatus(
 			status as "unread" | "read" | "archived",
 		);
 		res.status(200).json(messages);
@@ -45,7 +45,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
-		const message: Message | null = await messagesModel.findById(messageId);
+		const message: Message | null = await messagesAdminModel.findById(messageId);
 		if (!message) {
 			res.sendStatus(404);
 			return;
@@ -71,7 +71,7 @@ const editStatus = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "Statut invalide" });
 			return;
 		}
-		const updatedMessage: Message | null = await messagesModel.updateStatus(
+		const updatedMessage: Message | null = await messagesAdminModel.updateStatus(
 			messageId,
 			{ status },
 		);
@@ -95,7 +95,7 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
-		const deleted: boolean = await messagesModel.deleteOne(messageId);
+		const deleted: boolean = await messagesAdminModel.deleteOne(messageId);
 		if (!deleted) {
 			res.sendStatus(404);
 			return;
