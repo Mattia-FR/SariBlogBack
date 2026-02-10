@@ -101,10 +101,25 @@ const deleteOne = async (id: number): Promise<boolean> => {
 	}
 };
 
+const countByStatus = async (status: string): Promise<number> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			"SELECT COUNT(*) as total FROM messages WHERE status = ?",
+			[status],
+		);
+		return rows[0].total;
+	} catch (err) {
+		console.error(err);
+		throw err;
+	}
+};
+
 export default {
 	findAll,
 	findByStatus,
 	findById,
 	updateStatus,
 	deleteOne,
+	countByStatus,
 };

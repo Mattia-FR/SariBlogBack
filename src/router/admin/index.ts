@@ -2,6 +2,7 @@ import express, { type Router } from "express";
 import articlesAdminRouter from "./articlesAdminRouter";
 import adminMessagesRouter from "./messagesAdminRouter";
 import imagesAdminRouter from "./imagesAdminRouter";
+import dashboardAdminRouter from "./dashboardAdminRouter";
 
 const router: Router = express.Router();
 
@@ -9,5 +10,6 @@ const router: Router = express.Router();
 router.use("/articles", articlesAdminRouter);
 router.use("/messages", adminMessagesRouter);
 router.use("/images", imagesAdminRouter);
+router.use("/dashboard", dashboardAdminRouter);
 
 export default router;

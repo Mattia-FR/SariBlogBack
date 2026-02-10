@@ -115,10 +115,38 @@ const deleteOne = async (id: number): Promise<boolean> => {
 	}
 };
 
+const countAll = async (): Promise<number> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			"SELECT COUNT(*) as total FROM images",
+		);
+		return rows[0].total;
+	} catch (err) {
+		console.error(err);
+		throw err;
+	}
+};
+
+const countInGallery = async (): Promise<number> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			"SELECT COUNT(*) as total FROM images WHERE is_in_gallery = TRUE",
+		);
+		return rows[0].total;
+	} catch (err) {
+		console.error(err);
+		throw err;
+	}
+};
+
 export default {
 	findAll,
 	findById,
 	create,
 	update,
 	deleteOne,
+	countAll,
+	countInGallery,
 };
