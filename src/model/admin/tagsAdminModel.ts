@@ -1,7 +1,10 @@
-// Back/src/models/admin/tagsAdminModel.ts
 import pool from "../db";
 import type { Tag } from "../../types/tags";
 import type { ResultSetHeader } from "mysql2/promise";
+
+// J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
+// Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Tag.
+// Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
 
 const findById = async (id: number): Promise<Tag | null> => {
 	try {

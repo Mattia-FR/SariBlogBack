@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import messagesAdminModel from "../../model/admin/messagesAdminModel";
-import type { Message } from "../../types/messages";
+import type { Message, MessageStatus } from "../../types/messages";
 
 // Liste tous les messages
 // GET /messages
@@ -24,7 +24,7 @@ const browseByStatus = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 		const messages: Message[] = await messagesAdminModel.findByStatus(
-			status as "unread" | "read" | "archived",
+			status as MessageStatus,
 		);
 		res.status(200).json(messages);
 	} catch (err) {
@@ -45,7 +45,8 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
-		const message: Message | null = await messagesAdminModel.findById(messageId);
+		const message: Message | null =
+			await messagesAdminModel.findById(messageId);
 		if (!message) {
 			res.sendStatus(404);
 			return;
@@ -71,10 +72,8 @@ const editStatus = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "Statut invalide" });
 			return;
 		}
-		const updatedMessage: Message | null = await messagesAdminModel.updateStatus(
-			messageId,
-			{ status },
-		);
+		const updatedMessage: Message | null =
+			await messagesAdminModel.updateStatus(messageId, { status });
 		if (!updatedMessage) {
 			res.sendStatus(404);
 			return;

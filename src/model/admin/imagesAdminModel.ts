@@ -11,7 +11,7 @@ import imagesModel from "../imagesModel";
 const { findById } = imagesModel;
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
-// Grâce aux transformations (toDateString, tags), le frontend reçoit toujours des objets strictement conformes à l'interface Image.
+// Grâce aux transformations (toDateString), le frontend reçoit toujours des objets strictement conformes à l'interface Image.
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
 
 const findAll = async (): Promise<Image[]> => {

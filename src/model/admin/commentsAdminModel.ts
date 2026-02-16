@@ -7,6 +7,10 @@ import type {
 } from "../../types/comments";
 import { toDateString } from "../../utils/dateHelpers";
 
+// J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
+// Grâce aux transformations (toDateString) et au mapping explicite après jointure users, le frontend reçoit toujours des objets strictement conformes à l'interface Comment.
+// Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
+
 const findAll = async (): Promise<Comment[]> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
