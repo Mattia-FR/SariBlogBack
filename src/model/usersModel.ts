@@ -17,15 +17,23 @@ const findAll = async (): Promise<User[]> => {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
 			`SELECT id, username, email, firstname, lastname, role, 
-			 avatar, bio, bio_short, created_at, updated_at 
-			 FROM users`,
+			avatar, bio, bio_short, created_at, updated_at 
+			FROM users`,
 		);
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return rows.map((row: any) => ({
-			...row,
-			created_at: toDateString(row.created_at),
-			updated_at: toDateString(row.updated_at),
+			id: row.id,
+			username: row.username,
+			email: row.email,
+			firstname: row.firstname,
+			lastname: row.lastname,
+			role: row.role,
+			avatar: row.avatar,
+			bio: row.bio,
+			bio_short: row.bio_short,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		}));
 	} catch (err) {
 		console.error(err);
@@ -38,18 +46,27 @@ const findById = async (id: number): Promise<User | null> => {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
 			`SELECT id, username, email, firstname, lastname, role, 
-			 avatar, bio, bio_short, created_at, updated_at 
-			 FROM users 
-			 WHERE id = ?`,
+			avatar, bio, bio_short, created_at, updated_at 
+			FROM users 
+			WHERE id = ?`,
 			[id],
 		);
 
 		if (!rows[0]) return null;
 
+		const row = rows[0];
 		return {
-			...rows[0],
-			created_at: toDateString(rows[0].created_at),
-			updated_at: toDateString(rows[0].updated_at),
+			id: row.id,
+			username: row.username,
+			email: row.email,
+			firstname: row.firstname,
+			lastname: row.lastname,
+			role: row.role,
+			avatar: row.avatar,
+			bio: row.bio,
+			bio_short: row.bio_short,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
 		console.error(err);
@@ -67,10 +84,20 @@ const findByEmail = async (email: string): Promise<UserWithPassword | null> => {
 
 		if (!rows[0]) return null;
 
+		const row = rows[0];
 		return {
-			...rows[0],
-			created_at: toDateString(rows[0].created_at),
-			updated_at: toDateString(rows[0].updated_at),
+			id: row.id,
+			username: row.username,
+			email: row.email,
+			firstname: row.firstname,
+			lastname: row.lastname,
+			role: row.role,
+			avatar: row.avatar,
+			bio: row.bio,
+			bio_short: row.bio_short,
+			password: row.password,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
 		console.error(err);
@@ -90,10 +117,20 @@ const findByIdentifier = async (
 
 		if (!rows[0]) return null;
 
+		const row = rows[0];
 		return {
-			...rows[0],
-			created_at: toDateString(rows[0].created_at),
-			updated_at: toDateString(rows[0].updated_at),
+			id: row.id,
+			username: row.username,
+			email: row.email,
+			firstname: row.firstname,
+			lastname: row.lastname,
+			role: row.role,
+			avatar: row.avatar,
+			bio: row.bio,
+			bio_short: row.bio_short,
+			password: row.password,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
 		console.error(err);
@@ -160,7 +197,7 @@ const create = async (data: UserCreateData): Promise<User> => {
 
 		const [result] = await pool.query<ResultSetHeader>(
 			`INSERT INTO users (username, email, password, firstname, lastname, role, avatar, bio, bio_short)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				data.username,
 				data.email,
@@ -203,19 +240,28 @@ const findArtist = async (): Promise<User | null> => {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
 			`SELECT id, username, email, firstname, lastname, role,
-			 avatar, bio, bio_short, created_at, updated_at
-			 FROM users
-			 WHERE role = 'editor'
-			 ORDER BY id ASC
-			 LIMIT 1`,
+			avatar, bio, bio_short, created_at, updated_at
+			FROM users
+			WHERE role = 'editor'
+			ORDER BY id ASC
+			LIMIT 1`,
 		);
 
 		if (!rows[0]) return null;
 
+		const row = rows[0];
 		return {
-			...rows[0],
-			created_at: toDateString(rows[0].created_at),
-			updated_at: toDateString(rows[0].updated_at),
+			id: row.id,
+			username: row.username,
+			email: row.email,
+			firstname: row.firstname,
+			lastname: row.lastname,
+			role: row.role,
+			avatar: row.avatar,
+			bio: row.bio,
+			bio_short: row.bio_short,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
 		console.error(err);
@@ -247,7 +293,8 @@ const findByIdWithRefreshToken = async (
 			"SELECT refresh_token FROM users WHERE id = ?",
 			[id],
 		);
-		return users[0] || null;
+		if (!users[0]) return null;
+		return { refresh_token: users[0].refresh_token };
 	} catch (err) {
 		console.error(err);
 		throw err;

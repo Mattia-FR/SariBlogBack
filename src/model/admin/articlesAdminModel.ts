@@ -31,16 +31,23 @@ const findAllForAdmin = async (): Promise<Article[]> => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return articles.map((article: any) => ({
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.filter((t: any) => t.article_id === article.id)
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
-			created_at: toDateString(article.created_at),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		}));
 	} catch (err) {
 		console.error(err);
@@ -73,12 +80,20 @@ const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 		const article = rows[0];
 
 		return {
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			content: article.content,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags,
-			created_at: toDateString(article.created_at),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		};
 	} catch (err) {
 		console.error(err);
@@ -111,12 +126,20 @@ const findBySlugForAdmin = async (slug: string): Promise<Article | null> => {
 		const article = rows[0];
 
 		return {
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			content: article.content,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags,
-			created_at: toDateString(article.created_at),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		};
 	} catch (err) {
 		console.error(err);
@@ -141,18 +164,21 @@ const create = async (data: ArticleCreateData): Promise<Article> => {
 
 		return {
 			id: result.insertId,
-			...data,
+			title: data.title,
+			slug: data.slug,
+			excerpt: data.excerpt ?? null,
+			content: data.content,
 			status: data.status ?? "draft",
-			views: 0,
+			user_id: data.user_id,
 			created_at: new Date().toISOString(),
 			updated_at: new Date().toISOString(),
 			published_at: data.published_at ? toDateString(data.published_at) : null,
+			views: 0,
+			featured_image_id: data.featured_image_id ?? null,
 			imageUrl: buildImageUrl(
 				data.featured_image_id ? `/images/${data.featured_image_id}` : null,
 			),
 			tags: [],
-			excerpt: data.excerpt ?? null,
-			featured_image_id: data.featured_image_id ?? null,
 		};
 	} catch (err) {
 		console.error(err);

@@ -26,9 +26,16 @@ const findGallery = async (): Promise<Image[]> => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return images.map((image: any) => ({
-			...image,
-			created_at: toDateString(image.created_at),
-			updated_at: toDateString(image.updated_at),
+			id: image.id,
+			title: image.title,
+			description: image.description,
+			path: image.path,
+			alt_descr: image.alt_descr,
+			is_in_gallery: image.is_in_gallery,
+			user_id: image.user_id,
+			article_id: image.article_id,
+			created_at: toDateString(image.created_at) ?? "",
+			updated_at: toDateString(image.updated_at) ?? "",
 			tags: tags
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.filter((t: any) => t.image_id === image.id)
@@ -53,10 +60,18 @@ const findById = async (id: number): Promise<Image | null> => {
 
 		if (!rows[0]) return null;
 
+		const row = rows[0];
 		return {
-			...rows[0],
-			created_at: toDateString(rows[0].created_at),
-			updated_at: toDateString(rows[0].updated_at),
+			id: row.id,
+			title: row.title,
+			description: row.description,
+			path: row.path,
+			alt_descr: row.alt_descr,
+			is_in_gallery: row.is_in_gallery,
+			user_id: row.user_id,
+			article_id: row.article_id,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
 		console.error(err);
@@ -76,9 +91,16 @@ const findByArticleId = async (id: number): Promise<Image[]> => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return rows.map((row: any) => ({
-			...row,
-			created_at: toDateString(row.created_at),
-			updated_at: toDateString(row.updated_at),
+			id: row.id,
+			title: row.title,
+			description: row.description,
+			path: row.path,
+			alt_descr: row.alt_descr,
+			is_in_gallery: row.is_in_gallery,
+			user_id: row.user_id,
+			article_id: row.article_id,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		}));
 	} catch (err) {
 		console.error(err);
@@ -99,9 +121,16 @@ const findByTagId = async (id: number): Promise<Image[]> => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return rows.map((row: any) => ({
-			...row,
-			created_at: toDateString(row.created_at),
-			updated_at: toDateString(row.updated_at),
+			id: row.id,
+			title: row.title,
+			description: row.description,
+			path: row.path,
+			alt_descr: row.alt_descr,
+			is_in_gallery: row.is_in_gallery,
+			user_id: row.user_id,
+			article_id: row.article_id,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		}));
 	} catch (err) {
 		console.error(err);
@@ -130,10 +159,18 @@ const findImageOfTheDay = async (): Promise<Image | null> => {
 		);
 		const imageIndex = dayOfYear % rows.length;
 
+		const row = rows[imageIndex];
 		return {
-			...rows[imageIndex],
-			created_at: toDateString(rows[imageIndex].created_at),
-			updated_at: toDateString(rows[imageIndex].updated_at),
+			id: row.id,
+			title: row.title,
+			description: row.description,
+			path: row.path,
+			alt_descr: row.alt_descr,
+			is_in_gallery: row.is_in_gallery,
+			user_id: row.user_id,
+			article_id: row.article_id,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
 		console.error(err);

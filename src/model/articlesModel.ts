@@ -11,7 +11,7 @@ const findPublished = async (): Promise<Article[]> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [articles]: any = await pool.query(
-			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
+			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
 			FROM articles a
 			LEFT JOIN images i ON a.featured_image_id = i.id
 			WHERE a.status = 'published'
@@ -27,15 +27,23 @@ const findPublished = async (): Promise<Article[]> => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return articles.map((article: any) => ({
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.filter((t: any) => t.article_id === article.id)
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		}));
 	} catch (err) {
 		console.error(err);
@@ -68,12 +76,20 @@ const findPublishedById = async (id: number): Promise<Article | null> => {
 		const article = rows[0];
 
 		return {
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			content: article.content,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags,
-			created_at: toDateString(article.created_at),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		};
 	} catch (err) {
 		console.error(err);
@@ -106,12 +122,20 @@ const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
 		const article = rows[0];
 
 		return {
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			content: article.content,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags,
-			created_at: toDateString(article.created_at),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		};
 	} catch (err) {
 		console.error(err);
@@ -123,7 +147,7 @@ const findHomepagePreview = async (): Promise<Article[]> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [articles]: any = await pool.query(
-			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
+			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
 			FROM articles a
 			LEFT JOIN images i ON a.featured_image_id = i.id
 			WHERE a.status = 'published'
@@ -140,15 +164,23 @@ const findHomepagePreview = async (): Promise<Article[]> => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return articles.map((article: any) => ({
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.filter((t: any) => t.article_id === article.id)
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		}));
 	} catch (err) {
 		console.error(err);

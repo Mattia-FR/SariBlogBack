@@ -24,7 +24,14 @@ const findAll = async (): Promise<Image[]> => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return rows.map((row: any) => ({
-			...row,
+			id: row.id,
+			title: row.title,
+			description: row.description,
+			path: row.path,
+			alt_descr: row.alt_descr,
+			is_in_gallery: row.is_in_gallery,
+			user_id: row.user_id,
+			article_id: row.article_id,
 			created_at: toDateString(row.created_at),
 			updated_at: toDateString(row.updated_at),
 		}));

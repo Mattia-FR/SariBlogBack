@@ -9,7 +9,13 @@ const findById = async (id: number): Promise<Tag | null> => {
 		const [rows]: any = await pool.query("SELECT * FROM tags WHERE id = ?", [
 			id,
 		]);
-		return rows[0] || null;
+		if (!rows[0]) return null;
+		const row = rows[0];
+		return {
+			id: row.id,
+			name: row.name,
+			slug: row.slug,
+		};
 	} catch (err) {
 		console.error(err);
 		throw err;
@@ -25,7 +31,8 @@ const create = async (data: { name: string; slug: string }): Promise<Tag> => {
 
 		return {
 			id: result.insertId,
-			...data,
+			name: data.name,
+			slug: data.slug,
 		};
 	} catch (err) {
 		console.error(err);
