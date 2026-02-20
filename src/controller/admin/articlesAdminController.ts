@@ -10,6 +10,7 @@ import type {
 	ArticleCreateData,
 	ArticleUpdateData,
 } from "../../types/articles";
+import { buildSlug } from "../../utils/slug";
 
 // Type pour un article admin : Article + comments_count (optionnel).
 type ArticleWithCommentsCount = Article & { comments_count?: number };
@@ -68,8 +69,20 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
+		const title =
+			typeof req.body.title === "string" ? req.body.title.trim() : "";
+		if (!title) {
+			res.status(400).json({ error: "Le titre est requis" });
+			return;
+		}
+		const slugProvided =
+			req.body.slug && typeof req.body.slug === "string"
+				? req.body.slug.trim()
+				: "";
 		const articleData: ArticleCreateData = {
 			...req.body,
+			title,
+			slug: slugProvided || buildSlug(title),
 			user_id: userId,
 		};
 

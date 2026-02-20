@@ -21,7 +21,7 @@ export interface Article {
 
 export interface ArticleCreateData {
 	title: string;
-	slug: string;
+	slug?: string; // optionnel : généré depuis le titre si absent
 	content: string;
 	excerpt?: string | null;
 	status?: ArticleStatus;
