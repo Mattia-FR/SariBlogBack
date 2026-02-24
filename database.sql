@@ -11,10 +11,12 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Suppression des tables dans l'ordre inverse des dépendances
 DROP TABLE IF EXISTS articles_tags;
 DROP TABLE IF EXISTS images_tags;
+DROP TABLE IF EXISTS images_categories;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS images;
 DROP TABLE IF EXISTS articles;
+DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS tags;
 DROP TABLE IF EXISTS users;
 
@@ -167,6 +169,29 @@ CREATE TABLE images_tags (
     CONSTRAINT fk_images_tags_tag FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table: Categories (sas galerie - navigation par catégorie)
+CREATE TABLE categories (
+    id INT UNSIGNED AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    slug VARCHAR(50) NOT NULL,
+    display_order SMALLINT UNSIGNED DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_categories PRIMARY KEY (id),
+    CONSTRAINT uk_categories_name UNIQUE (name),
+    CONSTRAINT uk_categories_slug UNIQUE (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table de jonction: Images_Categories
+CREATE TABLE images_categories (
+    image_id INT UNSIGNED NOT NULL,
+    category_id INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_category (category_id),
+    CONSTRAINT pk_images_categories PRIMARY KEY (image_id, category_id),
+    CONSTRAINT fk_images_categories_image FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE,
+    CONSTRAINT fk_images_categories_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ============================================
 -- PARTIE 2 : DONNÉES DE TEST
 -- Portfolio/Blog d'Illustratrice
@@ -177,7 +202,7 @@ CREATE TABLE images_tags (
 -- ============================================
 -- Note : Les mots de passe sont hashés avec Argon2id
 -- admin: Reve42
--- sari.elliot: Serenite26
+-- sari.eliott: Serenite26
 -- marie.dubois: Aventure54
 -- pierre.martin: Equilibre10
 -- sophie.bernard: Lueur29
@@ -185,7 +210,7 @@ CREATE TABLE images_tags (
 -- emma.lucas: Infini00
 INSERT INTO users (username, email, password, firstname, lastname, role, bio, bio_short) VALUES
 ("admin", "admin@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$2eNt3aySYfYyyervEcFtiQ$6wM6Qj0SggDgPTd0Ycnl5KJYZcIjeiRg87Tm2AZTUfI", NULL, NULL, "admin", NULL, NULL),
-("sari.elliot", "sari.elliot@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wkio5piGN9BZtJAdkecJ3Q$tgbsy5tWsPXS5/bs7apwAqRGzupLzIay/rudaEMlPWU", "Sari", "Elliot", "editor", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d’atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy"),
+("sari.eliott", "sari.eliott@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wkio5piGN9BZtJAdkecJ3Q$tgbsy5tWsPXS5/bs7apwAqRGzupLzIay/rudaEMlPWU", "Sari", "Eliott", "editor", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d’atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy"),
 ("marie.dubois", "marie.dubois@example.com", "$argon2id$v=19$m=65536,t=3,p=4$24NWnxaZlg/vEexp8Ye5lA$RHylTbrzv+uTW9FU7rzbNzk39pnTieKqvTisUc0D+Sw", "Marie", "Dubois", "subscriber", NULL, NULL),
 ("pierre.martin", "pierre.martin@example.com", "$argon2id$v=19$m=65536,t=3,p=4$XQl79zwa6gatYl2hPNNg7Q$v/bP9N/f43A81EkKdc/abchYtdo4FaqFt9h9W47FF0I", "Pierre", "Martin", "subscriber", NULL, NULL),
 ("sophie.bernard", "sophie.bernard@example.com", "$argon2id$v=19$m=65536,t=3,p=4$5O77aH8f1ja8zzWfR8TY4Q$g3B66HUiuT8VNjGgQAtibiG75SXI125k/3f3bPNWBVA", "Sophie", "Bernard", "subscriber", NULL, NULL),
@@ -206,6 +231,16 @@ INSERT INTO tags (name, slug) VALUES
 ("Projet personnel", "projet-personnel"),
 ("Commande", "commande"),
 ("Croquis", "croquis");
+
+-- ============================================
+-- CATEGORIES (sas galerie - ordre d'affichage)
+-- ============================================
+INSERT INTO categories (name, slug, display_order) VALUES
+("Portraits", "portraits", 1),
+("Aquarelle", "aquarelle", 2),
+("Paysages", "paysages", 3),
+("Fantasy", "fantasy", 4),
+("Croquis & esquisses", "croquis-esquisses", 5);
 
 -- ============================================
 -- ARTICLES (10 articles)
@@ -295,6 +330,19 @@ INSERT INTO images_tags (image_id, tag_id) VALUES
 (11, 5), (11, 10),       -- Esquisse de créature -> Fantasy, Croquis
 (13, 2), (13, 3),        -- Portrait numérique -> Illustration numérique, Portrait
 (14, 1);                 -- Aquarelle botanique -> Aquarelle
+
+-- ============================================
+-- RELATIONS : Images_Categories (galerie / sas)
+-- ============================================
+INSERT INTO images_categories (image_id, category_id) VALUES
+(1, 1), (1, 2),          -- Portrait féminin aquarelle -> Portraits, Aquarelle
+(3, 3), (3, 4),          -- Paysage fantastique numérique -> Paysages, Fantasy
+(5, 4),                  -- Dragon volant -> Fantasy
+(8, 3), (8, 4),          -- Forêt enchantée -> Paysages, Fantasy
+(9, 4),                  -- Personnage fantasy -> Fantasy
+(11, 4), (11, 5),        -- Esquisse de créature -> Fantasy, Croquis & esquisses
+(13, 1),                 -- Portrait numérique -> Portraits
+(14, 2);                 -- Aquarelle botanique -> Aquarelle
 
 -- ============================================
 -- MESSAGES (10 messages de contact)

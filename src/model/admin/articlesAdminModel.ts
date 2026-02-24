@@ -6,6 +6,7 @@ import type {
 } from "../../types/articles";
 import type { ResultSetHeader } from "mysql2/promise";
 import { buildImageUrl } from "../../utils/imageUrl";
+import { buildSlug } from "../../utils/slug";
 import { toDateString } from "../../utils/dateHelpers";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
@@ -149,11 +150,12 @@ const findBySlugForAdmin = async (slug: string): Promise<Article | null> => {
 
 const create = async (data: ArticleCreateData): Promise<Article> => {
 	try {
+		const slug = data.slug ?? buildSlug(data.title);
 		const [result] = await pool.query<ResultSetHeader>(
 			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			[
 				data.title,
-				data.slug,
+				slug,
 				data.excerpt,
 				data.content,
 				data.status,
@@ -165,7 +167,7 @@ const create = async (data: ArticleCreateData): Promise<Article> => {
 		return {
 			id: result.insertId,
 			title: data.title,
-			slug: data.slug,
+			slug,
 			excerpt: data.excerpt ?? null,
 			content: data.content,
 			status: data.status ?? "draft",
