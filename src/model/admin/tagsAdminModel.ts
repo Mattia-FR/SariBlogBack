@@ -6,6 +6,24 @@ import type { ResultSetHeader } from "mysql2/promise";
 // Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Tag.
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
 
+const findAll = async (): Promise<Tag[]> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			"SELECT id, name, slug FROM tags ORDER BY name",
+		);
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		return rows.map((row: any) => ({
+			id: row.id,
+			name: row.name,
+			slug: row.slug,
+		}));
+	} catch (err) {
+		console.error(err);
+		throw err;
+	}
+};
+
 const findById = async (id: number): Promise<Tag | null> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
@@ -108,6 +126,7 @@ const countAll = async (): Promise<number> => {
 };
 
 export default {
+	findAll,
 	findById,
 	create,
 	update,

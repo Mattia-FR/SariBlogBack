@@ -8,7 +8,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon --exec ts-node index.ts"
+    "dev": "nodemon --exec ts-node index.ts",
+    "db:init": "ts-node src/db/init.ts"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

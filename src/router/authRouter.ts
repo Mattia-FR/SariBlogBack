@@ -1,7 +1,7 @@
-import { Router } from "express";
+import express, { type Router } from "express";
 import { login, logout, refresh, signup } from "../controller/authController";
 
-const router = Router();
+const router: Router = express.Router();
 
 router.post("/login", login);
 router.post("/signup", signup);

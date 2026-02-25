@@ -5,19 +5,14 @@ import {
 	add,
 	edit,
 	destroy,
-} from "../../controller/admin/imagesAdminController";
+} from "../../controller/admin/tagsAdminController";
 
 const router: Router = express.Router();
 
-// GET /admin/images — liste toutes les images
 router.get("/", browseAll);
-// GET /admin/images/:id — détail d'une image
 router.get("/:id", readById);
-// POST /admin/images — créer une image
 router.post("/", add);
-// PATCH /admin/images/:id — modifier une image
 router.patch("/:id", edit);
-// DELETE /admin/images/:id — supprimer une image
 router.delete("/:id", destroy);
 
 export default router;
