@@ -1,7 +1,3 @@
-/**
- * Controller admin des tags.
- * CRUD : liste, détail, création, mise à jour, suppression.
- */
 import type { Request, Response } from "express";
 import tagsAdminModel from "../../model/admin/tagsAdminModel";
 import type { Tag } from "../../types/tags";

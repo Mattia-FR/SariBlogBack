@@ -5,6 +5,7 @@ import imagesAdminRouter from "./imagesAdminRouter";
 import dashboardAdminRouter from "./dashboardAdminRouter";
 import commentsAdminRouter from "./commentsAdminRouter";
 import tagsAdminRouter from "./tagsAdminRouter";
+import categoriesAdminRouter from "./categoriesAdminRouter";
 
 const router: Router = express.Router();
 
@@ -15,5 +16,6 @@ router.use("/messages", messagesAdminRouter);
 router.use("/comments", commentsAdminRouter);
 router.use("/dashboard", dashboardAdminRouter);
 router.use("/tags", tagsAdminRouter);
+router.use("/categories", categoriesAdminRouter);
 
 export default router;
