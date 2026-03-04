@@ -163,9 +163,19 @@ const create = async (data: ArticleCreateData): Promise<Article> => {
 				data.featured_image_id,
 			],
 		);
+		const articleId = result.insertId;
+
+		const tagIds = Array.isArray(data.tag_ids) ? data.tag_ids : [];
+		if (tagIds.length > 0) {
+			const values = tagIds.map((tagId) => [articleId, tagId]);
+			await pool.query(
+				"INSERT INTO articles_tags (article_id, tag_id) VALUES ?",
+				[values],
+			);
+		}
 
 		return {
-			id: result.insertId,
+			id: articleId,
 			title: data.title,
 			slug,
 			excerpt: data.excerpt ?? null,
@@ -214,18 +224,30 @@ const update = async (
 			}
 		}
 
-		if (updates.length === 0) {
+		const hasTagIds = "tag_ids" in data;
+		if (updates.length === 0 && !hasTagIds) {
 			throw new Error("Aucun champ à mettre à jour");
 		}
 
-		values.push(id);
+		if (updates.length > 0) {
+			values.push(id);
+			const query = `UPDATE articles SET ${updates.join(", ")} WHERE id = ?`;
+			const [result] = await pool.query<ResultSetHeader>(query, values);
+			if (result.affectedRows === 0) {
+				return null;
+			}
+		}
 
-		const query = `UPDATE articles SET ${updates.join(", ")} WHERE id = ?`;
-
-		const [result] = await pool.query<ResultSetHeader>(query, values);
-
-		if (result.affectedRows === 0) {
-			return null;
+		if (hasTagIds) {
+			const tagIds = Array.isArray(data.tag_ids) ? data.tag_ids : [];
+			await pool.query("DELETE FROM articles_tags WHERE article_id = ?", [id]);
+			if (tagIds.length > 0) {
+				const tagValues = tagIds.map((tagId) => [id, tagId]);
+				await pool.query(
+					"INSERT INTO articles_tags (article_id, tag_id) VALUES ?",
+					[tagValues],
+				);
+			}
 		}
 
 		const updatedArticle = await findByIdForAdmin(id);

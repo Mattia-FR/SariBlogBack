@@ -138,22 +138,41 @@ const findByIdentifier = async (
 	}
 };
 
+const ALLOWED_UPDATE_FIELDS: (keyof UserUpdateData)[] = [
+	"username",
+	"email",
+	"firstname",
+	"lastname",
+	"role",
+	"avatar",
+	"bio",
+	"bio_short",
+];
+
 const updateData = async (
 	id: number,
 	data: UserUpdateData,
 ): Promise<User | null> => {
 	try {
-		const keys = Object.keys(data);
-		const values = Object.values(data);
+		const updates: string[] = [];
+		const values: (string | number | null)[] = [];
 
-		if (keys.length === 0) {
+		for (const field of ALLOWED_UPDATE_FIELDS) {
+			if (field in data) {
+				updates.push(`${field} = ?`);
+				values.push(data[field] ?? null);
+			}
+		}
+
+		if (updates.length === 0) {
 			throw new Error("Aucun champ à mettre à jour");
 		}
 
-		const fields = keys.map((k) => `${k} = ?`).join(", ");
 		values.push(id);
-
-		await pool.query(`UPDATE users SET ${fields} WHERE id = ?`, values);
+		await pool.query(
+			`UPDATE users SET ${updates.join(", ")} WHERE id = ?`,
+			values,
+		);
 		return findById(id);
 	} catch (err) {
 		console.error(err);

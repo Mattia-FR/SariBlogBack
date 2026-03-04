@@ -61,7 +61,10 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 		next();
 	} catch (err) {
 		// Token invalide, expiré, ou erreur de vérification
-		if (err instanceof jwt.JsonWebTokenError || err instanceof jwt.TokenExpiredError) {
+		if (
+			err instanceof jwt.JsonWebTokenError ||
+			err instanceof jwt.TokenExpiredError
+		) {
 			return res.sendStatus(401);
 		}
 		console.error("Erreur lors de la vérification du token :", err);

@@ -63,6 +63,21 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		const path = `/uploads/images/${req.file.filename}`;
 		const { title, description, alt_descr, is_in_gallery, article_id } =
 			req.body;
+		let tagIds: number[] = [];
+		if (Array.isArray(req.body.tag_ids)) {
+			tagIds = req.body.tag_ids
+				.map((id: unknown) => Number(id))
+				.filter((id: number) => !Number.isNaN(id));
+		} else if (typeof req.body.tag_ids === "string") {
+			try {
+				const parsed = JSON.parse(req.body.tag_ids) as unknown[];
+				tagIds = Array.isArray(parsed)
+					? parsed.map((id) => Number(id)).filter((id) => !Number.isNaN(id))
+					: [];
+			} catch {
+				// ignore invalid JSON
+			}
+		}
 		const image = await imagesAdminModel.create({
 			path,
 			user_id: userId,
@@ -73,6 +88,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 				req.body.is_in_gallery === "true" || req.body.is_in_gallery === "on",
 			article_id:
 				article_id != null && article_id !== "" ? Number(article_id) : null,
+			tag_ids: tagIds.length > 0 ? tagIds : undefined,
 		});
 		res.status(201).json(enrichWithImageUrl(image));
 	} catch (err) {
@@ -100,6 +116,14 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			data.is_in_gallery = Boolean(is_in_gallery);
 		if (article_id !== undefined)
 			data.article_id = article_id != null ? Number(article_id) : null;
+		if (req.body.tag_ids !== undefined) {
+			const tagIds = Array.isArray(req.body.tag_ids)
+				? req.body.tag_ids
+						.map((id: unknown) => Number(id))
+						.filter((id: number) => !Number.isNaN(id))
+				: [];
+			data.tag_ids = tagIds;
+		}
 
 		const image = await imagesAdminModel.update(id, data);
 		if (!image) {

@@ -30,7 +30,9 @@ function requireRole(allowedRoles: UserRole | UserRole[]) {
 		}
 
 		// 2. Normaliser les rôles autorisés en tableau
-		const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+		const rolesArray = Array.isArray(allowedRoles)
+			? allowedRoles
+			: [allowedRoles];
 
 		// 3. Vérifier que le rôle de l'utilisateur est dans la liste autorisée
 		const userRole = req.user.role as UserRole;

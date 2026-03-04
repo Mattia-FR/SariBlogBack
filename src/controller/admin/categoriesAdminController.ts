@@ -1,7 +1,11 @@
 import type { Request, Response } from "express";
 import categoriesAdminModel from "../../model/admin/categoriesAdminModel";
 import categoriesModel from "../../model/categoriesModel";
-import type { Category, CategoryCreateData, CategoryUpdateData } from "../../types/categories";
+import type {
+	Category,
+	CategoryCreateData,
+	CategoryUpdateData,
+} from "../../types/categories";
 import { buildSlug } from "../../utils/slug";
 
 // Liste toutes les catégories (ordre d'affichage).
@@ -11,8 +15,13 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const categories: Category[] = await categoriesModel.findAll();
 		res.status(200).json(categories);
 	} catch (err) {
-		console.error("Erreur lors de la récupération des catégories (admin) :", err);
-		res.status(500).json({ error: "Erreur lors de la récupération des catégories" });
+		console.error(
+			"Erreur lors de la récupération des catégories (admin) :",
+			err,
+		);
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la récupération des catégories" });
 	}
 };
 
@@ -25,7 +34,8 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
-		const category: Category | null = await categoriesAdminModel.findById(categoryId);
+		const category: Category | null =
+			await categoriesAdminModel.findById(categoryId);
 		if (!category) {
 			res.status(404).json({ error: "Catégorie non trouvée" });
 			return;
@@ -36,7 +46,9 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de la catégorie par ID (admin) :",
 			err,
 		);
-		res.status(500).json({ error: "Erreur lors de la récupération de la catégorie" });
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la récupération de la catégorie" });
 	}
 };
 
@@ -55,7 +67,8 @@ const add = async (req: Request, res: Response): Promise<void> => {
 				: "";
 		const slug = slugProvided || buildSlug(name);
 		const display_order =
-			typeof req.body.display_order === "number" && Number.isInteger(req.body.display_order)
+			typeof req.body.display_order === "number" &&
+			Number.isInteger(req.body.display_order)
 				? req.body.display_order
 				: 0;
 
@@ -72,7 +85,9 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		res.status(500).json({ error: "Erreur lors de la création de la catégorie" });
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la création de la catégorie" });
 	}
 };
 
@@ -97,26 +112,36 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			if (trimmed) data.slug = trimmed;
 		}
 		if (display_order !== undefined) {
-			if (typeof display_order === "number" && Number.isInteger(display_order)) {
+			if (
+				typeof display_order === "number" &&
+				Number.isInteger(display_order)
+			) {
 				data.display_order = display_order;
 			}
 		}
 
 		if (Object.keys(data).length === 0) {
 			res.status(400).json({
-				error: "Au moins un champ (name, slug ou display_order) doit être fourni et valide",
+				error:
+					"Au moins un champ (name, slug ou display_order) doit être fourni et valide",
 			});
 			return;
 		}
 
-		const updatedCategory: Category | null = await categoriesAdminModel.update(categoryId, data);
+		const updatedCategory: Category | null = await categoriesAdminModel.update(
+			categoryId,
+			data,
+		);
 		if (!updatedCategory) {
 			res.status(404).json({ error: "Catégorie non trouvée" });
 			return;
 		}
 		res.status(200).json(updatedCategory);
 	} catch (err) {
-		console.error("Erreur lors de la mise à jour de la catégorie (admin) :", err);
+		console.error(
+			"Erreur lors de la mise à jour de la catégorie (admin) :",
+			err,
+		);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
 			res.status(409).json({
@@ -125,7 +150,9 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		res.status(500).json({ error: "Erreur lors de la mise à jour de la catégorie" });
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la mise à jour de la catégorie" });
 	}
 };
 
@@ -145,8 +172,13 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.sendStatus(204);
 	} catch (err) {
-		console.error("Erreur lors de la suppression de la catégorie (admin) :", err);
-		res.status(500).json({ error: "Erreur lors de la suppression de la catégorie" });
+		console.error(
+			"Erreur lors de la suppression de la catégorie (admin) :",
+			err,
+		);
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la suppression de la catégorie" });
 	}
 };
 

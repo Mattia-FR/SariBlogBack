@@ -9,8 +9,11 @@ import type {
 	Article,
 	ArticleCreateData,
 	ArticleUpdateData,
+	ArticleStatus,
 } from "../../types/articles";
 import { buildSlug } from "../../utils/slug";
+
+const VALID_STATUSES: ArticleStatus[] = ["draft", "published", "archived"];
 
 // Type pour un article admin : Article + comments_count (optionnel).
 type ArticleWithCommentsCount = Article & { comments_count?: number };
@@ -79,11 +82,39 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			req.body.slug && typeof req.body.slug === "string"
 				? req.body.slug.trim()
 				: "";
+		const tagIds = Array.isArray(req.body.tag_ids)
+			? req.body.tag_ids
+					.map((id: unknown) => Number(id))
+					.filter((id: number) => !Number.isNaN(id))
+			: [];
+		const rawStatus = req.body.status;
+		const status: ArticleCreateData["status"] =
+			typeof rawStatus === "string" &&
+			VALID_STATUSES.includes(rawStatus as ArticleStatus)
+				? (rawStatus as ArticleStatus)
+				: "draft";
+		const rawFeatured = req.body.featured_image_id;
+		const featured_image_id: number | null =
+			rawFeatured != null && rawFeatured !== ""
+				? Number(rawFeatured) || null
+				: null;
+		const published_at =
+			req.body.published_at != null && req.body.published_at !== ""
+				? String(req.body.published_at)
+				: null;
 		const articleData: ArticleCreateData = {
-			...req.body,
 			title,
 			slug: slugProvided || buildSlug(title),
+			content: typeof req.body.content === "string" ? req.body.content : "",
+			excerpt:
+				req.body.excerpt != null && req.body.excerpt !== ""
+					? String(req.body.excerpt).trim()
+					: null,
+			status,
 			user_id: userId,
+			featured_image_id,
+			published_at,
+			tag_ids: tagIds,
 		};
 
 		const newArticle: ArticleWithCommentsCount =
@@ -110,7 +141,15 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
-		const articleData: ArticleUpdateData = req.body;
+		const tagIds = Array.isArray(req.body.tag_ids)
+			? req.body.tag_ids
+					.map((id: unknown) => Number(id))
+					.filter((id: number) => !Number.isNaN(id))
+			: undefined;
+		const articleData: ArticleUpdateData = {
+			...req.body,
+			tag_ids: tagIds,
+		};
 		const updatedArticle: ArticleWithCommentsCount | null =
 			await articlesAdminModel.update(articleId, articleData);
 

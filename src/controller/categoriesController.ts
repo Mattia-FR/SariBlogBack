@@ -10,7 +10,9 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		res.status(200).json(categories);
 	} catch (err) {
 		console.error("Erreur lors de la récupération des catégories :", err);
-		res.status(500).json({ error: "Erreur lors de la récupération des catégories" });
+		res
+			.status(500)
+			.json({ error: "Erreur lors de la récupération des catégories" });
 	}
 };
 

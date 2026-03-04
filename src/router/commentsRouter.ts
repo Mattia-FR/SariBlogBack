@@ -1,6 +1,7 @@
 import express, { type Router } from "express";
 import { readByArticleId, create } from "../controller/commentsController";
 import { requireAuth } from "../middleware/authMiddleware";
+import { commentsLimiter } from "../config/rateLimit";
 
 const router: Router = express.Router();
 
@@ -8,6 +9,6 @@ const router: Router = express.Router();
 router.get("/article/:articleId", readByArticleId);
 
 // Créer un commentaire (authentification requise)
-router.post("/", requireAuth, create);
+router.post("/", commentsLimiter, requireAuth, create);
 
 export default router;

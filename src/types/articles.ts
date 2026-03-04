@@ -28,6 +28,7 @@ export interface ArticleCreateData {
 	user_id: number;
 	featured_image_id?: number | null;
 	published_at?: string | null;
+	tag_ids?: number[];
 }
 
 export interface ArticleUpdateData {
@@ -38,4 +39,5 @@ export interface ArticleUpdateData {
 	status?: ArticleStatus;
 	featured_image_id?: number | null;
 	published_at?: string | null;
+	tag_ids?: number[];
 }

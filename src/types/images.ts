@@ -23,6 +23,7 @@ export interface ImageCreateData {
 	alt_descr?: string | null;
 	is_in_gallery?: boolean;
 	article_id?: number | null;
+	tag_ids?: number[];
 }
 
 /** Données partielles pour mettre à jour une image. */
@@ -33,4 +34,5 @@ export interface ImageUpdateData {
 	alt_descr?: string | null;
 	is_in_gallery?: boolean;
 	article_id?: number | null;
+	tag_ids?: number[];
 }
