@@ -99,6 +99,28 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
+// Récupère les images de la galerie associées à une catégorie par ID. Retourne Image[] + imageUrl.
+// GET /images/category/:categoryId
+const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const categoryId: number = Number.parseInt(req.params.categoryId, 10);
+		if (Number.isNaN(categoryId)) {
+			res.status(400).json({ error: "ID de catégorie invalide" });
+			return;
+		}
+
+		const images: Image[] = await imagesModel.findByCategoryId(categoryId);
+		const enrichedImages = images.map(enrichWithImageUrl);
+		res.status(200).json(enrichedImages);
+	} catch (err) {
+		console.error(
+			"Erreur lors de la récupération des images par ID de catégorie :",
+			err,
+		);
+		res.sendStatus(500);
+	}
+};
+
 // Récupère l'image du jour (galerie, déterministe par jour de l'année). Retourne Image + imageUrl.
 // GET /images/image-of-the-day
 const readImageOfTheDay = async (
@@ -128,5 +150,6 @@ export {
 	readById,
 	readByArticleId,
 	readByTag,
+	readByCategoryId,
 	readImageOfTheDay,
 };

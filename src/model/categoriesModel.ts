@@ -25,4 +25,26 @@ const findAll = async (): Promise<Category[]> => {
 	}
 };
 
-export default { findAll };
+const findBySlug = async (slug: string): Promise<Category | null> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			"SELECT id, name, slug, display_order, created_at FROM categories WHERE slug = ?",
+			[slug],
+		);
+		if (!rows[0]) return null;
+		const row = rows[0];
+		return {
+			id: row.id,
+			name: row.name,
+			slug: row.slug,
+			display_order: row.display_order,
+			created_at: row.created_at,
+		};
+	} catch (err) {
+		console.error(err);
+		throw err;
+	}
+};
+
+export default { findAll, findBySlug };
