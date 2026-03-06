@@ -1,23 +1,32 @@
 import type { Request, Response, NextFunction } from "express";
+import { ZodError } from "zod";
 
 export function errorHandler(
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	err: any,
+	err: unknown,
 	_req: Request,
 	res: Response,
 	_next: NextFunction,
 ) {
 	console.error("Erreur:", err);
 
-	if (err.code === "LIMIT_FILE_SIZE") {
+	if (err instanceof ZodError) {
+		return res.status(400).json({
+			error: "Données invalides",
+			details: err.issues,
+		});
+	}
+
+	const error = err as { code?: string };
+
+	if (error.code === "LIMIT_FILE_SIZE") {
 		return res.status(400).json({ error: "Fichier trop volumineux" });
 	}
 
-	if (err.code === "LIMIT_UNEXPECTED_FILE") {
+	if (error.code === "LIMIT_UNEXPECTED_FILE") {
 		return res.status(400).json({ error: "Fichier non autorisé" });
 	}
 
-	if (err.code === "LIMIT_FILE_COUNT") {
+	if (error.code === "LIMIT_FILE_COUNT") {
 		return res.status(400).json({ error: "Trop de fichiers envoyés" });
 	}
 

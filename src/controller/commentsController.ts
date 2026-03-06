@@ -32,15 +32,7 @@ const create = async (req: Request, res: Response): Promise<void> => {
 			res.sendStatus(401);
 			return;
 		}
-		const articleId = Number.parseInt(req.body.article_id, 10);
-		const text = typeof req.body.text === "string" ? req.body.text.trim() : "";
-		if (Number.isNaN(articleId) || !text) {
-			res.status(400).json({
-				error:
-					"Données invalides : article_id (nombre) et text (non vide) requis",
-			});
-			return;
-		}
+		const { article_id: articleId, text } = req.body;
 		const created = await commentsModel.create({
 			text,
 			user_id: req.user.userId,

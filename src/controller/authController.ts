@@ -9,9 +9,6 @@ import { argon2Options } from "../config/argon2";
 export async function login(req: Request, res: Response) {
 	try {
 		const { identifier, password } = req.body;
-		if (!identifier || !password) {
-			return res.sendStatus(400);
-		}
 
 		// Vérifier les secrets AVANT toute opération
 		const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
@@ -137,13 +134,6 @@ export async function signup(req: Request, res: Response) {
 	try {
 		const { username, email, password, firstname, lastname } = req.body;
 
-		// Validation des champs obligatoires
-		if (!username || !email || !password) {
-			return res
-				.status(400)
-				.json({ error: "Username, email et password sont requis" });
-		}
-
 		// Vérifier les secrets AVANT toute opération
 		const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
 		const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
@@ -161,8 +151,8 @@ export async function signup(req: Request, res: Response) {
 				username,
 				email,
 				password: hashedPassword,
-				firstname: firstname || null,
-				lastname: lastname || null,
+				firstname: firstname?.trim() || null,
+				lastname: lastname?.trim() || null,
 				role: "subscriber", // Par défaut, nouveau compte = subscriber
 			});
 

@@ -22,12 +22,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 				return;
 			}
 
-			// Validation des champs requis pour utilisateur connecté
 			const { subject, text } = req.body;
-			if (!subject || !text) {
-				res.status(400).json({ error: "Le sujet et le message sont requis" });
-				return;
-			}
 
 			// Utiliser les données de l'utilisateur connecté
 			messageData = {
@@ -43,12 +38,6 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		} else {
 			// Cas 2 : Visiteur non connecté (formulaire classique)
 			const { firstname, lastname, email, subject, text } = req.body;
-
-			// Validation basique pour visiteur
-			if (!firstname || !lastname || !email || !subject || !text) {
-				res.status(400).json({ error: "Tous les champs sont requis" });
-				return;
-			}
 
 			messageData = {
 				firstname,
