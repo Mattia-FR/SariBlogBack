@@ -1,7 +1,7 @@
-import express from "express";
+import express, { type Router } from "express";
 import * as dashboardAdminController from "../../controller/admin/dashboardAdminController";
 
-const router = express.Router();
+const router: Router = express.Router();
 
 router.get("/stats", dashboardAdminController.getStats);
 

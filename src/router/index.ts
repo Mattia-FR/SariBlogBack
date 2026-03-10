@@ -9,6 +9,7 @@ import authRouter from "./authRouter";
 import adminRouter from "./admin";
 import { requireAuth } from "../middleware/authMiddleware";
 import { requireEditor } from "../middleware/roleMiddleware";
+import categoriesRouter from "./categoriesRouter";
 
 const router: Router = express.Router();
 
@@ -20,6 +21,7 @@ router.use("/tags", tagsRouter);
 router.use("/comments", commentsRouter);
 router.use("/messages", messagesRouter);
 router.use("/auth", authRouter);
+router.use("/categories", categoriesRouter);
 
 // Routes privées
 router.use("/admin", requireAuth, requireEditor, adminRouter);

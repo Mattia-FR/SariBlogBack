@@ -4,6 +4,7 @@ import {
 	readById,
 	readByArticleId,
 	readByTag,
+	readByCategoryId,
 	readImageOfTheDay,
 } from "../controller/imagesController";
 
@@ -20,6 +21,9 @@ router.get("/article/:articleId", readByArticleId);
 
 // Route pour récupérer les images par tag (public)
 router.get("/tag/:tagId", readByTag);
+
+// Route pour récupérer les images de la galerie par catégorie (public)
+router.get("/category/:categoryId", readByCategoryId);
 
 // Route pour récupérer une image par son ID (public)
 // ⚠️ Doit être en dernier car /:id est générique et intercepterait /article/... et /tag/...

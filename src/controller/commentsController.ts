@@ -1,7 +1,5 @@
 import type { Request, Response } from "express";
-
 import commentsModel from "../model/commentsModel";
-
 import type { Comment } from "../types/comments";
 
 // Récupère tous les commentaires approuvés associés à un article par son ID (public)
@@ -26,4 +24,30 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { readByArticleId };
+// Crée un commentaire (visiteur anonyme). Statut initial : pending, modération via admin.
+// POST /comments
+const create = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const {
+			article_id: articleId,
+			text,
+			firstname,
+			lastname,
+			email,
+		} = req.body;
+		const created = await commentsModel.create({
+			text,
+			article_id: articleId,
+			user_id: null,
+			firstname: firstname?.trim() ?? null,
+			lastname: lastname?.trim() ?? null,
+			email: email?.trim() ?? null,
+		});
+		res.status(201).json(created);
+	} catch (err) {
+		console.error("Erreur lors de la création du commentaire :", err);
+		res.sendStatus(500);
+	}
+};
+
+export { readByArticleId, create };

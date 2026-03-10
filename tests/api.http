@@ -53,22 +53,10 @@ Content-Type: application/json
   "password": "votre_mot_de_passe"
 }
 
-### 2. Inscription (signup)
-POST {{baseUrl}}/auth/signup
-Content-Type: application/json
-
-{
-  "username": "nouveau_user",
-  "email": "nouveau@example.com",
-  "password": "MotDePasse123!",
-  "firstname": "Jean",
-  "lastname": "Dupont"
-}
-
-### 3. Rafraîchir l'access token (utilise le cookie refreshToken)
+### 2. Rafraîchir l'access token (utilise le cookie refreshToken)
 POST {{baseUrl}}/auth/refresh
 
-### 4. Déconnexion (logout) - invalide le refresh token et supprime le cookie
+### 3. Déconnexion (logout) - invalide le refresh token et supprime le cookie
 POST {{baseUrl}}/auth/logout
 
 ###############################################################################

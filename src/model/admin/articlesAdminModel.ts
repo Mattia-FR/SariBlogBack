@@ -6,6 +6,7 @@ import type {
 } from "../../types/articles";
 import type { ResultSetHeader } from "mysql2/promise";
 import { buildImageUrl } from "../../utils/imageUrl";
+import { buildSlug } from "../../utils/slug";
 import { toDateString } from "../../utils/dateHelpers";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
@@ -31,16 +32,23 @@ const findAllForAdmin = async (): Promise<Article[]> => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return articles.map((article: any) => ({
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.filter((t: any) => t.article_id === article.id)
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
-			created_at: toDateString(article.created_at),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		}));
 	} catch (err) {
 		console.error(err);
@@ -73,12 +81,20 @@ const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 		const article = rows[0];
 
 		return {
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			content: article.content,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags,
-			created_at: toDateString(article.created_at),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		};
 	} catch (err) {
 		console.error(err);
@@ -111,12 +127,20 @@ const findBySlugForAdmin = async (slug: string): Promise<Article | null> => {
 		const article = rows[0];
 
 		return {
-			...article,
+			id: article.id,
+			title: article.title,
+			slug: article.slug,
+			excerpt: article.excerpt,
+			content: article.content,
+			status: article.status,
+			user_id: article.user_id,
+			created_at: toDateString(article.created_at) ?? "",
+			updated_at: toDateString(article.updated_at) ?? "",
+			published_at: toDateString(article.published_at) ?? null,
+			views: article.views,
+			featured_image_id: article.featured_image_id,
 			imageUrl: buildImageUrl(article.image_path),
 			tags: tags,
-			created_at: toDateString(article.created_at),
-			updated_at: toDateString(article.updated_at),
-			published_at: toDateString(article.published_at),
 		};
 	} catch (err) {
 		console.error(err);
@@ -126,11 +150,12 @@ const findBySlugForAdmin = async (slug: string): Promise<Article | null> => {
 
 const create = async (data: ArticleCreateData): Promise<Article> => {
 	try {
+		const slug = data.slug ?? buildSlug(data.title);
 		const [result] = await pool.query<ResultSetHeader>(
 			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			[
 				data.title,
-				data.slug,
+				slug,
 				data.excerpt,
 				data.content,
 				data.status,
@@ -138,21 +163,34 @@ const create = async (data: ArticleCreateData): Promise<Article> => {
 				data.featured_image_id,
 			],
 		);
+		const articleId = result.insertId;
+
+		const tagIds = Array.isArray(data.tag_ids) ? data.tag_ids : [];
+		if (tagIds.length > 0) {
+			const values = tagIds.map((tagId) => [articleId, tagId]);
+			await pool.query(
+				"INSERT INTO articles_tags (article_id, tag_id) VALUES ?",
+				[values],
+			);
+		}
 
 		return {
-			id: result.insertId,
-			...data,
+			id: articleId,
+			title: data.title,
+			slug,
+			excerpt: data.excerpt ?? null,
+			content: data.content,
 			status: data.status ?? "draft",
-			views: 0,
+			user_id: data.user_id,
 			created_at: new Date().toISOString(),
 			updated_at: new Date().toISOString(),
 			published_at: data.published_at ? toDateString(data.published_at) : null,
+			views: 0,
+			featured_image_id: data.featured_image_id ?? null,
 			imageUrl: buildImageUrl(
 				data.featured_image_id ? `/images/${data.featured_image_id}` : null,
 			),
 			tags: [],
-			excerpt: data.excerpt ?? null,
-			featured_image_id: data.featured_image_id ?? null,
 		};
 	} catch (err) {
 		console.error(err);
@@ -186,18 +224,30 @@ const update = async (
 			}
 		}
 
-		if (updates.length === 0) {
+		const hasTagIds = "tag_ids" in data;
+		if (updates.length === 0 && !hasTagIds) {
 			throw new Error("Aucun champ à mettre à jour");
 		}
 
-		values.push(id);
+		if (updates.length > 0) {
+			values.push(id);
+			const query = `UPDATE articles SET ${updates.join(", ")} WHERE id = ?`;
+			const [result] = await pool.query<ResultSetHeader>(query, values);
+			if (result.affectedRows === 0) {
+				return null;
+			}
+		}
 
-		const query = `UPDATE articles SET ${updates.join(", ")} WHERE id = ?`;
-
-		const [result] = await pool.query<ResultSetHeader>(query, values);
-
-		if (result.affectedRows === 0) {
-			return null;
+		if (hasTagIds) {
+			const tagIds = Array.isArray(data.tag_ids) ? data.tag_ids : [];
+			await pool.query("DELETE FROM articles_tags WHERE article_id = ?", [id]);
+			if (tagIds.length > 0) {
+				const tagValues = tagIds.map((tagId) => [id, tagId]);
+				await pool.query(
+					"INSERT INTO articles_tags (article_id, tag_id) VALUES ?",
+					[tagValues],
+				);
+			}
 		}
 
 		const updatedArticle = await findByIdForAdmin(id);

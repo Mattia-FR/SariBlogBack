@@ -21,13 +21,14 @@ export interface Article {
 
 export interface ArticleCreateData {
 	title: string;
-	slug: string;
+	slug?: string; // optionnel : généré depuis le titre si absent
 	content: string;
 	excerpt?: string | null;
 	status?: ArticleStatus;
 	user_id: number;
 	featured_image_id?: number | null;
 	published_at?: string | null;
+	tag_ids?: number[];
 }
 
 export interface ArticleUpdateData {
@@ -38,4 +39,5 @@ export interface ArticleUpdateData {
 	status?: ArticleStatus;
 	featured_image_id?: number | null;
 	published_at?: string | null;
+	tag_ids?: number[];
 }

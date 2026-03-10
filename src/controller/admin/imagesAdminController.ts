@@ -1,8 +1,3 @@
-/**
- * Controller admin des images.
- * CRUD simple : liste toutes les images, détail par ID, création, mise à jour, suppression.
- * Utilise imagesAdminModel. Enrichit les réponses avec imageUrl.
- */
 import type { Request, Response } from "express";
 import imagesAdminModel from "../../model/admin/imagesAdminModel";
 import type { Image, ImageUpdateData } from "../../types/images";
@@ -61,20 +56,39 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			res.status(401).json({ error: "Non authentifié" });
 			return;
 		}
-		const { path, title, description, alt_descr, is_in_gallery, article_id } =
-			req.body;
-		if (!path || typeof path !== "string" || path.trim() === "") {
-			res.status(400).json({ error: "Le champ path est requis" });
+		if (!req.file) {
+			res.status(400).json({ error: "Fichier image requis" });
 			return;
 		}
+		const path = `/uploads/images/${req.file.filename}`;
+		const { title, description, alt_descr, is_in_gallery, article_id } =
+			req.body;
+		let tagIds: number[] = [];
+		if (Array.isArray(req.body.tag_ids)) {
+			tagIds = req.body.tag_ids
+				.map((id: unknown) => Number(id))
+				.filter((id: number) => !Number.isNaN(id));
+		} else if (typeof req.body.tag_ids === "string") {
+			try {
+				const parsed = JSON.parse(req.body.tag_ids) as unknown[];
+				tagIds = Array.isArray(parsed)
+					? parsed.map((id) => Number(id)).filter((id) => !Number.isNaN(id))
+					: [];
+			} catch {
+				// ignore invalid JSON
+			}
+		}
 		const image = await imagesAdminModel.create({
-			path: path.trim(),
+			path,
 			user_id: userId,
-			title: title ?? null,
-			description: description ?? null,
-			alt_descr: alt_descr ?? null,
-			is_in_gallery: Boolean(is_in_gallery),
-			article_id: article_id != null ? Number(article_id) : null,
+			title: title?.trim() || null,
+			description: description?.trim() || null,
+			alt_descr: alt_descr?.trim() || null,
+			is_in_gallery:
+				req.body.is_in_gallery === "true" || req.body.is_in_gallery === "on",
+			article_id:
+				article_id != null && article_id !== "" ? Number(article_id) : null,
+			tag_ids: tagIds.length > 0 ? tagIds : undefined,
 		});
 		res.status(201).json(enrichWithImageUrl(image));
 	} catch (err) {
@@ -83,7 +97,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Met à jour une image. Body : champs optionnels (title, description, path, alt_descr, is_in_gallery, article_id).
+// Met à jour une image. Body : champs optionnels (title, description, alt_descr, is_in_gallery, article_id). Le fichier image n'est pas modifié.
 // PATCH /admin/images/:id
 const edit = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -93,16 +107,23 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 		const data: ImageUpdateData = {};
-		const { title, description, path, alt_descr, is_in_gallery, article_id } =
+		const { title, description, alt_descr, is_in_gallery, article_id } =
 			req.body;
 		if (title !== undefined) data.title = title ?? null;
 		if (description !== undefined) data.description = description ?? null;
-		if (path !== undefined) data.path = path;
 		if (alt_descr !== undefined) data.alt_descr = alt_descr ?? null;
 		if (is_in_gallery !== undefined)
 			data.is_in_gallery = Boolean(is_in_gallery);
 		if (article_id !== undefined)
 			data.article_id = article_id != null ? Number(article_id) : null;
+		if (req.body.tag_ids !== undefined) {
+			const tagIds = Array.isArray(req.body.tag_ids)
+				? req.body.tag_ids
+						.map((id: unknown) => Number(id))
+						.filter((id: number) => !Number.isNaN(id))
+				: [];
+			data.tag_ids = tagIds;
+		}
 
 		const image = await imagesAdminModel.update(id, data);
 		if (!image) {

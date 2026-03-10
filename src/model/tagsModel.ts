@@ -15,10 +15,17 @@ function rowToTag(row: any): Tag {
 	};
 }
 
+// Liste les tags effectivement utilisés (au moins un article ou une image).
 const findAll = async (): Promise<Tag[]> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query("SELECT id, name, slug FROM tags");
+		const [rows]: any = await pool.query(
+			`SELECT t.id, t.name, t.slug
+			FROM tags t
+			WHERE EXISTS (SELECT 1 FROM articles_tags at WHERE at.tag_id = t.id)
+			   OR EXISTS (SELECT 1 FROM images_tags it WHERE it.tag_id = t.id)
+			ORDER BY t.name`,
+		);
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return rows.map((row: any) => rowToTag(row));
 	} catch (err) {

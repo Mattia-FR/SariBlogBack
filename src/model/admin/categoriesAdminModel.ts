@@ -1,41 +1,30 @@
 import pool from "../db";
-import type { Tag } from "../../types/tags";
+import type {
+	Category,
+	CategoryCreateData,
+	CategoryUpdateData,
+} from "../../types/categories";
 import type { ResultSetHeader } from "mysql2/promise";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
-// Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Tag.
+// Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Category.
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
 
-const findAll = async (): Promise<Tag[]> => {
+const findById = async (id: number): Promise<Category | null> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			"SELECT id, name, slug FROM tags ORDER BY name",
+			"SELECT * FROM categories WHERE id = ?",
+			[id],
 		);
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		return rows.map((row: any) => ({
-			id: row.id,
-			name: row.name,
-			slug: row.slug,
-		}));
-	} catch (err) {
-		console.error(err);
-		throw err;
-	}
-};
-
-const findById = async (id: number): Promise<Tag | null> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query("SELECT * FROM tags WHERE id = ?", [
-			id,
-		]);
 		if (!rows[0]) return null;
 		const row = rows[0];
 		return {
 			id: row.id,
 			name: row.name,
 			slug: row.slug,
+			display_order: row.display_order,
+			created_at: row.created_at,
 		};
 	} catch (err) {
 		console.error(err);
@@ -43,17 +32,16 @@ const findById = async (id: number): Promise<Tag | null> => {
 	}
 };
 
-const create = async (data: { name: string; slug: string }): Promise<Tag> => {
+const create = async (data: CategoryCreateData): Promise<Category> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
-			"INSERT INTO tags (name, slug) VALUES (?, ?)",
-			[data.name, data.slug],
+			"INSERT INTO categories (name, slug, display_order) VALUES (?, ?, ?)",
+			[data.name, data.slug, data.display_order],
 		);
-
 		return {
 			id: result.insertId,
-			name: data.name,
-			slug: data.slug,
+			...data,
+			created_at: new Date().toISOString(),
 		};
 	} catch (err) {
 		console.error(err);
@@ -63,20 +51,24 @@ const create = async (data: { name: string; slug: string }): Promise<Tag> => {
 
 const update = async (
 	id: number,
-	data: { name?: string; slug?: string },
-): Promise<Tag | null> => {
+	data: CategoryUpdateData,
+): Promise<Category | null> => {
 	try {
 		const updates: string[] = [];
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const values: any[] = [];
 
-		if (data.name) {
+		if (data.name !== undefined) {
 			updates.push("name = ?");
 			values.push(data.name);
 		}
-		if (data.slug) {
+		if (data.slug !== undefined) {
 			updates.push("slug = ?");
 			values.push(data.slug);
+		}
+		if (data.display_order !== undefined) {
+			updates.push("display_order = ?");
+			values.push(data.display_order);
 		}
 
 		if (updates.length === 0) {
@@ -86,14 +78,11 @@ const update = async (
 		values.push(id);
 
 		const [result] = await pool.query<ResultSetHeader>(
-			`UPDATE tags SET ${updates.join(", ")} WHERE id = ?`,
+			`UPDATE categories SET ${updates.join(", ")} WHERE id = ?`,
 			values,
 		);
 
-		if (result.affectedRows === 0) {
-			return null;
-		}
-
+		if (result.affectedRows === 0) return null;
 		return await findById(id);
 	} catch (err) {
 		console.error(err);
@@ -104,7 +93,7 @@ const update = async (
 const deleteOne = async (id: number): Promise<boolean> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
-			"DELETE FROM tags WHERE id = ?",
+			"DELETE FROM categories WHERE id = ?",
 			[id],
 		);
 		return result.affectedRows > 0;
@@ -114,22 +103,4 @@ const deleteOne = async (id: number): Promise<boolean> => {
 	}
 };
 
-const countAll = async (): Promise<number> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query("SELECT COUNT(*) as total FROM tags");
-		return rows[0].total;
-	} catch (err) {
-		console.error(err);
-		throw err;
-	}
-};
-
-export default {
-	findAll,
-	findById,
-	create,
-	update,
-	deleteOne,
-	countAll,
-};
+export default { findById, create, update, deleteOne };

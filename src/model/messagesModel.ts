@@ -5,6 +5,10 @@ import messagesAdminModel from "./admin/messagesAdminModel";
 
 const { findById } = messagesAdminModel;
 
+// J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
+// Le message renvoyé après création passe par messagesAdminModel.findById, qui applique toDateString ; le frontend reçoit donc un objet conforme à l'interface Message.
+// Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
+
 const create = async (data: MessageCreateData): Promise<Message> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(

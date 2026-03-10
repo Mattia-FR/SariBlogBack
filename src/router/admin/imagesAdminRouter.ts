@@ -6,20 +6,19 @@ import {
 	edit,
 	destroy,
 } from "../../controller/admin/imagesAdminController";
-import { requireAuth } from "../../middleware/authMiddleware";
-import { requireEditor } from "../../middleware/roleMiddleware";
+import { uploadImage } from "../../config/multer";
 
 const router: Router = express.Router();
 
 // GET /admin/images — liste toutes les images
-router.get("/", requireAuth, requireEditor, browseAll);
+router.get("/", browseAll);
 // GET /admin/images/:id — détail d'une image
-router.get("/:id", requireAuth, requireEditor, readById);
+router.get("/:id", readById);
 // POST /admin/images — créer une image
-router.post("/", requireAuth, requireEditor, add);
-// PATCH /admin/images/:id — modifier une image
-router.patch("/:id", requireAuth, requireEditor, edit);
+router.post("/", uploadImage.single("image"), add);
+// PATCH /admin/images/:id — modifier une image (métadonnées uniquement, pas de nouvel upload)
+router.patch("/:id", edit);
 // DELETE /admin/images/:id — supprimer une image
-router.delete("/:id", requireAuth, requireEditor, destroy);
+router.delete("/:id", destroy);
 
 export default router;
