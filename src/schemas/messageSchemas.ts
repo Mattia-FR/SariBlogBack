@@ -11,12 +11,3 @@ export const messageVisitorSchema = z.object({
 		.min(1, "Le message est requis")
 		.max(5000, "Le message ne doit pas dépasser 5000 caractères"),
 });
-
-export const messageConnectedSchema = z.object({
-	subject: z.string().trim().min(1, "Le sujet est requis"),
-	text: z
-		.string()
-		.trim()
-		.min(1, "Le message est requis")
-		.max(5000, "Le message ne doit pas dépasser 5000 caractères"),
-});

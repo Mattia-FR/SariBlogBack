@@ -24,19 +24,24 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Crée un commentaire (utilisateur connecté). Statut initial : pending.
+// Crée un commentaire (visiteur anonyme). Statut initial : pending, modération via admin.
 // POST /comments
 const create = async (req: Request, res: Response): Promise<void> => {
 	try {
-		if (!req.user?.userId) {
-			res.sendStatus(401);
-			return;
-		}
-		const { article_id: articleId, text } = req.body;
+		const {
+			article_id: articleId,
+			text,
+			firstname,
+			lastname,
+			email,
+		} = req.body;
 		const created = await commentsModel.create({
 			text,
-			user_id: req.user.userId,
 			article_id: articleId,
+			user_id: null,
+			firstname: firstname?.trim() ?? null,
+			lastname: lastname?.trim() ?? null,
+			email: email?.trim() ?? null,
 		});
 		res.status(201).json(created);
 	} catch (err) {

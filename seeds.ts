@@ -2,25 +2,15 @@ import type { Connection } from "mysql2/promise";
 
 export async function runSeeds(connection: Connection): Promise<void> {
 	// ============================================
-	// USERS (1 admin + 1 éditeur + 5 subscribers)
+	// USERS (1 admin + 1 éditeur)
 	// Mots de passe hashés avec Argon2id :
 	//   admin        → Reve42
 	//   sari.eliott  → Serenite26
-	//   marie.dubois → Aventure54
-	//   pierre.martin → Equilibre10
-	//   sophie.bernard → Lueur29
-	//   lucas.roux   → Echo77
-	//   emma.lucas   → Infini00
 	// ============================================
 	await connection.query(`
     INSERT INTO users (username, email, password, firstname, lastname, role, bio, bio_short) VALUES
     ("admin", "admin@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$2eNt3aySYfYyyervEcFtiQ$6wM6Qj0SggDgPTd0Ycnl5KJYZcIjeiRg87Tm2AZTUfI", NULL, NULL, "admin", NULL, NULL),
-    ("sari.eliott", "sari.eliott@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wkio5piGN9BZtJAdkecJ3Q$tgbsy5tWsPXS5/bs7apwAqRGzupLzIay/rudaEMlPWU", "Sari", "Eliott", "editor", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d'atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy"),
-    ("marie.dubois", "marie.dubois@example.com", "$argon2id$v=19$m=65536,t=3,p=4$24NWnxaZlg/vEexp8Ye5lA$RHylTbrzv+uTW9FU7rzbNzk39pnTieKqvTisUc0D+Sw", "Marie", "Dubois", "subscriber", NULL, NULL),
-    ("pierre.martin", "pierre.martin@example.com", "$argon2id$v=19$m=65536,t=3,p=4$XQl79zwa6gatYl2hPNNg7Q$v/bP9N/f43A81EkKdc/abchYtdo4FaqFt9h9W47FF0I", "Pierre", "Martin", "subscriber", NULL, NULL),
-    ("sophie.bernard", "sophie.bernard@example.com", "$argon2id$v=19$m=65536,t=3,p=4$5O77aH8f1ja8zzWfR8TY4Q$g3B66HUiuT8VNjGgQAtibiG75SXI125k/3f3bPNWBVA", "Sophie", "Bernard", "subscriber", NULL, NULL),
-    ("lucas.roux", "lucas.roux@example.com", "$argon2id$v=19$m=65536,t=3,p=4$cZ8vo8j1zJtRb75XjycMKg$mYEVFVQTOlQRGoTeGbblXQKbfQDjI/0vollW0UeV/So", "Lucas", "Roux", "subscriber", NULL, NULL),
-    ("emma.lucas", "emma.lucas@example.com", "$argon2id$v=19$m=65536,t=3,p=4$PgYC4hQgj76Rw6Kt1tjbOA$2cEjNYvBDNQ553TmlTpEVvxZFwdvC+FnI/pBwFzN5Tc", "Emma", "Lucas", "subscriber", NULL, NULL)
+    ("sari.eliott", "sari.eliott@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wkio5piGN9BZtJAdkecJ3Q$tgbsy5tWsPXS5/bs7apwAqRGzupLzIay/rudaEMlPWU", "Sari", "Eliott", "editor", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d'atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy")
   `);
 
 	// ============================================
@@ -172,13 +162,13 @@ export async function runSeeds(connection: Connection): Promise<void> {
 	await connection.query(`
     INSERT INTO messages (firstname, lastname, email, ip, subject, text, status, user_id) VALUES
     ("Jean", "Dupont", "jean.dupont@example.com", "192.168.1.100", "Question sur votre tutoriel aquarelle", "Bonjour, j'ai lu votre article sur l'aquarelle et j'aimerais en savoir plus sur les techniques de lavis. Pourriez-vous m'aider ?", "unread", NULL),
-    ("Marie", "Dubois", "marie.dubois@example.com", "192.168.1.101", "Demande de commission", "Bonjour, je suis éditrice et nous recherchons une illustratrice pour un livre jeunesse. Vos œuvres nous intéressent beaucoup. Pourrions-nous discuter ?", "read", 3),
+    ("Marie", "Dubois", "marie.dubois@example.com", "192.168.1.101", "Demande de commission", "Bonjour, je suis éditrice et nous recherchons une illustratrice pour un livre jeunesse. Vos œuvres nous intéressent beaucoup. Pourrions-nous discuter ?", "read", NULL),
     ("Thomas", "Lefebvre", "thomas.lefebvre@example.com", "192.168.1.102", "Demande de prix", "Bonjour, j'adore vos illustrations fantasy ! Pourriez-vous me donner une estimation pour un portrait personnalisé ?", "unread", NULL),
     ("Julie", "Garcia", "julie.garcia@example.com", "192.168.1.103", "Proposition d'exposition", "Excellente galerie ! J'organise une exposition d'illustration numérique et j'aimerais vous y inviter. Seriez-vous intéressée ?", "read", NULL),
     ("Antoine", "Petit", "antoine.petit@example.com", "192.168.1.104", "Demande d'information", "Bonjour, pourriez-vous me donner plus d'informations sur vos créneaux disponibles pour une commande ? Je suis intéressé par une illustration personnalisée.", "unread", NULL),
     ("Laura", "Robert", "laura.robert@example.com", "192.168.1.105", "Proposition de collaboration", "Bonjour, je suis autrice de fantasy et j'aimerais collaborer avec vous sur des illustrations pour mon prochain roman. Êtes-vous ouverte à cela ?", "read", NULL),
     ("Nicolas", "Richard", "nicolas.richard@example.com", "192.168.1.106", "Félicitations pour votre travail", "Bravo pour votre magnifique portfolio ! Vos illustrations sont vraiment inspirantes et pleines de poésie. Continuez ainsi !", "archived", NULL),
-    ("Sophie", "Bernard", "sophie.bernard@example.com", "192.168.1.107", "Question sur les techniques", "J'ai une question sur votre technique de portrait numérique. Pourriez-vous m'expliquer comment vous travaillez les textures ?", "unread", 5),
+    ("Sophie", "Bernard", "sophie.bernard@example.com", "192.168.1.107", "Question sur les techniques", "J'ai une question sur votre technique de portrait numérique. Pourriez-vous m'expliquer comment vous travaillez les textures ?", "unread", NULL),
     ("Maxime", "Simon", "maxime.simon@example.com", "192.168.1.108", "Demande de workshop", "Bonjour, j'anime des ateliers d'illustration et j'aimerais vous inviter à donner un workshop. Êtes-vous intéressée ?", "read", NULL),
     ("Sarah", "Michel", "sarah.michel@example.com", "192.168.1.109", "Remerciement", "Un grand merci pour tous vos tutoriels ! Ils m'ont beaucoup aidé dans mon apprentissage de l'illustration numérique.", "archived", NULL)
   `);
@@ -187,16 +177,16 @@ export async function runSeeds(connection: Connection): Promise<void> {
 	// COMMENTS
 	// ============================================
 	await connection.query(`
-    INSERT INTO comments (text, status, user_id, article_id) VALUES
-    ("Excellent tutoriel ! L'aquarelle m'a toujours intimidée mais vos explications sont très claires. Merci !", "approved", 3, 1),
-    ("J'adore voir votre processus créatif ! C'est fascinant de suivre la transformation de l'esquisse à l'œuvre finale.", "approved", 4, 2),
-    ("Super article sur les portraits ! Pourriez-vous faire une suite sur les expressions faciales ?", "approved", 5, 3),
-    ("Cet article sur les paysages fantasy est une source d'inspiration ! J'ai déjà essayé quelques techniques.", "approved", 6, 4),
-    ("Votre tutoriel sur le dragon est génial ! Les étapes sont bien détaillées, je vais m'y mettre.", "approved", 7, 5),
-    ("Spam comment with promotional links and unwanted content.", "spam", 4, 3),
-    ("Je trouve que certaines palettes de couleurs sont difficiles à maîtriser. Avez-vous des conseils pour les débutants ?", "approved", 4, 6),
-    ("Merci pour ces astuces sur les croquis ! J'ai déjà appliqué plusieurs techniques et je vois la différence.", "approved", 5, 7),
-    ("This is a test comment that should be rejected.", "rejected", 6, 2),
-    ("Votre série de portraits fantasy est magnifique ! Où peut-on voir l'ensemble de la série ?", "approved", 7, 8)
+    INSERT INTO comments (text, status, user_id, article_id, firstname, lastname, email) VALUES
+    ("Excellent tutoriel ! L'aquarelle m'a toujours intimidée mais vos explications sont très claires. Merci !", "approved", NULL, 1, "Marie", "Dubois", "marie.dubois@example.com"),
+    ("J'adore voir votre processus créatif ! C'est fascinant de suivre la transformation de l'esquisse à l'œuvre finale.", "approved", NULL, 2, "Pierre", "Martin", "pierre.martin@example.com"),
+    ("Super article sur les portraits ! Pourriez-vous faire une suite sur les expressions faciales ?", "approved", NULL, 3, "Sophie", "Bernard", "sophie.bernard@example.com"),
+    ("Cet article sur les paysages fantasy est une source d'inspiration ! J'ai déjà essayé quelques techniques.", "approved", NULL, 4, "Lucas", "Roux", "lucas.roux@example.com"),
+    ("Votre tutoriel sur le dragon est génial ! Les étapes sont bien détaillées, je vais m'y mettre.", "approved", NULL, 5, "Emma", "Lucas", "emma.lucas@example.com"),
+    ("Spam comment with promotional links and unwanted content.", "spam", NULL, 3, "Spam", "User", "spam@example.com"),
+    ("Je trouve que certaines palettes de couleurs sont difficiles à maîtriser. Avez-vous des conseils pour les débutants ?", "approved", NULL, 6, "Pierre", "Martin", "pierre.martin@example.com"),
+    ("Merci pour ces astuces sur les croquis ! J'ai déjà appliqué plusieurs techniques et je vois la différence.", "approved", NULL, 7, "Sophie", "Bernard", "sophie.bernard@example.com"),
+    ("This is a test comment that should be rejected.", "rejected", NULL, 2, "Test", "Reject", "reject@example.com"),
+    ("Votre série de portraits fantasy est magnifique ! Où peut-on voir l'ensemble de la série ?", "approved", NULL, 8, "Emma", "Lucas", "emma.lucas@example.com")
   `);
 }

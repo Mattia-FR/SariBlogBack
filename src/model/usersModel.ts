@@ -223,7 +223,7 @@ const create = async (data: UserCreateData): Promise<User> => {
 				data.password,
 				data.firstname ?? null,
 				data.lastname ?? null,
-				data.role ?? "subscriber",
+				data.role ?? "editor",
 				data.avatar ?? null,
 				data.bio ?? null,
 				data.bio_short ?? null,
