@@ -14,7 +14,7 @@ app.use(helmetMiddleware);
 // CORS
 app.use(
 	cors({
-		origin: "http://localhost:5173",
+		origin: process.env.ALLOWED_ORIGIN,
 		credentials: true, // OBLIGATOIRE pour cookies
 	}),
 );
