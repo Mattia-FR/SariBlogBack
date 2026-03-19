@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+import fs from "node:fs/promises";
+import path from "node:path";
 import imagesAdminModel from "../../model/admin/imagesAdminModel";
 import type { Image, ImageUpdateData } from "../../types/images";
 import { buildImageUrl } from "../../utils/imageUrl";
@@ -146,11 +148,36 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
+
+		const image = await imagesAdminModel.findById(id);
+		if (!image) {
+			res.sendStatus(404);
+			return;
+		}
+
 		const deleted = await imagesAdminModel.deleteOne(id);
 		if (!deleted) {
 			res.sendStatus(404);
 			return;
 		}
+
+		// `image.path` contient un chemin serveur (ex: `/uploads/images/abc.jpg`).
+		// En dev, Multer écrit dans `./uploads/images` (relatif au `cwd` du processus),
+		// donc on reconstruit un chemin disque compatible Windows.
+		const relativeImagePath = image.path.replace(/^\/+/, "");
+		const fullPath = path.join(process.cwd(), relativeImagePath);
+		try {
+			await fs.unlink(fullPath);
+		} catch (unlinkErr) {
+			const err = unlinkErr as NodeJS.ErrnoException;
+			// ENOENT = "file not found" : le fichier n'existe pas (déjà supprimé, ou chemin correct mais absent).
+			// On l'ignore pour que la suppression DB reste idempotente côté API.
+			// (suppression DB ok même si le fichier n’est déjà plus là)
+			if (err?.code !== "ENOENT") {
+				console.error("Erreur lors de la suppression du fichier image :", err);
+			}
+		}
+
 		res.sendStatus(204);
 	} catch (err) {
 		console.error("Erreur lors de la suppression de l'image (admin) :", err);
