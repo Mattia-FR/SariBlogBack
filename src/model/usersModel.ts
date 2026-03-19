@@ -1,11 +1,6 @@
 import pool from "./db";
 import type { ResultSetHeader } from "mysql2/promise";
-import type {
-	User,
-	UserWithPassword,
-	UserUpdateData,
-	UserCreateData,
-} from "../types/users";
+import type { User, UserWithPassword, UserCreateData } from "../types/users";
 import { toDateString } from "../utils/dateHelpers";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
@@ -132,64 +127,6 @@ const findByIdentifier = async (
 			created_at: toDateString(row.created_at) ?? "",
 			updated_at: toDateString(row.updated_at) ?? "",
 		};
-	} catch (err) {
-		console.error(err);
-		throw err;
-	}
-};
-
-const ALLOWED_UPDATE_FIELDS: (keyof UserUpdateData)[] = [
-	"username",
-	"email",
-	"firstname",
-	"lastname",
-	"role",
-	"avatar",
-	"bio",
-	"bio_short",
-];
-
-const updateData = async (
-	id: number,
-	data: UserUpdateData,
-): Promise<User | null> => {
-	try {
-		const updates: string[] = [];
-		const values: (string | number | null)[] = [];
-
-		for (const field of ALLOWED_UPDATE_FIELDS) {
-			if (field in data) {
-				updates.push(`${field} = ?`);
-				values.push(data[field] ?? null);
-			}
-		}
-
-		if (updates.length === 0) {
-			throw new Error("Aucun champ à mettre à jour");
-		}
-
-		values.push(id);
-		await pool.query(
-			`UPDATE users SET ${updates.join(", ")} WHERE id = ?`,
-			values,
-		);
-		return findById(id);
-	} catch (err) {
-		console.error(err);
-		throw err;
-	}
-};
-
-const updatePassword = async (
-	id: number,
-	hashedPassword: string,
-): Promise<boolean> => {
-	try {
-		const [result] = await pool.query<ResultSetHeader>(
-			"UPDATE users SET password = ? WHERE id = ?",
-			[hashedPassword, id],
-		);
-		return result.affectedRows > 0;
 	} catch (err) {
 		console.error(err);
 		throw err;
@@ -337,8 +274,6 @@ export default {
 	findByEmail,
 	findByIdentifier,
 	findArtist,
-	updateData,
-	updatePassword,
 	create,
 	deleteOne,
 	saveRefreshToken,
