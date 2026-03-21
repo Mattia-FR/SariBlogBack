@@ -11,32 +11,57 @@ import logger from "../utils/logger";
 const findPublished = async (
 	page = 1,
 	limit = 10,
+	tagId?: number,
 ): Promise<{ articles: Article[]; total: number }> => {
 	const offset = (page - 1) * limit;
 
 	try {
+		const tagFilter =
+			tagId != null
+				? "INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?"
+				: "";
+
+		const listParams = tagId != null ? [tagId, limit, offset] : [limit, offset];
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [articles]: any = await pool.query(
 			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
       FROM articles a
       LEFT JOIN images i ON a.featured_image_id = i.id
+      ${tagFilter}
       WHERE a.status = 'published'
       ORDER BY a.published_at DESC
       LIMIT ? OFFSET ?`,
-			[limit, offset],
+			listParams,
 		);
 
+		const countParams = tagId != null ? [tagId] : [];
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [countResult]: any = await pool.query(
-			`SELECT COUNT(*) as total FROM articles WHERE status = 'published'`,
+			tagId != null
+				? `SELECT COUNT(DISTINCT a.id) as total
+          FROM articles a
+          INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?
+          WHERE a.status = 'published'`
+				: `SELECT COUNT(*) as total FROM articles WHERE status = 'published'`,
+			countParams,
 		);
 
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [tags]: any = await pool.query(
-			`SELECT at.article_id, t.id, t.name, t.slug
-      FROM articles_tags at
-      LEFT JOIN tags t ON at.tag_id = t.id`,
-		);
+		let tags: any[] = [];
+		if (articles.length > 0) {
+			const articleIds: number[] = articles.map(
+				(row: { id: number }) => row.id,
+			);
+			const placeholders = articleIds.map(() => "?").join(",");
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			const [tagRows]: any = await pool.query(
+				`SELECT at.article_id, t.id, t.name, t.slug
+        FROM articles_tags at
+        LEFT JOIN tags t ON at.tag_id = t.id
+        WHERE at.article_id IN (${placeholders})`,
+				articleIds,
+			);
+			tags = tagRows;
+		}
 
 		return {
 			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing

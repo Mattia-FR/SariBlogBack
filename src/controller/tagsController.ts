@@ -5,14 +5,45 @@ import tagsModel from "../model/tagsModel";
 import type { Tag } from "../types/tags";
 import logger from "../utils/logger";
 
-// Liste tous les tags (public)
-// GET /tags
-const browseAll = async (req: Request, res: Response): Promise<void> => {
+// Tags utilisés sur au moins un article publié (public, filtre blog).
+// GET /tags/published-articles
+const browseUsedOnPublishedArticles = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
 	try {
-		const tags: Tag[] = await tagsModel.findAll();
+		const tags: Tag[] = await tagsModel.findUsedOnPublishedArticles();
 		res.status(200).json(tags);
 	} catch (err) {
-		logger.error("Erreur lors de la récupération de tous les tags :", err);
+		logger.error(
+			"Erreur lors de la récupération des tags des articles publiés :",
+			err,
+		);
+		res.sendStatus(500);
+	}
+};
+
+// Tags utilisés sur au moins une image de galerie dans une catégorie (public).
+// GET /tags/category/:categoryId
+const readUsedOnGalleryByCategoryId = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
+	try {
+		const categoryId: number = Number.parseInt(req.params.categoryId, 10);
+		if (Number.isNaN(categoryId)) {
+			res.status(400).json({ error: "ID de catégorie invalide" });
+			return;
+		}
+
+		const tags: Tag[] =
+			await tagsModel.findUsedOnGalleryImagesByCategoryId(categoryId);
+		res.status(200).json(tags);
+	} catch (err) {
+		logger.error(
+			"Erreur lors de la récupération des tags de galerie par catégorie :",
+			err,
+		);
 		res.sendStatus(500);
 	}
 };
@@ -59,4 +90,9 @@ const readByImageId = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseAll, readByArticleId, readByImageId };
+export {
+	browseUsedOnPublishedArticles,
+	readByArticleId,
+	readByImageId,
+	readUsedOnGalleryByCategoryId,
+};

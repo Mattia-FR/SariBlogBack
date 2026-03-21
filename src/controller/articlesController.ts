@@ -63,10 +63,7 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(article);
 	} catch (err) {
-		logger.error(
-			"Erreur lors de la récupération de l'article par slug :",
-			err,
-		);
+		logger.error("Erreur lors de la récupération de l'article par slug :", err);
 		res.sendStatus(500);
 	}
 };
@@ -91,7 +88,24 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		const { articles, total } = await articlesModel.findPublished(page, limit);
+		let tagId: number | undefined;
+		const tagIdRaw = req.query.tagId;
+		if (tagIdRaw !== undefined && tagIdRaw !== "") {
+			const parsed = Number.parseInt(String(tagIdRaw), 10);
+			if (Number.isNaN(parsed) || parsed < 1) {
+				res.status(400).json({
+					error: "Le paramètre tagId doit être un nombre positif",
+				});
+				return;
+			}
+			tagId = parsed;
+		}
+
+		const { articles, total } = await articlesModel.findPublished(
+			page,
+			limit,
+			tagId,
+		);
 		res.status(200).json({ articles, total, page, limit });
 	} catch (err) {
 		logger.error("Erreur lors de la récupération des articles publiés :", err);

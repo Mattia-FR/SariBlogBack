@@ -326,7 +326,8 @@ Pour les routes protégées, envoyer le header : `Authorization: Bearer <accessT
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
-| `GET` | `/tags` | Liste tous les tags | Public |
+| `GET` | `/tags/published-articles` | Tags utilisés sur au moins un article publié | Public |
+| `GET` | `/tags/category/:categoryId` | Tags utilisés sur la galerie d'une catégorie | Public |
 | `GET` | `/tags/article/:articleId` | Tags associés à un article | Public |
 | `GET` | `/tags/image/:imageId` | Tags associés à une image | Public |
 

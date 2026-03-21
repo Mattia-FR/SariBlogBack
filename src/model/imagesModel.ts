@@ -139,28 +139,71 @@ const findByTagId = async (id: number): Promise<Image[]> => {
 	}
 };
 
-const findByCategoryId = async (categoryId: number): Promise<Image[]> => {
+const findByCategoryId = async (
+	categoryId: number,
+	page: number,
+	limit: number,
+	tagId?: number,
+): Promise<{ images: Image[]; total: number }> => {
+	const offset = (page - 1) * limit;
 	try {
+		const tagJoin =
+			tagId != null
+				? "INNER JOIN images_tags tagf ON tagf.image_id = i.id AND tagf.tag_id = ?"
+				: "";
+
+		const countParams = tagId != null ? [tagId, categoryId] : [categoryId];
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [countResult]: any = await pool.query(
+			tagId != null
+				? `SELECT COUNT(DISTINCT i.id) as total
+			FROM images i
+			INNER JOIN images_categories ic ON i.id = ic.image_id
+			${tagJoin}
+			WHERE ic.category_id = ? AND i.is_in_gallery = TRUE`
+				: `SELECT COUNT(*) as total
+			FROM images i
+			INNER JOIN images_categories ic ON i.id = ic.image_id
+			WHERE ic.category_id = ? AND i.is_in_gallery = TRUE`,
+			countParams,
+		);
+		const total = countResult[0].total as number;
+
+		const listParams =
+			tagId != null
+				? [tagId, categoryId, limit, offset]
+				: [categoryId, limit, offset];
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [images]: any = await pool.query(
 			`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery,
 			i.user_id, i.article_id, i.created_at, i.updated_at
 			FROM images i
 			INNER JOIN images_categories ic ON i.id = ic.image_id
+			${tagJoin}
 			WHERE ic.category_id = ? AND i.is_in_gallery = TRUE
-			ORDER BY i.created_at DESC`,
-			[categoryId],
+			ORDER BY i.created_at DESC
+			LIMIT ? OFFSET ?`,
+			listParams,
 		);
+
+		if (images.length === 0) {
+			return { images: [], total };
+		}
+
+		const imageIds: number[] = images.map((image: { id: number }) => image.id);
+		const placeholders = imageIds.map(() => "?").join(",");
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [tags]: any = await pool.query(
 			`SELECT it.image_id, t.id, t.name, t.slug
 			FROM images_tags it
-			LEFT JOIN tags t ON it.tag_id = t.id`,
+			LEFT JOIN tags t ON it.tag_id = t.id
+			WHERE it.image_id IN (${placeholders})`,
+			imageIds,
 		);
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		return images.map((image: any) => ({
+		const mapped: Image[] = images.map((image: any) => ({
 			id: image.id,
 			title: image.title,
 			description: image.description,
@@ -177,6 +220,8 @@ const findByCategoryId = async (categoryId: number): Promise<Image[]> => {
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
 		}));
+
+		return { images: mapped, total };
 	} catch (err) {
 		logger.error(err);
 		throw err;

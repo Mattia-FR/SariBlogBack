@@ -161,13 +161,16 @@ GET {{baseUrl}}/users/1
 # 🏷️ TAGS (public)
 ###############################################################################
 
-### 1. Liste tous les tags
-GET {{baseUrl}}/tags
+### 1. Tags utilisés sur des articles publiés (filtre blog)
+GET {{baseUrl}}/tags/published-articles
 
-### 2. Tags d'un article
+### 2. Tags galerie pour une catégorie
+GET {{baseUrl}}/tags/category/1
+
+### 3. Tags d'un article
 GET {{baseUrl}}/tags/article/1
 
-### 3. Tags d'une image
+### 4. Tags d'une image
 GET {{baseUrl}}/tags/image/1
 
 ###############################################################################
