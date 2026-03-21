@@ -2,6 +2,7 @@ import pool from "../db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type { User, UserUpdateData } from "../../types/users";
 import usersModel from "../usersModel";
+import logger from "../../utils/logger";
 
 const ALLOWED_UPDATE_FIELDS: (keyof UserUpdateData)[] = [
 	"username",
@@ -39,7 +40,7 @@ const updateMeProfile = async (
 		);
 		return usersModel.findById(id);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -55,7 +56,7 @@ const updateMePassword = async (
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

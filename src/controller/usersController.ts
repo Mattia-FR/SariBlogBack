@@ -6,6 +6,7 @@ import type { Request, Response } from "express";
 import usersModel from "../model/usersModel";
 import type { User } from "../types/users";
 import { buildImageUrl } from "../utils/imageUrl";
+import logger from "../utils/logger";
 
 /** Enrichit un utilisateur avec l'URL complète de son avatar (User → User avec avatarUrl). */
 function enrichUserWithAvatarUrl(user: User): User {
@@ -30,7 +31,7 @@ const readArtist = async (req: Request, res: Response): Promise<void> => {
 		const enrichedArtist = enrichUserWithAvatarUrl(artist);
 		res.status(200).json(enrichedArtist);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'artiste :", err);
+		logger.error("Erreur lors de la récupération de l'artiste :", err);
 		res.sendStatus(500);
 	}
 };

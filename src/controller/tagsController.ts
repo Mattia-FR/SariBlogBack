@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import tagsModel from "../model/tagsModel";
 
 import type { Tag } from "../types/tags";
+import logger from "../utils/logger";
 
 // Liste tous les tags (public)
 // GET /tags
@@ -11,7 +12,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const tags: Tag[] = await tagsModel.findAll();
 		res.status(200).json(tags);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les tags :", err);
+		logger.error("Erreur lors de la récupération de tous les tags :", err);
 		res.sendStatus(500);
 	}
 };
@@ -29,7 +30,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 		const tags: Tag[] = await tagsModel.findByArticleId(articleId);
 		res.status(200).json(tags);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des tags par ID d'article :",
 			err,
 		);
@@ -50,7 +51,7 @@ const readByImageId = async (req: Request, res: Response): Promise<void> => {
 		const tags: Tag[] = await tagsModel.findByImageId(imageId);
 		res.status(200).json(tags);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des tags par ID d'image :",
 			err,
 		);

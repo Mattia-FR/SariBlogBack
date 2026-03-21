@@ -6,6 +6,7 @@ import type {
 	CommentUpdateData,
 } from "../../types/comments";
 import { toDateString } from "../../utils/dateHelpers";
+import logger from "../../utils/logger";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString) et au mapping explicite après jointure users, le frontend reçoit toujours des objets strictement conformes à l'interface Comment.
@@ -59,7 +60,7 @@ const findAll = async (): Promise<Comment[]> => {
 			};
 		});
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -114,7 +115,7 @@ const findByStatus = async (status: CommentStatus): Promise<Comment[]> => {
 			};
 		});
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -167,7 +168,7 @@ const findById = async (id: number): Promise<Comment | null> => {
 			email: row.email ?? null,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -195,7 +196,7 @@ const updateStatus = async (
 
 		return findById(id);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -208,7 +209,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -222,7 +223,7 @@ const countByStatus = async (status: CommentStatus): Promise<number> => {
 		);
 		return rows[0].total;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

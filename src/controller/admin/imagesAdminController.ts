@@ -4,6 +4,7 @@ import path from "node:path";
 import imagesAdminModel from "../../model/admin/imagesAdminModel";
 import type { Image, ImageUpdateData } from "../../types/images";
 import { buildImageUrl } from "../../utils/imageUrl";
+import logger from "../../utils/logger";
 
 function enrichWithImageUrl(item: Image): Image & { imageUrl: string } {
 	return {
@@ -20,7 +21,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const enriched = images.map(enrichWithImageUrl);
 		res.status(200).json(enriched);
 	} catch (err) {
-		console.error("Erreur lors de la récupération des images (admin) :", err);
+		logger.error("Erreur lors de la récupération des images (admin) :", err);
 		res.sendStatus(500);
 	}
 };
@@ -41,7 +42,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(enrichWithImageUrl(image));
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de l'image par ID (admin) :",
 			err,
 		);
@@ -94,7 +95,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		});
 		res.status(201).json(enrichWithImageUrl(image));
 	} catch (err) {
-		console.error("Erreur lors de la création de l'image (admin) :", err);
+		logger.error("Erreur lors de la création de l'image (admin) :", err);
 		res.sendStatus(500);
 	}
 };
@@ -134,7 +135,7 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(enrichWithImageUrl(image));
 	} catch (err) {
-		console.error("Erreur lors de la mise à jour de l'image (admin) :", err);
+		logger.error("Erreur lors de la mise à jour de l'image (admin) :", err);
 		res.sendStatus(500);
 	}
 };
@@ -174,13 +175,13 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 			// On l'ignore pour que la suppression DB reste idempotente côté API.
 			// (suppression DB ok même si le fichier n’est déjà plus là)
 			if (err?.code !== "ENOENT") {
-				console.error("Erreur lors de la suppression du fichier image :", err);
+				logger.error("Erreur lors de la suppression du fichier image :", err);
 			}
 		}
 
 		res.sendStatus(204);
 	} catch (err) {
-		console.error("Erreur lors de la suppression de l'image (admin) :", err);
+		logger.error("Erreur lors de la suppression de l'image (admin) :", err);
 		res.sendStatus(500);
 	}
 };

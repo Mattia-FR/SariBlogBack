@@ -8,6 +8,7 @@ import type { ResultSetHeader } from "mysql2/promise";
 import { buildImageUrl } from "../../utils/imageUrl";
 import { buildSlug } from "../../utils/slug";
 import { toDateString } from "../../utils/dateHelpers";
+import logger from "../../utils/logger";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString, imageUrl, tags), le frontend reçoit toujours des objets strictement conformes à l’interface Article.
@@ -51,7 +52,7 @@ const findAllForAdmin = async (): Promise<Article[]> => {
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -97,7 +98,7 @@ const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 			tags: tags,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -143,7 +144,7 @@ const findBySlugForAdmin = async (slug: string): Promise<Article | null> => {
 			tags: tags,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -193,7 +194,7 @@ const create = async (data: ArticleCreateData): Promise<Article> => {
 			tags: [],
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -253,7 +254,7 @@ const update = async (
 		const updatedArticle = await findByIdForAdmin(id);
 		return updatedArticle;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -266,7 +267,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -279,7 +280,7 @@ const countAll = async (): Promise<number> => {
 		);
 		return rows[0].total;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -293,7 +294,7 @@ const countByStatus = async (status: string): Promise<number> => {
 		);
 		return rows[0].total;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

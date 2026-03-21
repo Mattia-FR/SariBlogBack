@@ -6,6 +6,7 @@ import type { Request, Response } from "express";
 import articlesModel from "../model/articlesModel";
 import articlesAdminModel from "../model/admin/articlesAdminModel";
 import type { Article } from "../types/articles";
+import logger from "../utils/logger";
 
 // Liste tous les articles (admin - tous statuts). Retourne Article[] sans content.
 // GET /articles
@@ -14,7 +15,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const articles: Article[] = await articlesAdminModel.findAllForAdmin();
 		res.status(200).json(articles);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les articles :", err);
+		logger.error("Erreur lors de la récupération de tous les articles :", err);
 		res.sendStatus(500);
 	}
 };
@@ -38,7 +39,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(article);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'article par ID :", err);
+		logger.error("Erreur lors de la récupération de l'article par ID :", err);
 		res.sendStatus(500);
 	}
 };
@@ -62,7 +63,7 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(article);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de l'article par slug :",
 			err,
 		);
@@ -74,33 +75,26 @@ const readBySlug = async (req: Request, res: Response): Promise<void> => {
 // GET /articles/published?limit=4
 const browsePublished = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const limitParam = req.query.limit;
-		const limit = limitParam
-			? Number.parseInt(limitParam as string, 10)
-			: undefined;
+		const page = Number.parseInt(req.query.page as string, 10) || 1;
+		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
 
-		if (limit !== undefined) {
-			if (Number.isNaN(limit) || limit < 1) {
-				res
-					.status(400)
-					.json({ error: "Le paramètre limit doit être un nombre positif" });
-				return;
-			}
-			if (limit > 20) {
-				res
-					.status(400)
-					.json({ error: "Le paramètre limit ne peut pas dépasser 20" });
-				return;
-			}
+		if (page < 1) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre page doit être un nombre positif" });
+			return;
+		}
+		if (limit < 1 || limit > 20) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			return;
 		}
 
-		let articles: Article[] = await articlesModel.findPublished();
-		if (limit !== undefined) {
-			articles = articles.slice(0, limit);
-		}
-		res.status(200).json(articles);
+		const { articles, total } = await articlesModel.findPublished(page, limit);
+		res.status(200).json({ articles, total, page, limit });
 	} catch (err) {
-		console.error("Erreur lors de la récupération des articles publiés :", err);
+		logger.error("Erreur lors de la récupération des articles publiés :", err);
 		res.sendStatus(500);
 	}
 };
@@ -127,7 +121,7 @@ const readPublishedById = async (
 
 		res.status(200).json(article);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de l'article publié par ID :",
 			err,
 		);
@@ -157,7 +151,7 @@ const readPublishedBySlug = async (
 
 		res.status(200).json(article);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de l'article publié par slug :",
 			err,
 		);
@@ -175,7 +169,7 @@ const readHomepagePreview = async (
 		const articles: Article[] = await articlesModel.findHomepagePreview();
 		res.status(200).json(articles);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de la preview homepage :",
 			err,
 		);

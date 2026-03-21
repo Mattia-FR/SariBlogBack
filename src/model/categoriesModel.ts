@@ -1,5 +1,6 @@
 import pool from "./db";
 import type { Category } from "../types/categories";
+import logger from "../utils/logger";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Category.
@@ -20,7 +21,7 @@ const findAll = async (): Promise<Category[]> => {
 			created_at: row.created_at,
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -42,7 +43,7 @@ const findBySlug = async (slug: string): Promise<Category | null> => {
 			created_at: row.created_at,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

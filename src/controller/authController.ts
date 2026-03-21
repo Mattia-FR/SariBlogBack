@@ -5,6 +5,7 @@ import argon2 from "argon2";
 import type { User } from "../types/users";
 import type { TokenPayload } from "../types/auth";
 import { argon2Options } from "../config/argon2";
+import logger from "../utils/logger";
 
 export async function login(req: Request, res: Response) {
 	try {
@@ -14,7 +15,7 @@ export async function login(req: Request, res: Response) {
 		const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
 		const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 		if (!ACCESS_SECRET || !REFRESH_SECRET) {
-			console.error("JWT secrets non définis");
+			logger.error("JWT secrets non définis");
 			return res.sendStatus(500);
 		}
 
@@ -65,7 +66,7 @@ export async function login(req: Request, res: Response) {
 			user: publicUser,
 		});
 	} catch (err) {
-		console.error("Erreur lors de la connexion :", err);
+		logger.error("Erreur lors de la connexion :", err);
 		res.sendStatus(500);
 	}
 }
@@ -85,7 +86,7 @@ export async function refresh(req: Request, res: Response) {
 			"15m") as jwt.SignOptions["expiresIn"];
 
 		if (!REFRESH_SECRET || !ACCESS_SECRET) {
-			console.error("JWT secrets non définis");
+			logger.error("JWT secrets non définis");
 			return res.sendStatus(500);
 		}
 
@@ -125,7 +126,7 @@ export async function refresh(req: Request, res: Response) {
 		) {
 			return res.sendStatus(401);
 		}
-		console.error("Erreur lors du refresh:", err);
+		logger.error("Erreur lors du refresh:", err);
 		return res.sendStatus(500);
 	}
 }
@@ -143,7 +144,7 @@ export async function logout(req: Request, res: Response) {
 		// 2. Décoder le token pour obtenir l'userId
 		const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 		if (!REFRESH_SECRET) {
-			console.error("REFRESH_TOKEN_SECRET non défini");
+			logger.error("REFRESH_TOKEN_SECRET non défini");
 			return res.sendStatus(500);
 		}
 
@@ -168,7 +169,7 @@ export async function logout(req: Request, res: Response) {
 		// 5. Réponse
 		return res.sendStatus(200);
 	} catch (err) {
-		console.error("Erreur lors de la déconnexion :", err);
+		logger.error("Erreur lors de la déconnexion :", err);
 		return res.sendStatus(500);
 	}
 }

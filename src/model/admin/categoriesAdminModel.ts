@@ -5,6 +5,7 @@ import type {
 	CategoryUpdateData,
 } from "../../types/categories";
 import type { ResultSetHeader, PoolConnection } from "mysql2/promise";
+import logger from "../../utils/logger";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Category.
@@ -27,7 +28,7 @@ const findById = async (id: number): Promise<Category | null> => {
 			created_at: row.created_at,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -73,7 +74,7 @@ const create = async (data: CategoryCreateData): Promise<Category> => {
 		};
 	} catch (err) {
 		await connection.rollback();
-		console.error(err);
+		logger.error(err);
 		throw err;
 	} finally {
 		connection.release();
@@ -154,7 +155,7 @@ const update = async (
 		return await findById(id);
 	} catch (err) {
 		await connection.rollback();
-		console.error(err);
+		logger.error(err);
 		throw err;
 	} finally {
 		connection.release();
@@ -169,7 +170,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

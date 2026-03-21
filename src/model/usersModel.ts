@@ -2,6 +2,7 @@ import pool from "./db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type { User, UserWithPassword, UserCreateData } from "../types/users";
 import { toDateString } from "../utils/dateHelpers";
+import logger from "../utils/logger";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString), le frontend reçoit toujours des objets strictement conformes aux interfaces User et UserWithPassword.
@@ -31,7 +32,7 @@ const findAll = async (): Promise<User[]> => {
 			updated_at: toDateString(row.updated_at) ?? "",
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -64,7 +65,7 @@ const findById = async (id: number): Promise<User | null> => {
 			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -95,7 +96,7 @@ const findByEmail = async (email: string): Promise<UserWithPassword | null> => {
 			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -128,7 +129,7 @@ const findByIdentifier = async (
 			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -173,7 +174,7 @@ const create = async (data: UserCreateData): Promise<User> => {
 		}
 		return newUser;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -186,7 +187,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -220,7 +221,7 @@ const findArtist = async (): Promise<User | null> => {
 			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -235,7 +236,7 @@ const saveRefreshToken = async (
 			userId,
 		]);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -252,7 +253,7 @@ const findByIdWithRefreshToken = async (
 		if (!users[0]) return null;
 		return { refresh_token: users[0].refresh_token };
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -263,7 +264,7 @@ const deleteRefreshToken = async (userId: number): Promise<void> => {
 			userId,
 		]);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

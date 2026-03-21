@@ -7,6 +7,7 @@ import type {
 } from "../../types/images";
 import { toDateString } from "../../utils/dateHelpers";
 import imagesModel from "../imagesModel";
+import logger from "../../utils/logger";
 
 const { findById } = imagesModel;
 
@@ -51,7 +52,7 @@ const findAll = async (): Promise<Image[]> => {
 				})),
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -85,7 +86,7 @@ const create = async (data: ImageCreateData): Promise<Image> => {
 		if (!created) throw new Error("Impossible de récupérer l'image créée");
 		return created;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -138,7 +139,7 @@ const update = async (
 
 		return findById(id);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -151,7 +152,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -164,7 +165,7 @@ const countAll = async (): Promise<number> => {
 		);
 		return rows[0].total;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -177,7 +178,7 @@ const countInGallery = async (): Promise<number> => {
 		);
 		return rows[0].total;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

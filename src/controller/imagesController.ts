@@ -6,6 +6,7 @@ import type { Request, Response } from "express";
 import imagesModel from "../model/imagesModel";
 import type { Image } from "../types/images";
 import { buildImageUrl } from "../utils/imageUrl";
+import logger from "../utils/logger";
 
 /** Enrichit une image avec l'URL complète (path → imageUrl). */
 function enrichWithImageUrl(item: Image): Image & { imageUrl: string } {
@@ -23,7 +24,7 @@ const browseGallery = async (req: Request, res: Response): Promise<void> => {
 		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de la galerie d'images :",
 			err,
 		);
@@ -50,7 +51,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		const enrichedImage = enrichWithImageUrl(image);
 		res.status(200).json(enrichedImage);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'image par ID :", err);
+		logger.error("Erreur lors de la récupération de l'image par ID :", err);
 		res.sendStatus(500);
 	}
 };
@@ -69,7 +70,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des images par ID d'article :",
 			err,
 		);
@@ -91,7 +92,7 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des images par ID de tag :",
 			err,
 		);
@@ -113,7 +114,7 @@ const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 		const enrichedImages = images.map(enrichWithImageUrl);
 		res.status(200).json(enrichedImages);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des images par ID de catégorie :",
 			err,
 		);
@@ -140,7 +141,7 @@ const readImageOfTheDay = async (
 		const enrichedImage = enrichWithImageUrl(image);
 		res.status(200).json(enrichedImage);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de l'image du jour :", err);
+		logger.error("Erreur lors de la récupération de l'image du jour :", err);
 		res.sendStatus(500);
 	}
 };

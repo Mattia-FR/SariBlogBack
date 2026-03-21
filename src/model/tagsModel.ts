@@ -1,5 +1,6 @@
 import pool from "./db";
 import type { Tag } from "../types/tags";
+import logger from "../utils/logger";
 
 /* J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 Le frontend reçoit toujours des objets strictement conformes à l'interface Tag.
@@ -29,7 +30,7 @@ const findAll = async (): Promise<Tag[]> => {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return rows.map((row: any) => rowToTag(row));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -47,7 +48,7 @@ const findByArticleId = async (id: number): Promise<Tag[]> => {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return rows.map((row: any) => rowToTag(row));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -65,7 +66,7 @@ const findByImageId = async (id: number): Promise<Tag[]> => {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return rows.map((row: any) => rowToTag(row));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

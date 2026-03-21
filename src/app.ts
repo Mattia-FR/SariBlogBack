@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { helmetMiddleware } from "./config/helmet";
 import router from "./router";
 import { errorHandler } from "./middleware/errorMiddleware";
+import logger from "./utils/logger";
 
 const app = express();
 
@@ -27,7 +28,7 @@ app.use(cookieParser());
 
 // Logging
 app.use((req, _res, next) => {
-	console.log(`${req.method} ${req.url}`);
+	logger.info(`${req.method} ${req.url}`);
 	next();
 });
 

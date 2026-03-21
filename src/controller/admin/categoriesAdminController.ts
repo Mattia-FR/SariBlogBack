@@ -7,6 +7,7 @@ import type {
 	CategoryUpdateData,
 } from "../../types/categories";
 import { buildSlug } from "../../utils/slug";
+import logger from "../../utils/logger";
 
 // Liste toutes les catégories (ordre d'affichage).
 // GET /admin/categories
@@ -15,7 +16,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const categories: Category[] = await categoriesModel.findAll();
 		res.status(200).json(categories);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des catégories (admin) :",
 			err,
 		);
@@ -42,7 +43,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(category);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de la catégorie par ID (admin) :",
 			err,
 		);
@@ -79,7 +80,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		const newCategory: Category = await categoriesAdminModel.create(data);
 		res.status(201).json(newCategory);
 	} catch (err) {
-		console.error("Erreur lors de la création de la catégorie (admin) :", err);
+		logger.error("Erreur lors de la création de la catégorie (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
 			res.status(409).json({
@@ -141,7 +142,7 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(updatedCategory);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la mise à jour de la catégorie (admin) :",
 			err,
 		);
@@ -175,7 +176,7 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.sendStatus(204);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la suppression de la catégorie (admin) :",
 			err,
 		);

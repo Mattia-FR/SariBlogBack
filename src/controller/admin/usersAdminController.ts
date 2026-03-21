@@ -6,6 +6,7 @@ import { buildImageUrl } from "../../utils/imageUrl";
 import usersAdminModel from "../../model/admin/usersAdminModel";
 import usersModel from "../../model/usersModel";
 import { argon2Options } from "../../config/argon2";
+import logger from "../../utils/logger";
 
 /** Enrichit un utilisateur avec l'URL complète de son avatar (User → User avec avatarUrl). */
 function enrichUserWithAvatarUrl(user: User): User {
@@ -35,7 +36,7 @@ const readMe = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(enrichUserWithAvatarUrl(user));
 	} catch (error) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de l'utilisateur connecté (admin) :",
 			error,
 		);
@@ -72,7 +73,7 @@ const updateMeProfile = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(enrichUserWithAvatarUrl(user));
 	} catch (error) {
-		console.error("Erreur lors de la mise à jour du profil (admin) :", error);
+		logger.error("Erreur lors de la mise à jour du profil (admin) :", error);
 		res.sendStatus(500);
 	}
 };
@@ -104,7 +105,7 @@ const updateMePassword = async (req: Request, res: Response): Promise<void> => {
 
 		res.sendStatus(204);
 	} catch (error) {
-		console.error(
+		logger.error(
 			"Erreur lors de la mise à jour du mot de passe (admin) :",
 			error,
 		);

@@ -12,6 +12,7 @@ import type {
 	ArticleStatus,
 } from "../../types/articles";
 import { buildSlug } from "../../utils/slug";
+import logger from "../../utils/logger";
 
 const VALID_STATUSES: ArticleStatus[] = ["draft", "published", "archived"];
 
@@ -26,7 +27,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 			await articlesAdminModel.findAllForAdmin();
 		res.status(200).json(articles);
 	} catch (err) {
-		console.error("Erreur lors de la récupération des articles (admin) :", err);
+		logger.error("Erreur lors de la récupération des articles (admin) :", err);
 		res
 			.status(500)
 			.json({ error: "Erreur lors de la récupération des articles" });
@@ -52,7 +53,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(article);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de l'article par ID (admin) :",
 			err,
 		);
@@ -121,7 +122,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			await articlesAdminModel.create(articleData);
 		res.status(201).json(newArticle);
 	} catch (err) {
-		console.error("Erreur lors de la création de l'article (admin) :", err);
+		logger.error("Erreur lors de la création de l'article (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
 			res.status(409).json({ error: "Un article avec ce slug existe déjà" });
@@ -160,7 +161,7 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(updatedArticle);
 	} catch (err) {
-		console.error("Erreur lors de la mise à jour de l'article (admin) :", err);
+		logger.error("Erreur lors de la mise à jour de l'article (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
 			res.status(409).json({ error: "Un article avec ce slug existe déjà" });
@@ -189,7 +190,7 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.sendStatus(204);
 	} catch (err) {
-		console.error("Erreur lors de la suppression de l'article (admin) :", err);
+		logger.error("Erreur lors de la suppression de l'article (admin) :", err);
 		res
 			.status(500)
 			.json({ error: "Erreur lors de la suppression de l'article" });

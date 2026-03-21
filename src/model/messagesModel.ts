@@ -2,6 +2,7 @@ import pool from "./db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type { Message, MessageCreateData } from "../types/messages";
 import messagesAdminModel from "./admin/messagesAdminModel";
+import logger from "../utils/logger";
 
 const { findById } = messagesAdminModel;
 
@@ -32,7 +33,7 @@ const create = async (data: MessageCreateData): Promise<Message> => {
 		}
 		return newMessage;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

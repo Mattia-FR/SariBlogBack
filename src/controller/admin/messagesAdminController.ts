@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import messagesAdminModel from "../../model/admin/messagesAdminModel";
 import type { Message, MessageStatus } from "../../types/messages";
+import logger from "../../utils/logger";
 
 // Liste tous les messages
 // GET /messages
@@ -9,7 +10,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const messages: Message[] = await messagesAdminModel.findAll();
 		res.status(200).json(messages);
 	} catch (err) {
-		console.error("Erreur lors de la récupération de tous les messages :", err);
+		logger.error("Erreur lors de la récupération de tous les messages :", err);
 		res.sendStatus(500);
 	}
 };
@@ -28,7 +29,7 @@ const browseByStatus = async (req: Request, res: Response): Promise<void> => {
 		);
 		res.status(200).json(messages);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des messages par statut :",
 			err,
 		);
@@ -53,7 +54,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(message);
 	} catch (err) {
-		console.error("Erreur lors de la récupération du message par ID :", err);
+		logger.error("Erreur lors de la récupération du message par ID :", err);
 		res.sendStatus(500);
 	}
 };
@@ -80,7 +81,7 @@ const editStatus = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(updatedMessage);
 	} catch (err) {
-		console.error("Erreur lors de la mise à jour du statut :", err);
+		logger.error("Erreur lors de la mise à jour du statut :", err);
 		res.sendStatus(500);
 	}
 };
@@ -101,7 +102,7 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.sendStatus(204);
 	} catch (err) {
-		console.error("Erreur lors de la suppression du message :", err);
+		logger.error("Erreur lors de la suppression du message :", err);
 		res.sendStatus(500);
 	}
 };

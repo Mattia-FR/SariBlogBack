@@ -1,6 +1,7 @@
 import pool from "./db";
 import type { Image } from "../types/images";
 import { toDateString } from "../utils/dateHelpers";
+import logger from "../utils/logger";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString, tags), le frontend reçoit toujours des objets strictement conformes à l'interface Image.
@@ -43,7 +44,7 @@ const findGallery = async (): Promise<Image[]> => {
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -74,7 +75,7 @@ const findById = async (id: number): Promise<Image | null> => {
 			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -103,7 +104,7 @@ const findByArticleId = async (id: number): Promise<Image[]> => {
 			updated_at: toDateString(row.updated_at) ?? "",
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -133,7 +134,7 @@ const findByTagId = async (id: number): Promise<Image[]> => {
 			updated_at: toDateString(row.updated_at) ?? "",
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -177,7 +178,7 @@ const findByCategoryId = async (categoryId: number): Promise<Image[]> => {
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -217,7 +218,7 @@ const findImageOfTheDay = async (): Promise<Image | null> => {
 			updated_at: toDateString(row.updated_at) ?? "",
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
