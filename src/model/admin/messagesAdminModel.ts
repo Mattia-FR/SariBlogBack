@@ -145,8 +145,85 @@ const countByStatus = async (status: MessageStatus): Promise<number> => {
 	}
 };
 
+const findAllPaginated = async (
+	page: number,
+	limit: number,
+	status?: MessageStatus,
+): Promise<{ messages: Message[]; total: number }> => {
+	const offset = (page - 1) * limit;
+	const whereClause = status ? "WHERE status = ?" : "";
+	const countParams = status ? [status] : [];
+	const listParams = status ? [status, limit, offset] : [limit, offset];
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [countResult]: any = await pool.query(
+			`SELECT COUNT(*) as total FROM messages ${whereClause}`,
+			countParams,
+		);
+		const total = countResult[0].total as number;
+
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			`SELECT * FROM messages ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+			listParams,
+		);
+
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const messages: Message[] = rows.map((row: any) => ({
+			id: row.id,
+			firstname: row.firstname,
+			lastname: row.lastname,
+			email: row.email,
+			username: row.username,
+			ip: row.ip,
+			subject: row.subject,
+			text: row.text,
+			status: row.status,
+			user_id: row.user_id,
+			created_at: toDateString(row.created_at) ?? "",
+		}));
+
+		return { messages, total };
+	} catch (err) {
+		logger.error(err);
+		throw err;
+	}
+};
+
+/** Totaux pour les onglets (tous statuts confondus). */
+const findTabCounts = async (): Promise<{
+	total: number;
+	unread: number;
+	read: number;
+	archived: number;
+}> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			`SELECT
+				COUNT(*) AS total,
+				COALESCE(SUM(status = 'unread'), 0) AS unread,
+				COALESCE(SUM(status = 'read'), 0) AS \`read\`,
+				COALESCE(SUM(status = 'archived'), 0) AS archived
+			FROM messages`,
+		);
+		const r = rows[0];
+		return {
+			total: Number(r.total),
+			unread: Number(r.unread),
+			read: Number(r.read),
+			archived: Number(r.archived),
+		};
+	} catch (err) {
+		logger.error(err);
+		throw err;
+	}
+};
+
 export default {
 	findAll,
+	findAllPaginated,
+	findTabCounts,
 	findByStatus,
 	findById,
 	updateStatus,

@@ -57,6 +57,85 @@ const findAll = async (): Promise<Image[]> => {
 	}
 };
 
+const findAllPaginated = async (
+	page: number,
+	limit: number,
+	tagId?: number,
+): Promise<{ images: Image[]; total: number }> => {
+	const offset = (page - 1) * limit;
+	try {
+		const tagJoin =
+			tagId != null
+				? "INNER JOIN images_tags tagf ON tagf.image_id = i.id AND tagf.tag_id = ?"
+				: "";
+
+		const countParams = tagId != null ? [tagId] : [];
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [countResult]: any = await pool.query(
+			tagId != null
+				? `SELECT COUNT(DISTINCT i.id) as total
+			FROM images i
+			${tagJoin}
+			WHERE 1=1`
+				: "SELECT COUNT(*) as total FROM images i",
+			countParams,
+		);
+		const total = countResult[0].total as number;
+
+		const listParams = tagId != null ? [tagId, limit, offset] : [limit, offset];
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery, i.user_id, i.article_id, i.created_at, i.updated_at
+			FROM images i
+			${tagJoin}
+			ORDER BY i.created_at DESC
+			LIMIT ? OFFSET ?`,
+			listParams,
+		);
+
+		if (rows.length === 0) {
+			return { images: [], total };
+		}
+
+		const imageIds: number[] = rows.map((row: { id: number }) => row.id);
+		const placeholders = imageIds.map(() => "?").join(",");
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [tagsRows]: any = await pool.query(
+			`SELECT it.image_id, t.id, t.name, t.slug
+			FROM images_tags it
+			LEFT JOIN tags t ON it.tag_id = t.id
+			WHERE it.image_id IN (${placeholders})`,
+			imageIds,
+		);
+
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const images: Image[] = rows.map((row: any) => ({
+			id: row.id,
+			title: row.title,
+			description: row.description,
+			path: row.path,
+			alt_descr: row.alt_descr,
+			is_in_gallery: row.is_in_gallery,
+			user_id: row.user_id,
+			article_id: row.article_id,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
+			tags: tagsRows
+				.filter((t: { image_id: number }) => t.image_id === row.id)
+				.map((t: { id: number; name: string; slug: string }) => ({
+					id: t.id,
+					name: t.name,
+					slug: t.slug,
+				})),
+		}));
+
+		return { images, total };
+	} catch (err) {
+		logger.error(err);
+		throw err;
+	}
+};
+
 const create = async (data: ImageCreateData): Promise<Image> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
@@ -185,6 +264,7 @@ const countInGallery = async (): Promise<number> => {
 
 export default {
 	findAll,
+	findAllPaginated,
 	findById,
 	create,
 	update,

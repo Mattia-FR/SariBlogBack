@@ -3,12 +3,49 @@ import messagesAdminModel from "../../model/admin/messagesAdminModel";
 import type { Message, MessageStatus } from "../../types/messages";
 import logger from "../../utils/logger";
 
-// Liste tous les messages
-// GET /messages
+// Liste paginée des messages. Query : page, limit (1–20), status optionnel (unread | read | archived).
+// GET /admin/messages?page=1&limit=10&status=unread
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const messages: Message[] = await messagesAdminModel.findAll();
-		res.status(200).json(messages);
+		const page = Number.parseInt(req.query.page as string, 10) || 1;
+		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
+
+		if (page < 1) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre page doit être un nombre positif" });
+			return;
+		}
+		if (limit < 1 || limit > 20) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			return;
+		}
+
+		let status: MessageStatus | undefined;
+		const statusRaw = req.query.status;
+		if (statusRaw !== undefined && statusRaw !== "") {
+			const s = String(statusRaw);
+			if (!["unread", "read", "archived"].includes(s)) {
+				res.status(400).json({ error: "Statut de filtre invalide" });
+				return;
+			}
+			status = s as MessageStatus;
+		}
+
+		const [{ messages, total }, counts] = await Promise.all([
+			messagesAdminModel.findAllPaginated(page, limit, status),
+			messagesAdminModel.findTabCounts(),
+		]);
+
+		res.status(200).json({
+			messages,
+			total,
+			page,
+			limit,
+			counts,
+		});
 	} catch (err) {
 		logger.error("Erreur lors de la récupération de tous les messages :", err);
 		res.sendStatus(500);

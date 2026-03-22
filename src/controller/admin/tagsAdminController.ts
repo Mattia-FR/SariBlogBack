@@ -16,6 +16,47 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
+// Tags utilisés sur au moins un article (tous statuts), filtre liste articles admin.
+// GET /admin/tags/used-on-articles
+const browseUsedOnArticles = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
+	try {
+		const tags: Tag[] = await tagsAdminModel.findUsedOnArticles();
+		res.status(200).json(tags);
+	} catch (err) {
+		logger.error(
+			"Erreur lors de la récupération des tags utilisés sur des articles :",
+			err,
+		);
+		res.status(500).json({
+			error:
+				"Erreur lors de la récupération des tags utilisés sur des articles",
+		});
+	}
+};
+
+// Tags utilisés sur au moins une image (filtre liste images admin).
+// GET /admin/tags/used-on-images
+const browseUsedOnImages = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
+	try {
+		const tags: Tag[] = await tagsAdminModel.findUsedOnImages();
+		res.status(200).json(tags);
+	} catch (err) {
+		logger.error(
+			"Erreur lors de la récupération des tags utilisés sur des images :",
+			err,
+		);
+		res.status(500).json({
+			error: "Erreur lors de la récupération des tags utilisés sur des images",
+		});
+	}
+};
+
 // Récupère un tag par ID.
 // GET /admin/tags/:id
 const readById = async (req: Request, res: Response): Promise<void> => {
@@ -32,10 +73,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(tag);
 	} catch (err) {
-		logger.error(
-			"Erreur lors de la récupération du tag par ID (admin) :",
-			err,
-		);
+		logger.error("Erreur lors de la récupération du tag par ID (admin) :", err);
 		res.status(500).json({ error: "Erreur lors de la récupération du tag" });
 	}
 };
@@ -140,4 +178,12 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseAll, readById, add, edit, destroy };
+export {
+	browseAll,
+	browseUsedOnArticles,
+	browseUsedOnImages,
+	readById,
+	add,
+	edit,
+	destroy,
+};

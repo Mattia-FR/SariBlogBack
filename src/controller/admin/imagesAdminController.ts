@@ -13,13 +13,51 @@ function enrichWithImageUrl(item: Image): Image & { imageUrl: string } {
 	};
 }
 
-// Liste toutes les images (admin).
-// GET /admin/images
+// Liste les images (admin), paginée. Query : page, limit (1–20), tagId optionnel.
+// GET /admin/images?page=1&limit=10&tagId=2
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const images: Image[] = await imagesAdminModel.findAll();
+		const page = Number.parseInt(req.query.page as string, 10) || 1;
+		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
+
+		if (page < 1) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre page doit être un nombre positif" });
+			return;
+		}
+		if (limit < 1 || limit > 20) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			return;
+		}
+
+		let tagId: number | undefined;
+		const tagIdRaw = req.query.tagId;
+		if (tagIdRaw !== undefined && tagIdRaw !== "") {
+			const parsed = Number.parseInt(String(tagIdRaw), 10);
+			if (Number.isNaN(parsed) || parsed < 1) {
+				res.status(400).json({
+					error: "Le paramètre tagId doit être un nombre positif",
+				});
+				return;
+			}
+			tagId = parsed;
+		}
+
+		const { images, total } = await imagesAdminModel.findAllPaginated(
+			page,
+			limit,
+			tagId,
+		);
 		const enriched = images.map(enrichWithImageUrl);
-		res.status(200).json(enriched);
+		res.status(200).json({
+			images: enriched,
+			total,
+			page,
+			limit,
+		});
 	} catch (err) {
 		logger.error("Erreur lors de la récupération des images (admin) :", err);
 		res.sendStatus(500);

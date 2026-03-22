@@ -57,6 +57,90 @@ const findAllForAdmin = async (): Promise<Article[]> => {
 	}
 };
 
+/** Liste admin paginée (tous statuts), optionnellement filtrée par tag. */
+const findAllForAdminPaginated = async (
+	page: number,
+	limit: number,
+	tagId?: number,
+): Promise<{ articles: Article[]; total: number }> => {
+	const offset = (page - 1) * limit;
+
+	try {
+		const tagFilter =
+			tagId != null
+				? "INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?"
+				: "";
+
+		const listParams = tagId != null ? [tagId, limit, offset] : [limit, offset];
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [articles]: any = await pool.query(
+			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
+			FROM articles a
+			LEFT JOIN images i ON a.featured_image_id = i.id
+			${tagFilter}
+			ORDER BY a.created_at DESC
+			LIMIT ? OFFSET ?`,
+			listParams,
+		);
+
+		const countParams = tagId != null ? [tagId] : [];
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [countResult]: any = await pool.query(
+			tagId != null
+				? `SELECT COUNT(DISTINCT a.id) as total
+				FROM articles a
+				INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?`
+				: "SELECT COUNT(*) as total FROM articles",
+			countParams,
+		);
+
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		let tags: any[] = [];
+		if (articles.length > 0) {
+			const articleIds: number[] = articles.map(
+				(row: { id: number }) => row.id,
+			);
+			const placeholders = articleIds.map(() => "?").join(",");
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			const [tagRows]: any = await pool.query(
+				`SELECT at.article_id, t.id, t.name, t.slug
+				FROM articles_tags at
+				LEFT JOIN tags t ON at.tag_id = t.id
+				WHERE at.article_id IN (${placeholders})`,
+				articleIds,
+			);
+			tags = tagRows;
+		}
+
+		return {
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			articles: articles.map((article: any) => ({
+				id: article.id,
+				title: article.title,
+				slug: article.slug,
+				excerpt: article.excerpt,
+				status: article.status,
+				user_id: article.user_id,
+				created_at: toDateString(article.created_at) ?? "",
+				updated_at: toDateString(article.updated_at) ?? "",
+				published_at: toDateString(article.published_at) ?? null,
+				views: article.views,
+				featured_image_id: article.featured_image_id,
+				imageUrl: buildImageUrl(article.image_path),
+				tags: tags
+					// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+					.filter((t: any) => t.article_id === article.id)
+					// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+					.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
+			})),
+			total: countResult[0].total,
+		};
+	} catch (err) {
+		logger.error(err);
+		throw err;
+	}
+};
+
 const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
@@ -301,6 +385,7 @@ const countByStatus = async (status: string): Promise<number> => {
 
 export default {
 	findAllForAdmin,
+	findAllForAdminPaginated,
 	findByIdForAdmin,
 	findBySlugForAdmin,
 	create,

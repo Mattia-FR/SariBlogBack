@@ -358,7 +358,7 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `GET` | `/admin/articles` | Liste tous les articles (tous statuts) |
+| `GET` | `/admin/articles` | Liste paginée (tous statuts). Query : `page`, `limit` (1–20, défaut 10), `tagId` optionnel. Réponse : `{ articles, total, page, limit }`. |
 | `GET` | `/admin/articles/slug/:slug` | Article par slug (tous statuts) |
 | `GET` | `/admin/articles/:id` | Article par ID (détails complets) |
 | `POST` | `/admin/articles` | Créer un article |
@@ -369,7 +369,7 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `GET` | `/admin/images` | Liste toutes les images |
+| `GET` | `/admin/images` | Liste paginée (`page`, `limit` 1–20, `tagId` optionnel) → `{ images, total, page, limit }` |
 | `GET` | `/admin/images/:id` | Image par ID |
 | `POST` | `/admin/images` | Créer une image (`multipart/form-data`, champ `image`) |
 | `PATCH` | `/admin/images/:id` | Modifier les métadonnées d'une image |
@@ -380,6 +380,8 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
 | `GET` | `/admin/tags` | Liste tous les tags |
+| `GET` | `/admin/tags/used-on-articles` | Tags liés à au moins un article (filtre liste articles admin) |
+| `GET` | `/admin/tags/used-on-images` | Tags liés à au moins une image (filtre liste images) |
 | `GET` | `/admin/tags/:id` | Tag par ID |
 | `POST` | `/admin/tags` | Créer un tag |
 | `PATCH` | `/admin/tags/:id` | Modifier un tag |
@@ -399,8 +401,8 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `GET` | `/admin/comments` | Liste tous les commentaires |
-| `GET` | `/admin/comments/status/:status` | Commentaires par statut (`pending`, `approved`, `rejected`, `spam`) |
+| `GET` | `/admin/comments` | Liste paginée. Query : `page`, `limit` (1–20, défaut 10), `status` optionnel (`pending` \| `approved` \| `rejected` \| `spam`). Réponse : `{ comments, total, page, limit, counts }` avec `counts` : `{ total, pending, approved, rejected, spam }`. |
+| `GET` | `/admin/comments/status/:status` | Commentaires par statut, liste complète (non paginée) |
 | `GET` | `/admin/comments/:id` | Commentaire par ID |
 | `PATCH` | `/admin/comments/:id/status` | Mettre à jour le statut |
 | `DELETE` | `/admin/comments/:id` | Supprimer un commentaire |
@@ -409,8 +411,8 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `GET` | `/admin/messages` | Liste tous les messages |
-| `GET` | `/admin/messages/status/:status` | Messages par statut (`unread`, `read`, `archived`) |
+| `GET` | `/admin/messages` | Liste paginée des messages. Query : `page`, `limit` (1–20, défaut 10), `status` optionnel (`unread` \| `read` \| `archived`). Réponse : `{ messages, total, page, limit, counts }` où `counts` est `{ total, unread, read, archived }` pour les onglets admin. |
+| `GET` | `/admin/messages/status/:status` | Messages par statut (`unread`, `read`, `archived`), liste complète (non paginée) |
 | `GET` | `/admin/messages/:id` | Message par ID |
 | `PATCH` | `/admin/messages/:id/status` | Mettre à jour le statut |
 | `DELETE` | `/admin/messages/:id` | Supprimer un message |
@@ -455,7 +457,7 @@ curl http://localhost:4242/api/categories
 curl http://localhost:4242/api/tags/article/1
 
 # Route admin (avec token)
-curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/admin/articles
+curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" "http://localhost:4242/api/admin/articles?page=1&limit=10"
 
 # Statistiques du dashboard
 curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/admin/dashboard/stats

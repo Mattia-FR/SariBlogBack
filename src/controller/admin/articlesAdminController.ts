@@ -19,13 +19,48 @@ const VALID_STATUSES: ArticleStatus[] = ["draft", "published", "archived"];
 // Type pour un article admin : Article + comments_count (optionnel).
 type ArticleWithCommentsCount = Article & { comments_count?: number };
 
-// Liste tous les articles (tous statuts) avec tags et comments_count.
-// GET /admin/articles
+// Liste paginée (tous statuts) avec tags. Query : page, limit (1–20), tagId optionnel.
+// GET /admin/articles?page=1&limit=10&tagId=2
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const articles: ArticleWithCommentsCount[] =
-			await articlesAdminModel.findAllForAdmin();
-		res.status(200).json(articles);
+		const page = Number.parseInt(req.query.page as string, 10) || 1;
+		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
+
+		if (page < 1) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre page doit être un nombre positif" });
+			return;
+		}
+		if (limit < 1 || limit > 20) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			return;
+		}
+
+		let tagId: number | undefined;
+		const tagIdRaw = req.query.tagId;
+		if (tagIdRaw !== undefined && tagIdRaw !== "") {
+			const parsed = Number.parseInt(String(tagIdRaw), 10);
+			if (Number.isNaN(parsed) || parsed < 1) {
+				res.status(400).json({
+					error: "Le paramètre tagId doit être un nombre positif",
+				});
+				return;
+			}
+			tagId = parsed;
+		}
+
+		const { articles, total } =
+			await articlesAdminModel.findAllForAdminPaginated(page, limit, tagId);
+
+		res.status(200).json({
+			articles,
+			total,
+			page,
+			limit,
+		});
 	} catch (err) {
 		logger.error("Erreur lors de la récupération des articles (admin) :", err);
 		res
