@@ -1,13 +1,18 @@
 import winston from 'winston';
 
 const logger = winston.createLogger({
-  level: 'info', // on loggue "info" et tout ce qui est plus grave
+  level: 'info',
   format: winston.format.combine(
-    winston.format.timestamp(),   // ajoute la date/heure
-    winston.format.simple()       // format lisible
+    winston.format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+    }),
+    winston.format.colorize(),
+    winston.format.printf(({ timestamp, level, message }) => {
+      return `${timestamp} ${level}: ${message}`;
+    })
   ),
   transports: [
-    new winston.transports.Console(), // affiche dans le terminal
+    new winston.transports.Console(),
   ],
 });
 
