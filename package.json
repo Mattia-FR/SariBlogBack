@@ -7,7 +7,8 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "nodemon --exec ts-node index.ts",
     "db:init": "ts-node init.ts"
   },
@@ -20,7 +21,8 @@
     "@types/node": "^22.10.5",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.2"
   },
   "dependencies": {
     "argon2": "^0.44.0",
