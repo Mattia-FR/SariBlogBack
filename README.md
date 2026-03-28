@@ -7,7 +7,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 [![Express](https://img.shields.io/badge/Express-5.1-black.svg)](https://expressjs.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-orange.svg)](https://www.mysql.com/)
-[![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
 
 ## 📋 Table des matières
 
@@ -22,7 +21,6 @@
 - [Tests](#-tests)
 - [Sécurité](#-sécurité)
 - [Contribution](#-contribution)
-- [Licence](#-licence)
 
 ## 🎯 À propos
 
@@ -53,27 +51,28 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
   - Public : preview homepage, liste paginée publiés, par ID, par slug
   - Admin : liste tous statuts, par slug/ID, création, modification, suppression
 
-- **Images** : Galerie d'images avec filtrage (5 endpoints publics) + CRUD admin avec upload (5 endpoints)
-  - Public : galerie, image du jour, par tag, par article, par ID
+- **Images** : Galerie d'images avec filtrage (6 endpoints publics) + CRUD admin avec upload (5 endpoints)
+  - Public : galerie, image du jour, par tag, par catégorie, par article, par ID
   - Admin : liste, par ID, création (upload fichier), modification, suppression
 
-- **Tags** : Système de tags multi-entités (3 endpoints publics) + CRUD admin (5 endpoints)
-  - Public : liste complète, tags par article, tags par image
-  - Admin : liste, par ID, création, modification, suppression
+- **Tags** : Système de tags multi-entités (4 endpoints publics) + CRUD admin (7 endpoints)
+  - Public : tags des articles publiés, par catégorie (galerie), par article, par image
+  - Admin : liste, `used-on-articles`, `used-on-images`, par ID, création, modification, suppression
 
 - **Catégories** : Catégories d'images avec ordre d'affichage (2 endpoints publics) + CRUD admin (5 endpoints)
   - Public : liste complète, par slug
   - Admin : liste, par ID, création, modification, suppression
 
-- **Commentaires** : Système de commentaires modérés (1 endpoint public) + modération admin (5 endpoints)
-  - Public : commentaires approuvés d'un article (avec infos utilisateur)
+- **Commentaires** : Système de commentaires modérés (2 endpoints publics) + modération admin (5 endpoints)
+  - Public : liste des commentaires approuvés d'un article ; création d'un commentaire (modération ensuite)
   - Admin : liste, par statut, par ID, mise à jour statut, suppression
 
-- **Utilisateurs** : Profils publics (3 endpoints) + profil connecté (1 endpoint)
-  - Liste, artiste principale, par ID ; `/users/me` pour l'utilisateur connecté
+- **Utilisateurs** : Artiste principale (1 endpoint public) + profil connecté (3 endpoints admin)
+  - Public : profil de l'artiste principale (`GET /api/users/artist`)
+  - Admin : `GET/PATCH /api/admin/users/me`, `PATCH /api/admin/users/me/password`
 
 - **Messages** : Formulaire de contact (1 endpoint public) + gestion admin (5 endpoints)
-  - Public : création de message (avec optionalAuth pour lier l'utilisateur si connecté)
+  - Public : création de message (visiteur)
   - Admin : liste, par statut, par ID, mise à jour statut, suppression
 
 - **Authentification** : JWT avec refresh (3 endpoints)
@@ -81,7 +80,7 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 
 - **Dashboard** : Statistiques admin (1 endpoint)
 
-**Total : 55 endpoints (22 publics, 1 authentifié `/users/me`, 32 admin sous `/api/admin`)**
+**Total : 60 endpoints (23 routes publiques incluant `/api/auth`, 37 sous `/api/admin` avec JWT + rôle éditeur ou admin)**
 
 ## 🛠️ Technologies
 
@@ -97,6 +96,7 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 | **Validation** | Zod | 4.1.x |
 | **Upload** | Multer | 2.1.0 |
 | **Rate limiting** | express-rate-limit | 8.2.1 |
+| **Logging** | winston | 3.19.x |
 | **Utilitaires** | dotenv, cookie-parser, slugify | - |
 | **Sécurité HTTP** | Helmet | 8.1.0 |
 | **CORS** | cors | 2.8.5 |
@@ -114,14 +114,14 @@ Back/
 │   │   ├── multer.ts                # Upload d'images (20 MB max, nommage UUID)
 │   │   └── rateLimit.ts             # Rate limiters (login, messages, commentaires)
 │   ├── controller/
-│   │   ├── articlesController.ts    # Articles publics (4 handlers)
+│   │   ├── articlesController.ts    # Articles publics (handlers utilisés par articlesRouter)
 │   │   ├── categoriesController.ts  # Catégories publiques (2 handlers)
-│   │   ├── commentsController.ts    # Commentaires (1 handler)
-│   │   ├── imagesController.ts      # Images (5 handlers)
+│   │   ├── commentsController.ts    # Commentaires publics (liste + création)
+│   │   ├── imagesController.ts      # Images publiques (handlers galerie, filtres, etc.)
 │   │   ├── messagesController.ts    # Formulaire contact (1 handler)
 │   │   ├── authController.ts        # Authentification (login, refresh, logout)
-│   │   ├── tagsController.ts        # Tags (3 handlers)
-│   │   ├── usersController.ts       # Utilisateurs (4 handlers)
+│   │   ├── tagsController.ts        # Tags publics
+│   │   ├── usersController.ts       # Artiste principale (1 handler)
 │   │   └── admin/
 │   │       ├── articlesAdminController.ts    # CRUD articles (6 handlers)
 │   │       ├── categoriesAdminController.ts  # CRUD catégories (5 handlers)
@@ -129,7 +129,8 @@ Back/
 │   │       ├── dashboardAdminController.ts   # Statistiques (1 handler)
 │   │       ├── imagesAdminController.ts      # CRUD images + upload (5 handlers)
 │   │       ├── messagesAdminController.ts    # Gestion messages (5 handlers)
-│   │       └── tagsAdminController.ts        # CRUD tags (5 handlers)
+│   │       ├── tagsAdminController.ts        # CRUD tags (7 routes)
+│   │       └── usersAdminController.ts       # Profil connecté / mot de passe (3 handlers)
 │   ├── model/
 │   │   ├── db.ts                    # Pool de connexions MySQL
 │   │   ├── articlesModel.ts
@@ -145,7 +146,8 @@ Back/
 │   │       ├── commentsAdminModel.ts
 │   │       ├── imagesAdminModel.ts
 │   │       ├── messagesAdminModel.ts
-│   │       └── tagsAdminModel.ts
+│   │       ├── tagsAdminModel.ts
+│   │       └── usersAdminModel.ts
 │   ├── router/
 │   │   ├── index.ts                 # Router principal (préfixe /api)
 │   │   ├── articlesRouter.ts        # Routes publiques articles
@@ -164,7 +166,8 @@ Back/
 │   │       ├── dashboardAdminRouter.ts
 │   │       ├── imagesAdminRouter.ts
 │   │       ├── messagesAdminRouter.ts
-│   │       └── tagsAdminRouter.ts
+│   │       ├── tagsAdminRouter.ts
+│   │       └── usersAdminRouter.ts
 │   ├── middleware/
 │   │   ├── authMiddleware.ts        # requireAuth, optionalAuth (JWT)
 │   │   ├── errorMiddleware.ts       # Gestionnaire d'erreurs global (Zod, Multer, 500)
@@ -186,11 +189,14 @@ Back/
 │   └── utils/
 │       ├── dateHelpers.ts
 │       ├── imageUrl.ts
+│       ├── logger.ts                # Winston (logs)
 │       └── slug.ts
 ├── uploads/
 │   └── images/                      # Fichiers images (servis statiquement)
 ├── tests/
-│   └── api.http                     # Tests REST Client (VS Code)
+│   ├── api.http                     # Tests REST Client (VS Code)
+│   └── unit/                        # Tests unitaires Vitest
+├── vitest.config.ts
 ├── index.ts                         # Point d'entrée (port 4242)
 ├── init.ts                          # Script d'initialisation DB (npm run db:init)
 ├── seeds.ts                         # Données de test
@@ -254,20 +260,15 @@ REFRESH_TOKEN_SECRET=une_autre_longue_chaîne_aléatoire_secrète_2
 
 > ⚠️ **Important** : Les variables `DB_*`, `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `ALLOWED_ORIGIN` et `IMAGE_BASE_URL` sont **obligatoires** pour le bon fonctionnement.
 
-4. **Créer et initialiser la base de données**
+4. **Initialiser la base de données**
+
+> **Attention** : `npm run db:init` exécute [`init.ts`](init.ts), qui **supprime la base** portant le nom `DB_NAME` si elle existe, la recrée, applique `schema.sql` puis injecte les données de test via `seeds.ts`. Ajustez `DB_NAME` dans `.env` en conséquence.
 
 ```bash
-# Créer la base de données
-mysql -u votre_utilisateur -p -e "CREATE DATABASE sariblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-
-# Importer le schéma (tables uniquement)
-mysql -u votre_utilisateur -p sariblog < schema.sql
-
-# Injecter les données de test
 npm run db:init
 ```
 
-Le fichier `schema.sql` contient les 10 tables avec leurs relations. Le script `npm run db:init` (`init.ts` + `seeds.ts`) insère les données de test.
+Le fichier `schema.sql` contient les 10 tables avec leurs relations. Aucune étape `mysql` manuelle n’est nécessaire : tout est fait par le script.
 
 5. **Démarrer le serveur**
 
@@ -278,7 +279,7 @@ npm run dev
 
 Le serveur démarre sur **http://localhost:4242**
 
-Vous pouvez tester l'API en accédant à `http://localhost:4242/` qui retourne un message de confirmation.
+Vous pouvez tester l'API en accédant à `http://localhost:4242/` : la racine renvoie une chaîne de confirmation (message défini dans [`index.ts`](index.ts)).
 
 ## 📡 API Endpoints
 
@@ -311,16 +312,14 @@ Pour les routes protégées, envoyer le header : `Authorization: Bearer <accessT
 | `GET` | `/images/gallery` | Galerie d'images publiques (`is_in_gallery = TRUE`) | Public |
 | `GET` | `/images/article/:articleId` | Images associées à un article | Public |
 | `GET` | `/images/tag/:tagId` | Images filtrées par tag | Public |
+| `GET` | `/images/category/:categoryId` | Images de la galerie pour une catégorie (`?page`, `?limit`, max 20) | Public |
 | `GET` | `/images/:id` | Image par ID (détails complets) | Public |
 
-### Utilisateurs (`/api/users`)
+### Utilisateurs (`/api/users`) — public
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
-| `GET` | `/users` | Liste tous les utilisateurs (sans mots de passe) | Public |
 | `GET` | `/users/artist` | Profil de l'artiste principale (sans mot de passe) | Public |
-| `GET` | `/users/me` | Profil de l'utilisateur connecté | Authentifié |
-| `GET` | `/users/:id` | Profil utilisateur par ID (sans mot de passe) | Public |
 
 ### Tags (`/api/tags`)
 
@@ -343,12 +342,13 @@ Pour les routes protégées, envoyer le header : `Authorization: Bearer <accessT
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
 | `GET` | `/comments/article/:articleId` | Commentaires approuvés d'un article (avec infos utilisateur) | Public |
+| `POST` | `/comments` | Créer un commentaire (statut initial `pending`, modération côté admin) | Public |
 
 ### Messages (`/api/messages`)
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
-| `POST` | `/messages` | Créer un message via formulaire de contact (optionalAuth : lie l'utilisateur si connecté) | Public |
+| `POST` | `/messages` | Créer un message via formulaire de contact | Public |
 
 ### Admin (`/api/admin`) — protégé (JWT + rôle éditeur ou admin)
 
@@ -371,8 +371,8 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 |---------|----------|-------------|
 | `GET` | `/admin/images` | Liste paginée (`page`, `limit` 1–20, `tagId` optionnel) → `{ images, total, page, limit }` |
 | `GET` | `/admin/images/:id` | Image par ID |
-| `POST` | `/admin/images` | Créer une image (`multipart/form-data`, champ `image`) |
-| `PATCH` | `/admin/images/:id` | Modifier les métadonnées d'une image |
+| `POST` | `/admin/images` | Créer une image (`multipart/form-data`, champ `image` ; champs texte optionnels dont `article_id`, `category_id`, `tag_ids` comme JSON) |
+| `PATCH` | `/admin/images/:id` | Modifier les métadonnées (`title`, `description`, `alt_descr`, `is_in_gallery`, `article_id`, `category_id`, `tag_ids`, etc.) |
 | `DELETE` | `/admin/images/:id` | Supprimer une image |
 
 #### Tags admin (`/api/admin/tags`)
@@ -416,6 +416,14 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 | `GET` | `/admin/messages/:id` | Message par ID |
 | `PATCH` | `/admin/messages/:id/status` | Mettre à jour le statut |
 | `DELETE` | `/admin/messages/:id` | Supprimer un message |
+
+#### Utilisateurs admin (`/api/admin/users`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/users/me` | Profil de l'utilisateur connecté |
+| `PATCH` | `/admin/users/me` | Mettre à jour le profil connecté |
+| `PATCH` | `/admin/users/me/password` | Changer le mot de passe du compte connecté |
 
 #### Dashboard admin (`/api/admin/dashboard`)
 
@@ -461,6 +469,9 @@ curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" "http://localhost:4242/api/ad
 
 # Statistiques du dashboard
 curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/admin/dashboard/stats
+
+# Profil utilisateur connecté (admin)
+curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/admin/users/me
 ```
 
 ## 🗄️ Base de données
@@ -472,7 +483,7 @@ curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/adm
 | Table | Description | Relations |
 |-------|-------------|-----------|
 | `users` | Utilisateurs (2 données de test) | - |
-| `articles` | Articles de blog (10 données de test) | `users`, `images` (featured_image) |
+| `articles` | Articles de blog (30 données de test) | `users`, `images` (featured_image) |
 | `images` | Galerie d'images (14 données de test) | `users`, `articles` |
 | `tags` | Tags multi-entités (10 données de test) | - |
 | `categories` | Catégories d'images (5 données de test) | - |
@@ -495,7 +506,7 @@ curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/adm
 
 Le fichier `seeds.ts` (injecté via `npm run db:init`) inclut :
 - 2 utilisateurs (1 admin, 1 éditrice — l'artiste principale)
-- 10 articles (9 publiés, 1 brouillon)
+- 30 articles (28 publiés, 2 brouillons)
 - 14 images (galerie et illustrations d'articles)
 - 10 tags (aquarelle, fantasy, portrait, etc.)
 - 5 catégories (portraits, aquarelle, paysages, fantasy, croquis & esquisses)
@@ -521,6 +532,15 @@ Le fichier contient :
 - Tests pour tous les endpoints (auth, publics, admin)
 - Variables globales (`@baseUrl`, `@adminUrl`, `@accessToken`)
 - Exemples de codes HTTP (200, 401, 403, 404)
+
+### Tests unitaires (Vitest)
+
+```bash
+npm test          # exécution unique
+npm run test:watch  # mode surveillance
+```
+
+Les fichiers se trouvent dans `tests/unit/` ; la configuration est dans `vitest.config.ts`.
 
 ### Exemple de test
 
@@ -552,8 +572,12 @@ GET {{baseUrl}}/articles/homepage-preview
 # Démarrage en mode développement (avec hot reload)
 npm run dev
 
-# Initialiser la base de données (création du schéma + injection des données de test)
+# Initialiser la base de données (suppression/recréation de DB_NAME, schéma + données de test)
 npm run db:init
+
+# Tests unitaires (Vitest)
+npm test
+npm run test:watch
 ```
 
 ## 👤 Auteur
@@ -563,7 +587,3 @@ npm run db:init
 - GitHub : [@Mattia-FR](https://github.com/Mattia-FR)
 - Dépôt Backend : [SariBlogBack](https://github.com/Mattia-FR/SariBlogBack)
 - Dépôt Frontend : [SariBlogFront](https://github.com/Mattia-FR/SariBlogFront)
-
-## 📄 Licence
-
-Ce projet est sous licence ISC.

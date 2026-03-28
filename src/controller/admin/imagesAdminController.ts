@@ -88,7 +88,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Crée une image. user_id pris du JWT. Body : path (requis), title, description, alt_descr, is_in_gallery, article_id.
+// Crée une image. user_id pris du JWT. Body : path (requis), title, description, alt_descr, is_in_gallery, article_id, category_id.
 // POST /admin/images
 const add = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -102,8 +102,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 		const path = `/uploads/images/${req.file.filename}`;
-		const { title, description, alt_descr, is_in_gallery, article_id } =
-			req.body;
+		const { title, description, alt_descr, article_id, category_id } = req.body;
 		let tagIds: number[] = [];
 		if (Array.isArray(req.body.tag_ids)) {
 			tagIds = req.body.tag_ids
@@ -119,16 +118,34 @@ const add = async (req: Request, res: Response): Promise<void> => {
 				// ignore invalid JSON
 			}
 		}
+		const isInGallery =
+			req.body.is_in_gallery === "true" || req.body.is_in_gallery === "on";
+		let resolvedCategoryId: number | null =
+			category_id != null && category_id !== "" ? Number(category_id) : null;
+		if (!isInGallery) {
+			resolvedCategoryId = null;
+		} else if (
+			resolvedCategoryId === null ||
+			Number.isNaN(resolvedCategoryId) ||
+			resolvedCategoryId < 1
+		) {
+			res.status(400).json({
+				error:
+					"Une catégorie est requise pour une image affichée dans la galerie",
+			});
+			return;
+		}
+
 		const image = await imagesAdminModel.create({
 			path,
 			user_id: userId,
 			title: title?.trim() || null,
 			description: description?.trim() || null,
 			alt_descr: alt_descr?.trim() || null,
-			is_in_gallery:
-				req.body.is_in_gallery === "true" || req.body.is_in_gallery === "on",
+			is_in_gallery: isInGallery,
 			article_id:
 				article_id != null && article_id !== "" ? Number(article_id) : null,
+			category_id: resolvedCategoryId,
 			tag_ids: tagIds.length > 0 ? tagIds : undefined,
 		});
 		res.status(201).json(enrichWithImageUrl(image));
@@ -138,7 +155,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Met à jour une image. Body : champs optionnels (title, description, alt_descr, is_in_gallery, article_id). Le fichier image n'est pas modifié.
+// Met à jour une image. Body : champs optionnels (title, description, alt_descr, is_in_gallery, article_id, category_id). Le fichier image n'est pas modifié.
 // PATCH /admin/images/:id
 const edit = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -147,9 +164,21 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			res.status(400).json({ error: "ID invalide" });
 			return;
 		}
+		const existing = await imagesAdminModel.findById(id);
+		if (!existing) {
+			res.sendStatus(404);
+			return;
+		}
+
 		const data: ImageUpdateData = {};
-		const { title, description, alt_descr, is_in_gallery, article_id } =
-			req.body;
+		const {
+			title,
+			description,
+			alt_descr,
+			is_in_gallery,
+			article_id,
+			category_id,
+		} = req.body;
 		if (title !== undefined) data.title = title ?? null;
 		if (description !== undefined) data.description = description ?? null;
 		if (alt_descr !== undefined) data.alt_descr = alt_descr ?? null;
@@ -157,6 +186,8 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			data.is_in_gallery = Boolean(is_in_gallery);
 		if (article_id !== undefined)
 			data.article_id = article_id != null ? Number(article_id) : null;
+		if (category_id !== undefined)
+			data.category_id = category_id != null ? Number(category_id) : null;
 		if (req.body.tag_ids !== undefined) {
 			const tagIds = Array.isArray(req.body.tag_ids)
 				? req.body.tag_ids
@@ -164,6 +195,31 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 						.filter((id: number) => !Number.isNaN(id))
 				: [];
 			data.tag_ids = tagIds;
+		}
+
+		const finalInGallery =
+			data.is_in_gallery !== undefined
+				? data.is_in_gallery
+				: existing.is_in_gallery;
+		if (!finalInGallery) {
+			data.category_id = null;
+		} else {
+			const mergedCategoryId =
+				data.category_id !== undefined
+					? data.category_id
+					: existing.category_id;
+			if (
+				mergedCategoryId === null ||
+				mergedCategoryId === undefined ||
+				Number.isNaN(Number(mergedCategoryId)) ||
+				Number(mergedCategoryId) < 1
+			) {
+				res.status(400).json({
+					error:
+						"Une catégorie est requise pour une image affichée dans la galerie",
+				});
+				return;
+			}
 		}
 
 		const image = await imagesAdminModel.update(id, data);

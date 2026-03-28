@@ -83,8 +83,7 @@ const findUsedOnGalleryImagesByCategoryId = async (
 			FROM tags t
 			INNER JOIN images_tags it ON t.id = it.tag_id
 			INNER JOIN images i ON i.id = it.image_id
-			INNER JOIN images_categories ic ON ic.image_id = i.id
-			WHERE ic.category_id = ? AND i.is_in_gallery = TRUE
+			WHERE i.category_id = ? AND i.is_in_gallery = TRUE
 			ORDER BY t.name`,
 			[categoryId],
 		);

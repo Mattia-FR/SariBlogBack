@@ -19,7 +19,7 @@ const findAll = async (): Promise<Image[]> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, created_at, updated_at
+			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id, created_at, updated_at
 			FROM images
 			ORDER BY created_at DESC`,
 		);
@@ -41,6 +41,7 @@ const findAll = async (): Promise<Image[]> => {
 			is_in_gallery: row.is_in_gallery,
 			user_id: row.user_id,
 			article_id: row.article_id,
+			category_id: row.category_id ?? null,
 			created_at: toDateString(row.created_at),
 			updated_at: toDateString(row.updated_at),
 			tags: tagsRows
@@ -85,7 +86,7 @@ const findAllPaginated = async (
 		const listParams = tagId != null ? [tagId, limit, offset] : [limit, offset];
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery, i.user_id, i.article_id, i.created_at, i.updated_at
+			`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery, i.user_id, i.article_id, i.category_id, i.created_at, i.updated_at
 			FROM images i
 			${tagJoin}
 			ORDER BY i.created_at DESC
@@ -118,6 +119,7 @@ const findAllPaginated = async (
 			is_in_gallery: row.is_in_gallery,
 			user_id: row.user_id,
 			article_id: row.article_id,
+			category_id: row.category_id ?? null,
 			created_at: toDateString(row.created_at) ?? "",
 			updated_at: toDateString(row.updated_at) ?? "",
 			tags: tagsRows
@@ -139,8 +141,8 @@ const findAllPaginated = async (
 const create = async (data: ImageCreateData): Promise<Image> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
-			`INSERT INTO images (title, description, path, alt_descr, is_in_gallery, user_id, article_id)
-			VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO images (title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				data.title ?? null,
 				data.description ?? null,
@@ -149,6 +151,7 @@ const create = async (data: ImageCreateData): Promise<Image> => {
 				data.is_in_gallery ?? false,
 				data.user_id,
 				data.article_id ?? null,
+				data.category_id ?? null,
 			],
 		);
 
@@ -182,6 +185,7 @@ const update = async (
 			"alt_descr",
 			"is_in_gallery",
 			"article_id",
+			"category_id",
 		];
 
 		const updates: string[] = [];

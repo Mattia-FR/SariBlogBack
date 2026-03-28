@@ -12,7 +12,7 @@ const findGallery = async (): Promise<Image[]> => {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [images]: any = await pool.query(
 			`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery,
-			i.user_id, i.article_id, i.created_at, i.updated_at
+			i.user_id, i.article_id, i.category_id, i.created_at, i.updated_at
 			FROM images i
 			WHERE i.is_in_gallery = TRUE
 			ORDER BY i.created_at DESC`,
@@ -35,6 +35,7 @@ const findGallery = async (): Promise<Image[]> => {
 			is_in_gallery: image.is_in_gallery,
 			user_id: image.user_id,
 			article_id: image.article_id,
+			category_id: image.category_id ?? null,
 			created_at: toDateString(image.created_at) ?? "",
 			updated_at: toDateString(image.updated_at) ?? "",
 			tags: tags
@@ -53,7 +54,7 @@ const findById = async (id: number): Promise<Image | null> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, created_at, updated_at
+			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id, created_at, updated_at
 			FROM images
 			WHERE id = ?`,
 			[id],
@@ -71,6 +72,7 @@ const findById = async (id: number): Promise<Image | null> => {
 			is_in_gallery: row.is_in_gallery,
 			user_id: row.user_id,
 			article_id: row.article_id,
+			category_id: row.category_id ?? null,
 			created_at: toDateString(row.created_at) ?? "",
 			updated_at: toDateString(row.updated_at) ?? "",
 		};
@@ -84,7 +86,7 @@ const findByArticleId = async (id: number): Promise<Image[]> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, created_at, updated_at
+			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id, created_at, updated_at
 			FROM images 
 			WHERE article_id = ?`,
 			[id],
@@ -100,6 +102,7 @@ const findByArticleId = async (id: number): Promise<Image[]> => {
 			is_in_gallery: row.is_in_gallery,
 			user_id: row.user_id,
 			article_id: row.article_id,
+			category_id: row.category_id ?? null,
 			created_at: toDateString(row.created_at) ?? "",
 			updated_at: toDateString(row.updated_at) ?? "",
 		}));
@@ -113,7 +116,7 @@ const findByTagId = async (id: number): Promise<Image[]> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery, i.user_id, i.article_id, i.created_at, i.updated_at
+			`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery, i.user_id, i.article_id, i.category_id, i.created_at, i.updated_at
 			FROM images i
 			INNER JOIN images_tags it ON i.id = it.image_id
 			WHERE it.tag_id = ?`,
@@ -130,6 +133,7 @@ const findByTagId = async (id: number): Promise<Image[]> => {
 			is_in_gallery: row.is_in_gallery,
 			user_id: row.user_id,
 			article_id: row.article_id,
+			category_id: row.category_id ?? null,
 			created_at: toDateString(row.created_at) ?? "",
 			updated_at: toDateString(row.updated_at) ?? "",
 		}));
@@ -158,13 +162,11 @@ const findByCategoryId = async (
 			tagId != null
 				? `SELECT COUNT(DISTINCT i.id) as total
 			FROM images i
-			INNER JOIN images_categories ic ON i.id = ic.image_id
 			${tagJoin}
-			WHERE ic.category_id = ? AND i.is_in_gallery = TRUE`
+			WHERE i.category_id = ? AND i.is_in_gallery = TRUE`
 				: `SELECT COUNT(*) as total
 			FROM images i
-			INNER JOIN images_categories ic ON i.id = ic.image_id
-			WHERE ic.category_id = ? AND i.is_in_gallery = TRUE`,
+			WHERE i.category_id = ? AND i.is_in_gallery = TRUE`,
 			countParams,
 		);
 		const total = countResult[0].total as number;
@@ -176,11 +178,10 @@ const findByCategoryId = async (
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [images]: any = await pool.query(
 			`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery,
-			i.user_id, i.article_id, i.created_at, i.updated_at
+			i.user_id, i.article_id, i.category_id, i.created_at, i.updated_at
 			FROM images i
-			INNER JOIN images_categories ic ON i.id = ic.image_id
 			${tagJoin}
-			WHERE ic.category_id = ? AND i.is_in_gallery = TRUE
+			WHERE i.category_id = ? AND i.is_in_gallery = TRUE
 			ORDER BY i.created_at DESC
 			LIMIT ? OFFSET ?`,
 			listParams,
@@ -212,6 +213,7 @@ const findByCategoryId = async (
 			is_in_gallery: image.is_in_gallery,
 			user_id: image.user_id,
 			article_id: image.article_id,
+			category_id: image.category_id ?? null,
 			created_at: toDateString(image.created_at) ?? "",
 			updated_at: toDateString(image.updated_at) ?? "",
 			tags: tags
@@ -232,7 +234,7 @@ const findImageOfTheDay = async (): Promise<Image | null> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, created_at, updated_at
+			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id, created_at, updated_at
 			FROM images
 			WHERE is_in_gallery = TRUE
 			ORDER BY id ASC`,
@@ -259,6 +261,7 @@ const findImageOfTheDay = async (): Promise<Image | null> => {
 			is_in_gallery: row.is_in_gallery,
 			user_id: row.user_id,
 			article_id: row.article_id,
+			category_id: row.category_id ?? null,
 			created_at: toDateString(row.created_at) ?? "",
 			updated_at: toDateString(row.updated_at) ?? "",
 		};

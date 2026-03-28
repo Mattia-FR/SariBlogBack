@@ -152,6 +152,7 @@ Authorization: Bearer {{accessToken}}
 # - alt_descr: "Texte alternatif..."
 # - is_in_gallery: true
 # - article_id: 1
+# - category_id: 1 (optionnel, ID catégorie ; vide = aucune)
 # - tag_ids: [1,2] (ou JSON string)
 
 ### 4. Modifier une image (PATCH - admin)
@@ -165,6 +166,7 @@ Content-Type: application/json
   "alt_descr": "Texte alternatif modifié",
   "is_in_gallery": true,
   "article_id": 1,
+  "category_id": 1,
   "tag_ids": [1, 2]
 }
 

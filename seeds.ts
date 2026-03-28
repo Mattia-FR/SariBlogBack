@@ -84,21 +84,21 @@ export async function runSeeds(connection: Connection): Promise<void> {
 	// IMAGES
 	// ============================================
 	await connection.query(`
-    INSERT INTO images (title, description, path, alt_descr, is_in_gallery, user_id, article_id) VALUES
-    ("Portrait féminin aquarelle", "Portrait expressif réalisé à l'aquarelle avec des tons pastels doux", "/uploads/images/portrait-aquarelle.jpg", "Portrait de femme à l'aquarelle", TRUE, 1, 1),
-    ("Matériel aquarelle", "Présentation du matériel nécessaire pour débuter en aquarelle", "/uploads/images/materiel-aquarelle.jpg", "Matériel d'aquarelle pour débutants", FALSE, 1, 1),
-    ("Paysage fantastique numérique", "Paysage onirique avec montagnes flottantes et couleurs vives", "/uploads/images/paysage-fantasy.jpg", "Illustration de paysage fantastique", TRUE, 2, 2),
-    ("Croquis préparatoire", "Premier croquis du processus créatif montrant les étapes de conception", "/uploads/images/croquis-preparatoire.jpg", "Croquis préparatoire d'illustration", FALSE, 2, 2),
-    ("Dragon volant", "Créature fantastique ailée dans un style détaillé", "/uploads/images/dragon-volant.jpg", "Illustration de dragon en vol", TRUE, 1, 5),
-    ("Détail écailles dragon", "Détail technique montrant le travail des écailles et textures", "/uploads/images/detail-eccailles-dragon.jpg", "Détail des écailles de dragon", FALSE, 1, 5),
-    ("Portrait au crayon", "Croquis de portrait réalisé au crayon graphite avec un rendu réaliste", "/uploads/images/portrait-crayon.jpg", "Croquis de portrait au crayon", FALSE, 2, 3),
-    ("Forêt enchantée", "Illustration numérique d'une forêt magique avec des lumières féeriques", "/uploads/images/foret-enchantee.jpg", "Forêt magique illustrée", TRUE, 2, 4),
-    ("Personnage fantasy", "Création de personnage pour un univers fantasy avec armure détaillée", "/uploads/images/personnage-fantasy.jpg", "Personnage de fantasy armé", TRUE, 1, NULL),
-    ("Paysage aquarelle", "Vue de campagne réalisée à l'aquarelle avec technique humide sur humide", "/uploads/images/paysage-aquarelle.jpg", "Paysage bucolique à l'aquarelle", FALSE, 2, NULL),
-    ("Esquisse de créature", "Croquis rapide d'une créature mythologique au style dynamique", "/uploads/images/esquisse-creature.jpg", "Esquisse de créature fantastique", TRUE, 1, 7),
-    ("Croquis expressif", "Série de croquis rapides montrant différentes techniques de dessin", "/uploads/images/croquis-expressif.jpg", "Collection de croquis expressifs", FALSE, 1, 7),
-    ("Portrait numérique", "Portrait stylisé réalisé numériquement avec palette de couleurs moderne", "/uploads/images/portrait-numerique.jpg", "Portrait stylisé numérique", TRUE, 2, 10),
-    ("Aquarelle botanique", "Illustration de plantes et fleurs à l'aquarelle avec précision scientifique", "/uploads/images/botanique-aquarelle.jpg", "Illustration botanique aquarelle", TRUE, 1, NULL)
+    INSERT INTO images (title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id) VALUES
+    ("Portrait féminin aquarelle", "Portrait expressif réalisé à l'aquarelle avec des tons pastels doux", "/uploads/images/portrait-aquarelle.jpg", "Portrait de femme à l'aquarelle", TRUE, 1, 1, 1),
+    ("Matériel aquarelle", "Présentation du matériel nécessaire pour débuter en aquarelle", "/uploads/images/materiel-aquarelle.jpg", "Matériel d'aquarelle pour débutants", FALSE, 1, 1, NULL),
+    ("Paysage fantastique numérique", "Paysage onirique avec montagnes flottantes et couleurs vives", "/uploads/images/paysage-fantasy.jpg", "Illustration de paysage fantastique", TRUE, 2, 2, 3),
+    ("Croquis préparatoire", "Premier croquis du processus créatif montrant les étapes de conception", "/uploads/images/croquis-preparatoire.jpg", "Croquis préparatoire d'illustration", FALSE, 2, 2, NULL),
+    ("Dragon volant", "Créature fantastique ailée dans un style détaillé", "/uploads/images/dragon-volant.jpg", "Illustration de dragon en vol", TRUE, 1, 5, 4),
+    ("Détail écailles dragon", "Détail technique montrant le travail des écailles et textures", "/uploads/images/detail-eccailles-dragon.jpg", "Détail des écailles de dragon", FALSE, 1, 5, NULL),
+    ("Portrait au crayon", "Croquis de portrait réalisé au crayon graphite avec un rendu réaliste", "/uploads/images/portrait-crayon.jpg", "Croquis de portrait au crayon", FALSE, 2, 3, NULL),
+    ("Forêt enchantée", "Illustration numérique d'une forêt magique avec des lumières féeriques", "/uploads/images/foret-enchantee.jpg", "Forêt magique illustrée", TRUE, 2, 4, 3),
+    ("Personnage fantasy", "Création de personnage pour un univers fantasy avec armure détaillée", "/uploads/images/personnage-fantasy.jpg", "Personnage de fantasy armé", TRUE, 1, NULL, 4),
+    ("Paysage aquarelle", "Vue de campagne réalisée à l'aquarelle avec technique humide sur humide", "/uploads/images/paysage-aquarelle.jpg", "Paysage bucolique à l'aquarelle", FALSE, 2, NULL, NULL),
+    ("Esquisse de créature", "Croquis rapide d'une créature mythologique au style dynamique", "/uploads/images/esquisse-creature.jpg", "Esquisse de créature fantastique", TRUE, 1, 7, 4),
+    ("Croquis expressif", "Série de croquis rapides montrant différentes techniques de dessin", "/uploads/images/croquis-expressif.jpg", "Collection de croquis expressifs", FALSE, 1, 7, NULL),
+    ("Portrait numérique", "Portrait stylisé réalisé numériquement avec palette de couleurs moderne", "/uploads/images/portrait-numerique.jpg", "Portrait stylisé numérique", TRUE, 2, 10, 1),
+    ("Aquarelle botanique", "Illustration de plantes et fleurs à l'aquarelle avec précision scientifique", "/uploads/images/botanique-aquarelle.jpg", "Illustration botanique aquarelle", TRUE, 1, NULL, 2)
   `);
 
 	// ============================================
@@ -159,21 +159,6 @@ export async function runSeeds(connection: Connection): Promise<void> {
     (11, 5), (11, 10),
     (13, 2), (13, 3),
     (14, 1)
-  `);
-
-	// ============================================
-	// RELATIONS : Images <-> Categories
-	// ============================================
-	await connection.query(`
-    INSERT INTO images_categories (image_id, category_id) VALUES
-    (1, 1), (1, 2),
-    (3, 3), (3, 4),
-    (5, 4),
-    (8, 3), (8, 4),
-    (9, 4),
-    (11, 4), (11, 5),
-    (13, 1),
-    (14, 2)
   `);
 
 	// ============================================
