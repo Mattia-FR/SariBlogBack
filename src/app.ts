@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { helmetMiddleware } from "./config/helmet";
 import router from "./router";
 import { errorHandler } from "./middleware/errorMiddleware";
+import logger from "./utils/logger";
 
 const app = express();
 
@@ -14,7 +15,7 @@ app.use(helmetMiddleware);
 // CORS
 app.use(
 	cors({
-		origin: "http://localhost:5173",
+		origin: process.env.ALLOWED_ORIGIN,
 		credentials: true, // OBLIGATOIRE pour cookies
 	}),
 );
@@ -27,7 +28,7 @@ app.use(cookieParser());
 
 // Logging
 app.use((req, _res, next) => {
-	console.log(`${req.method} ${req.url}`);
+	logger.info(`${req.method} ${req.url}`);
 	next();
 });
 

@@ -9,6 +9,7 @@ export interface Image {
 	is_in_gallery: boolean;
 	user_id: number;
 	article_id: number | null;
+	category_id: number | null;
 	created_at: string;
 	updated_at: string;
 	tags?: Tag[];
@@ -23,6 +24,7 @@ export interface ImageCreateData {
 	alt_descr?: string | null;
 	is_in_gallery?: boolean;
 	article_id?: number | null;
+	category_id?: number | null;
 	tag_ids?: number[];
 }
 
@@ -34,5 +36,6 @@ export interface ImageUpdateData {
 	alt_descr?: string | null;
 	is_in_gallery?: boolean;
 	article_id?: number | null;
+	category_id?: number | null;
 	tag_ids?: number[];
 }

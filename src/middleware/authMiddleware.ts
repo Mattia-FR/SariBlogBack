@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import logger from "../utils/logger";
 
 declare global {
 	namespace Express {
@@ -36,7 +37,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 	// 2. Vérifier que le secret existe
 	const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
 	if (!ACCESS_SECRET) {
-		console.error("ACCESS_TOKEN_SECRET non défini");
+		logger.error("ACCESS_TOKEN_SECRET non défini");
 		return res.sendStatus(500);
 	}
 
@@ -67,7 +68,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 		) {
 			return res.sendStatus(401);
 		}
-		console.error("Erreur lors de la vérification du token :", err);
+		logger.error("Erreur lors de la vérification du token :", err);
 		return res.sendStatus(500);
 	}
 }
@@ -102,7 +103,7 @@ function optionalAuth(req: Request, res: Response, next: NextFunction) {
 	// 2. Vérifier que le secret existe
 	const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
 	if (!ACCESS_SECRET) {
-		console.error("ACCESS_TOKEN_SECRET non défini");
+		logger.error("ACCESS_TOKEN_SECRET non défini");
 		// On continue sans authentification plutôt que de bloquer
 		return next();
 	}

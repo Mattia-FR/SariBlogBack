@@ -7,7 +7,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 [![Express](https://img.shields.io/badge/Express-5.1-black.svg)](https://expressjs.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-orange.svg)](https://www.mysql.com/)
-[![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
 
 ## 📋 Table des matières
 
@@ -22,7 +21,6 @@
 - [Tests](#-tests)
 - [Sécurité](#-sécurité)
 - [Contribution](#-contribution)
-- [Licence](#-licence)
 
 ## 🎯 À propos
 
@@ -32,14 +30,15 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 - Architecture backend complète (MVC, API REST)
 - Système d'authentification JWT sécurisé
 - Gestion de base de données relationnelle (MySQL)
-- Découverte de Zod, Helmet, Argon2, Slugify, Cookie-parser
+- Découverte de Zod, Helmet, Argon2, Slugify, Cookie-parser, Multer, express-rate-limit
 
 **Fonctionnalités :**
 - Articles de blog avec statuts (draft, published, archived)
-- Galerie d'images avec système de tags et image du jour
+- Galerie d'images avec système de tags, catégories et image du jour
 - Commentaires modérés
 - Profils utilisateurs (dont artiste principale)
-- Système de tags multi-catégories
+- Système de tags multi-entités (articles et images)
+- Catégories d'images avec ordre d'affichage
 - Formulaire de contact et gestion des messages
 
 > **Note** : Ce dépôt contient uniquement le backend. Le frontend est disponible dans un [dépôt séparé](https://github.com/Mattia-FR/SariBlogFront).
@@ -52,26 +51,36 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
   - Public : preview homepage, liste paginée publiés, par ID, par slug
   - Admin : liste tous statuts, par slug/ID, création, modification, suppression
 
-- **Images** : Galerie d'images avec filtrage (5 endpoints)
-  - Galerie publique, image du jour, par tag, par article, par ID
+- **Images** : Galerie d'images avec filtrage (6 endpoints publics) + CRUD admin avec upload (5 endpoints)
+  - Public : galerie, image du jour, par tag, par catégorie, par article, par ID
+  - Admin : liste, par ID, création (upload fichier), modification, suppression
 
-- **Tags** : Système de tags multi-catégories (3 endpoints)
-  - Liste complète, tags par article, tags par image
+- **Tags** : Système de tags multi-entités (4 endpoints publics) + CRUD admin (7 endpoints)
+  - Public : tags des articles publiés, par catégorie (galerie), par article, par image
+  - Admin : liste, `used-on-articles`, `used-on-images`, par ID, création, modification, suppression
 
-- **Commentaires** : Système de commentaires modérés (1 endpoint)
-  - Commentaires approuvés d'un article (avec infos utilisateur)
+- **Catégories** : Catégories d'images avec ordre d'affichage (2 endpoints publics) + CRUD admin (5 endpoints)
+  - Public : liste complète, par slug
+  - Admin : liste, par ID, création, modification, suppression
 
-- **Utilisateurs** : Profils publics (3 endpoints) + profil connecté (1 endpoint)
-  - Liste, artiste principale, par ID ; `/users/me` pour l'utilisateur connecté
-
-- **Messages** : Formulaire de contact (1 endpoint public) + gestion admin (5 endpoints)
-  - Public : création de message (avec optionalAuth pour lier l'utilisateur si connecté)
+- **Commentaires** : Système de commentaires modérés (2 endpoints publics) + modération admin (5 endpoints)
+  - Public : liste des commentaires approuvés d'un article ; création d'un commentaire (modération ensuite)
   - Admin : liste, par statut, par ID, mise à jour statut, suppression
 
-- **Authentification** : JWT avec refresh (4 endpoints)
-  - Login, signup, refresh (cookie), logout
+- **Utilisateurs** : Artiste principale (1 endpoint public) + profil connecté (3 endpoints admin)
+  - Public : profil de l'artiste principale (`GET /api/users/artist`)
+  - Admin : `GET/PATCH /api/admin/users/me`, `PATCH /api/admin/users/me/password`
 
-**Total : 33 endpoints (21 publics + auth, 1 authentifié `/users/me`, 11 admin sous `/api/admin`)**
+- **Messages** : Formulaire de contact (1 endpoint public) + gestion admin (5 endpoints)
+  - Public : création de message (visiteur)
+  - Admin : liste, par statut, par ID, mise à jour statut, suppression
+
+- **Authentification** : JWT avec refresh (3 endpoints)
+  - Login, refresh (cookie), logout
+
+- **Dashboard** : Statistiques admin (1 endpoint)
+
+**Total : 60 endpoints (23 routes publiques incluant `/api/auth`, 37 sous `/api/admin` avec JWT + rôle éditeur ou admin)**
 
 ## 🛠️ Technologies
 
@@ -85,6 +94,9 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 | **Sécurité** | Argon2 | 0.44.0 |
 | **Auth** | jsonwebtoken | 9.0.3 |
 | **Validation** | Zod | 4.1.x |
+| **Upload** | Multer | 2.1.0 |
+| **Rate limiting** | express-rate-limit | 8.2.1 |
+| **Logging** | winston | 3.19.x |
 | **Utilitaires** | dotenv, cookie-parser, slugify | - |
 | **Sécurité HTTP** | Helmet | 8.1.0 |
 | **CORS** | cors | 2.8.5 |
@@ -97,62 +109,98 @@ Back/
 ├── src/
 │   ├── app.ts                       # Configuration Express (middlewares, CORS, static files)
 │   ├── config/
+│   │   ├── argon2.ts                # Options de hashage Argon2 (OWASP)
 │   │   ├── helmet.ts                # Configuration Helmet (sécurité HTTP)
-│   │   └── argon2.ts                # Options de hashage Argon2 (OWASP)
+│   │   ├── multer.ts                # Upload d'images (20 MB max, nommage UUID)
+│   │   └── rateLimit.ts             # Rate limiters (login, messages, commentaires)
 │   ├── controller/
-│   │   ├── articlesController.ts    # Articles publics (4 handlers)
-│   │   ├── imagesController.ts      # Images (5 handlers)
-│   │   ├── usersController.ts       # Utilisateurs (4 handlers)
-│   │   ├── tagsController.ts        # Tags (3 handlers)
-│   │   ├── commentsController.ts    # Commentaires (1 handler)
+│   │   ├── articlesController.ts    # Articles publics (handlers utilisés par articlesRouter)
+│   │   ├── categoriesController.ts  # Catégories publiques (2 handlers)
+│   │   ├── commentsController.ts    # Commentaires publics (liste + création)
+│   │   ├── imagesController.ts      # Images publiques (handlers galerie, filtres, etc.)
 │   │   ├── messagesController.ts    # Formulaire contact (1 handler)
-│   │   ├── authController.ts        # Authentification (login, signup, refresh, logout)
+│   │   ├── authController.ts        # Authentification (login, refresh, logout)
+│   │   ├── tagsController.ts        # Tags publics
+│   │   ├── usersController.ts       # Artiste principale (1 handler)
 │   │   └── admin/
-│   │       ├── articlesAdminController.ts  # CRUD articles (6 handlers)
-│   │       └── messagesAdminController.ts  # Gestion messages (5 handlers)
+│   │       ├── articlesAdminController.ts    # CRUD articles (6 handlers)
+│   │       ├── categoriesAdminController.ts  # CRUD catégories (5 handlers)
+│   │       ├── commentsAdminController.ts    # Modération commentaires (5 handlers)
+│   │       ├── dashboardAdminController.ts   # Statistiques (1 handler)
+│   │       ├── imagesAdminController.ts      # CRUD images + upload (5 handlers)
+│   │       ├── messagesAdminController.ts    # Gestion messages (5 handlers)
+│   │       ├── tagsAdminController.ts        # CRUD tags (7 routes)
+│   │       └── usersAdminController.ts       # Profil connecté / mot de passe (3 handlers)
 │   ├── model/
 │   │   ├── db.ts                    # Pool de connexions MySQL
 │   │   ├── articlesModel.ts
-│   │   ├── imagesModel.ts
-│   │   ├── usersModel.ts
-│   │   ├── tagsModel.ts
+│   │   ├── categoriesModel.ts
 │   │   ├── commentsModel.ts
+│   │   ├── imagesModel.ts
 │   │   ├── messagesModel.ts
+│   │   ├── tagsModel.ts
+│   │   ├── usersModel.ts
 │   │   └── admin/
-│   │       └── articlesAdminModel.ts
+│   │       ├── articlesAdminModel.ts
+│   │       ├── categoriesAdminModel.ts
+│   │       ├── commentsAdminModel.ts
+│   │       ├── imagesAdminModel.ts
+│   │       ├── messagesAdminModel.ts
+│   │       ├── tagsAdminModel.ts
+│   │       └── usersAdminModel.ts
 │   ├── router/
 │   │   ├── index.ts                 # Router principal (préfixe /api)
 │   │   ├── articlesRouter.ts        # Routes publiques articles
-│   │   ├── imagesRouter.ts
-│   │   ├── usersRouter.ts
-│   │   ├── tagsRouter.ts
+│   │   ├── authRouter.ts            # Auth (login, refresh, logout)
+│   │   ├── categoriesRouter.ts      # Routes publiques catégories
 │   │   ├── commentsRouter.ts
+│   │   ├── imagesRouter.ts
 │   │   ├── messagesRouter.ts
-│   │   ├── authRouter.ts            # Auth (login, signup, refresh, logout)
+│   │   ├── tagsRouter.ts
+│   │   ├── usersRouter.ts
 │   │   └── admin/
-│   │       ├── index.ts             # Montage sous /api/admin (protégé)
+│   │       ├── index.ts                    # Montage sous /api/admin (protégé)
 │   │       ├── articlesAdminRouter.ts
-│   │       └── messagesAdminRouter.ts
+│   │       ├── categoriesAdminRouter.ts
+│   │       ├── commentsAdminRouter.ts
+│   │       ├── dashboardAdminRouter.ts
+│   │       ├── imagesAdminRouter.ts
+│   │       ├── messagesAdminRouter.ts
+│   │       ├── tagsAdminRouter.ts
+│   │       └── usersAdminRouter.ts
 │   ├── middleware/
 │   │   ├── authMiddleware.ts        # requireAuth, optionalAuth (JWT)
-│   │   └── roleMiddleware.ts        # requireEditor, requireAdmin
+│   │   ├── errorMiddleware.ts       # Gestionnaire d'erreurs global (Zod, Multer, 500)
+│   │   ├── roleMiddleware.ts        # requireRole, requireEditor, requireAdmin
+│   │   └── validateMiddleware.ts    # validate(zodSchema) — parse req.body
+│   ├── schemas/
+│   │   ├── authSchemas.ts           # loginSchema (Zod)
+│   │   ├── commentSchemas.ts
+│   │   └── messageSchemas.ts
 │   ├── types/
 │   │   ├── articles.ts
-│   │   ├── images.ts
-│   │   ├── users.ts
-│   │   ├── tags.ts
+│   │   ├── auth.ts
+│   │   ├── categories.ts
 │   │   ├── comments.ts
+│   │   ├── images.ts
 │   │   ├── messages.ts
-│   │   └── auth.ts
+│   │   ├── tags.ts
+│   │   └── users.ts
 │   └── utils/
+│       ├── dateHelpers.ts
 │       ├── imageUrl.ts
+│       ├── logger.ts                # Winston (logs)
 │       └── slug.ts
 ├── uploads/
 │   └── images/                      # Fichiers images (servis statiquement)
 ├── tests/
-│   └── api.http                     # Tests REST Client (VS Code)
-├── database.sql                     # Schéma complet + données de test
+│   ├── api.http                     # Tests REST Client (VS Code)
+│   └── unit/                        # Tests unitaires Vitest
+├── vitest.config.ts
 ├── index.ts                         # Point d'entrée (port 4242)
+├── init.ts                          # Script d'initialisation DB (npm run db:init)
+├── seeds.ts                         # Données de test
+├── schema.sql                       # Schéma complet (10 tables)
 ├── package.json
 ├── tsconfig.json
 ├── .env.sample
@@ -201,27 +249,26 @@ DB_NAME=sariblog
 DB_PORT=3306
 PORT=4242
 
+ALLOWED_ORIGIN=http://localhost:5173
+IMAGE_BASE_URL=http://localhost:4242
+
 # JWT (obligatoire pour l'auth) : générer deux secrets avec :
 # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ACCESS_TOKEN_SECRET=une_longue_chaîne_aléatoire_secrète_1
 REFRESH_TOKEN_SECRET=une_autre_longue_chaîne_aléatoire_secrète_2
 ```
 
-> ⚠️ **Important** : Les variables `DB_*` et les deux secrets JWT (`ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`) sont **obligatoires** pour le bon fonctionnement (auth et démarrage).
+> ⚠️ **Important** : Les variables `DB_*`, `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `ALLOWED_ORIGIN` et `IMAGE_BASE_URL` sont **obligatoires** pour le bon fonctionnement.
 
-4. **Créer et importer la base de données**
+4. **Initialiser la base de données**
+
+> **Attention** : `npm run db:init` exécute [`init.ts`](init.ts), qui **supprime la base** portant le nom `DB_NAME` si elle existe, la recrée, applique `schema.sql` puis injecte les données de test via `seeds.ts`. Ajustez `DB_NAME` dans `.env` en conséquence.
 
 ```bash
-# Créer la base de données
-mysql -u votre_utilisateur -p -e "CREATE DATABASE sariblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-
-# Importer le schéma et les données de test
-mysql -u votre_utilisateur -p sariblog < database.sql
+npm run db:init
 ```
 
-Le fichier `database.sql` contient :
-- Le schéma complet (8 tables avec relations)
-- Les données de test (7 utilisateurs, 10 articles, 14 images, 10 tags, etc.)
+Le fichier `schema.sql` contient les 10 tables avec leurs relations. Aucune étape `mysql` manuelle n’est nécessaire : tout est fait par le script.
 
 5. **Démarrer le serveur**
 
@@ -232,7 +279,7 @@ npm run dev
 
 Le serveur démarre sur **http://localhost:4242**
 
-Vous pouvez tester l'API en accédant à `http://localhost:4242/` qui retourne un message de confirmation.
+Vous pouvez tester l'API en accédant à `http://localhost:4242/` : la racine renvoie une chaîne de confirmation (message défini dans [`index.ts`](index.ts)).
 
 ## 📡 API Endpoints
 
@@ -243,7 +290,6 @@ Vous pouvez tester l'API en accédant à `http://localhost:4242/` qui retourne u
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
 | `POST` | `/auth/login` | Connexion (identifier + password) ; retourne accessToken, définit cookie refreshToken | Public |
-| `POST` | `/auth/signup` | Inscription (username, email, password, firstname, lastname) | Public |
 | `POST` | `/auth/refresh` | Rafraîchir l'access token (utilise le cookie refreshToken) | Public (cookie) |
 | `POST` | `/auth/logout` | Déconnexion (invalide le refresh token, supprime le cookie) | Public |
 
@@ -266,36 +312,43 @@ Pour les routes protégées, envoyer le header : `Authorization: Bearer <accessT
 | `GET` | `/images/gallery` | Galerie d'images publiques (`is_in_gallery = TRUE`) | Public |
 | `GET` | `/images/article/:articleId` | Images associées à un article | Public |
 | `GET` | `/images/tag/:tagId` | Images filtrées par tag | Public |
+| `GET` | `/images/category/:categoryId` | Images de la galerie pour une catégorie (`?page`, `?limit`, max 20) | Public |
 | `GET` | `/images/:id` | Image par ID (détails complets) | Public |
 
-### Utilisateurs (`/api/users`)
+### Utilisateurs (`/api/users`) — public
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
-| `GET` | `/users` | Liste tous les utilisateurs (sans mots de passe) | Public |
 | `GET` | `/users/artist` | Profil de l'artiste principale (sans mot de passe) | Public |
-| `GET` | `/users/me` | Profil de l'utilisateur connecté | Authentifié |
-| `GET` | `/users/:id` | Profil utilisateur par ID (sans mot de passe) | Public |
 
 ### Tags (`/api/tags`)
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
-| `GET` | `/tags` | Liste tous les tags | Public |
+| `GET` | `/tags/published-articles` | Tags utilisés sur au moins un article publié | Public |
+| `GET` | `/tags/category/:categoryId` | Tags utilisés sur la galerie d'une catégorie | Public |
 | `GET` | `/tags/article/:articleId` | Tags associés à un article | Public |
 | `GET` | `/tags/image/:imageId` | Tags associés à une image | Public |
+
+### Catégories (`/api/categories`)
+
+| Méthode | Endpoint | Description | Accès |
+|---------|----------|-------------|-------|
+| `GET` | `/categories` | Liste toutes les catégories (triées par `display_order`) | Public |
+| `GET` | `/categories/:slug` | Catégorie par slug | Public |
 
 ### Commentaires (`/api/comments`)
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
 | `GET` | `/comments/article/:articleId` | Commentaires approuvés d'un article (avec infos utilisateur) | Public |
+| `POST` | `/comments` | Créer un commentaire (statut initial `pending`, modération côté admin) | Public |
 
 ### Messages (`/api/messages`)
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
-| `POST` | `/messages` | Créer un message via formulaire de contact (optionalAuth : lie l'utilisateur si connecté) | Public |
+| `POST` | `/messages` | Créer un message via formulaire de contact | Public |
 
 ### Admin (`/api/admin`) — protégé (JWT + rôle éditeur ou admin)
 
@@ -305,22 +358,78 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `GET` | `/admin/articles` | Liste tous les articles (tous statuts) |
+| `GET` | `/admin/articles` | Liste paginée (tous statuts). Query : `page`, `limit` (1–20, défaut 10), `tagId` optionnel. Réponse : `{ articles, total, page, limit }`. |
 | `GET` | `/admin/articles/slug/:slug` | Article par slug (tous statuts) |
 | `GET` | `/admin/articles/:id` | Article par ID (détails complets) |
 | `POST` | `/admin/articles` | Créer un article |
 | `PATCH` | `/admin/articles/:id` | Modifier un article |
 | `DELETE` | `/admin/articles/:id` | Supprimer un article |
 
+#### Images admin (`/api/admin/images`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/images` | Liste paginée (`page`, `limit` 1–20, `tagId` optionnel) → `{ images, total, page, limit }` |
+| `GET` | `/admin/images/:id` | Image par ID |
+| `POST` | `/admin/images` | Créer une image (`multipart/form-data`, champ `image` ; champs texte optionnels dont `article_id`, `category_id`, `tag_ids` comme JSON) |
+| `PATCH` | `/admin/images/:id` | Modifier les métadonnées (`title`, `description`, `alt_descr`, `is_in_gallery`, `article_id`, `category_id`, `tag_ids`, etc.) |
+| `DELETE` | `/admin/images/:id` | Supprimer une image |
+
+#### Tags admin (`/api/admin/tags`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/tags` | Liste tous les tags |
+| `GET` | `/admin/tags/used-on-articles` | Tags liés à au moins un article (filtre liste articles admin) |
+| `GET` | `/admin/tags/used-on-images` | Tags liés à au moins une image (filtre liste images) |
+| `GET` | `/admin/tags/:id` | Tag par ID |
+| `POST` | `/admin/tags` | Créer un tag |
+| `PATCH` | `/admin/tags/:id` | Modifier un tag |
+| `DELETE` | `/admin/tags/:id` | Supprimer un tag |
+
+#### Catégories admin (`/api/admin/categories`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/categories` | Liste toutes les catégories |
+| `GET` | `/admin/categories/:id` | Catégorie par ID |
+| `POST` | `/admin/categories` | Créer une catégorie |
+| `PATCH` | `/admin/categories/:id` | Modifier une catégorie |
+| `DELETE` | `/admin/categories/:id` | Supprimer une catégorie |
+
+#### Commentaires admin (`/api/admin/comments`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/comments` | Liste paginée. Query : `page`, `limit` (1–20, défaut 10), `status` optionnel (`pending` \| `approved` \| `rejected` \| `spam`). Réponse : `{ comments, total, page, limit, counts }` avec `counts` : `{ total, pending, approved, rejected, spam }`. |
+| `GET` | `/admin/comments/status/:status` | Commentaires par statut, liste complète (non paginée) |
+| `GET` | `/admin/comments/:id` | Commentaire par ID |
+| `PATCH` | `/admin/comments/:id/status` | Mettre à jour le statut |
+| `DELETE` | `/admin/comments/:id` | Supprimer un commentaire |
+
 #### Messages admin (`/api/admin/messages`)
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `GET` | `/admin/messages` | Liste tous les messages |
-| `GET` | `/admin/messages/status/:status` | Messages par statut (`unread`, `read`, `archived`) |
+| `GET` | `/admin/messages` | Liste paginée des messages. Query : `page`, `limit` (1–20, défaut 10), `status` optionnel (`unread` \| `read` \| `archived`). Réponse : `{ messages, total, page, limit, counts }` où `counts` est `{ total, unread, read, archived }` pour les onglets admin. |
+| `GET` | `/admin/messages/status/:status` | Messages par statut (`unread`, `read`, `archived`), liste complète (non paginée) |
 | `GET` | `/admin/messages/:id` | Message par ID |
 | `PATCH` | `/admin/messages/:id/status` | Mettre à jour le statut |
 | `DELETE` | `/admin/messages/:id` | Supprimer un message |
+
+#### Utilisateurs admin (`/api/admin/users`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/users/me` | Profil de l'utilisateur connecté |
+| `PATCH` | `/admin/users/me` | Mettre à jour le profil connecté |
+| `PATCH` | `/admin/users/me/password` | Changer le mot de passe du compte connecté |
+
+#### Dashboard admin (`/api/admin/dashboard`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/dashboard/stats` | Statistiques globales (articles, images, messages, commentaires) |
 
 ### Fichiers statiques
 
@@ -332,7 +441,7 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 
 ```bash
 # Connexion (récupérer l'accessToken pour les routes admin)
-curl -X POST http://localhost:4242/api/auth/login -H "Content-Type: application/json" -d "{\"identifier\":\"admin@example.com\",\"password\":\"votre_mot_de_passe\"}"
+curl -X POST http://localhost:4242/api/auth/login -H "Content-Type: application/json" -d "{\"identifier\":\"admin@sariblog.com\",\"password\":\"votre_mot_de_passe\"}"
 
 # Récupérer les 4 derniers articles pour la homepage
 curl http://localhost:4242/api/articles/homepage-preview
@@ -349,34 +458,45 @@ curl http://localhost:4242/api/images/gallery
 # Récupérer le profil de l'artiste principale
 curl http://localhost:4242/api/users/artist
 
+# Récupérer les catégories
+curl http://localhost:4242/api/categories
+
 # Récupérer les tags d'un article
 curl http://localhost:4242/api/tags/article/1
 
 # Route admin (avec token)
-curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/admin/articles
+curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" "http://localhost:4242/api/admin/articles?page=1&limit=10"
+
+# Statistiques du dashboard
+curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/admin/dashboard/stats
+
+# Profil utilisateur connecté (admin)
+curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/admin/users/me
 ```
 
 ## 🗄️ Base de données
 
 ### Structure
 
-**8 tables** avec relations (foreign keys) :
+**10 tables** avec relations (foreign keys) :
 
 | Table | Description | Relations |
 |-------|-------------|-----------|
-| `users` | Utilisateurs (7 données de test) | - |
-| `articles` | Articles de blog (10 données de test) | `users`, `images` (featured_image) |
+| `users` | Utilisateurs (2 données de test) | - |
+| `articles` | Articles de blog (30 données de test) | `users`, `images` (featured_image) |
 | `images` | Galerie d'images (14 données de test) | `users`, `articles` |
-| `tags` | Tags multi-catégories (10 données de test) | - |
+| `tags` | Tags multi-entités (10 données de test) | - |
+| `categories` | Catégories d'images (5 données de test) | - |
 | `comments` | Commentaires sur articles (10 données de test) | `users`, `articles` |
 | `messages` | Messages de contact (10 données de test) | `users` |
 | `articles_tags` | Relation N-N articles ↔ tags | `articles`, `tags` |
 | `images_tags` | Relation N-N images ↔ tags | `images`, `tags` |
+| `images_categories` | Relation N-N images ↔ catégories | `images`, `categories` |
 
 ### Caractéristiques
 
 - **Statuts d'articles** : `draft`, `published`, `archived`
-- **Rôles utilisateurs** : `admin`, `editor`, `subscriber`
+- **Rôles utilisateurs** : `admin`, `editor`
 - **Statuts de commentaires** : `pending`, `approved`, `rejected`, `spam`
 - **Statuts de messages** : `unread`, `read`, `archived`
 - **Encodage** : UTF-8 (utf8mb4_unicode_ci)
@@ -384,14 +504,15 @@ curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/adm
 
 ### Données de test
 
-Le fichier `database.sql` inclut :
-- 7 utilisateurs (1 admin, 1 éditeur, 5 abonnés)
-- 10 articles (9 publiés, 1 brouillon)
+Le fichier `seeds.ts` (injecté via `npm run db:init`) inclut :
+- 2 utilisateurs (1 admin, 1 éditrice — l'artiste principale)
+- 30 articles (28 publiés, 2 brouillons)
 - 14 images (galerie et illustrations d'articles)
 - 10 tags (aquarelle, fantasy, portrait, etc.)
+- 5 catégories (portraits, aquarelle, paysages, fantasy, croquis & esquisses)
 - 10 commentaires (8 approuvés, 1 spam, 1 rejeté)
 - 10 messages de contact
-- Relations articles-tags et images-tags
+- Relations articles-tags, images-tags et images-catégories
 
 ## 🧪 Tests
 
@@ -412,6 +533,15 @@ Le fichier contient :
 - Variables globales (`@baseUrl`, `@adminUrl`, `@accessToken`)
 - Exemples de codes HTTP (200, 401, 403, 404)
 
+### Tests unitaires (Vitest)
+
+```bash
+npm test          # exécution unique
+npm run test:watch  # mode surveillance
+```
+
+Les fichiers se trouvent dans `tests/unit/` ; la configuration est dans `vitest.config.ts`.
+
 ### Exemple de test
 
 ```http
@@ -426,12 +556,14 @@ GET {{baseUrl}}/articles/homepage-preview
 
 ### ✅ Implémenté
 
-- **Hashage des mots de passe** : Argon2id (options OWASP dans `src/config/argon2.ts`)
+- **Hashage des mots de passe** : Argon2id (options OWASP dans `src/config/argon2.ts` — memoryCost 19 MB, timeCost 2)
 - **Authentification JWT** : Access token (Bearer) + refresh token (cookie HttpOnly) ; secrets en variables d'environnement
 - **Rôles** : Middlewares `requireAuth`, `requireEditor`, `requireAdmin` pour protéger les routes admin
-- **CORS** : Activé pour les requêtes cross-origin
-- **Helmet** : Headers de sécurité HTTP configurés
-- **Validation** : Schémas Zod pour les entrées (auth, etc.)
+- **CORS** : Activé avec `credentials: true`, origine contrôlée via `ALLOWED_ORIGIN`
+- **Helmet** : Headers de sécurité HTTP configurés (CSP stricte, frameAncestors, crossOriginResourcePolicy)
+- **Validation des entrées** : Schémas Zod pour auth, messages et commentaires (`src/schemas/`)
+- **Rate limiting** : 3 limiteurs distincts (`loginLimiter`, `messagesLimiter`, `commentsLimiter`) — 5 requêtes par IP par tranche de 15 min
+- **Upload sécurisé** : Multer avec taille max 20 MB et nommage UUID des fichiers (`src/config/multer.ts`)
 - **Exclusion des mots de passe** : Les mots de passe ne sont jamais retournés dans les réponses API
 
 ## 📝 Scripts disponibles
@@ -439,6 +571,13 @@ GET {{baseUrl}}/articles/homepage-preview
 ```bash
 # Démarrage en mode développement (avec hot reload)
 npm run dev
+
+# Initialiser la base de données (suppression/recréation de DB_NAME, schéma + données de test)
+npm run db:init
+
+# Tests unitaires (Vitest)
+npm test
+npm run test:watch
 ```
 
 ## 👤 Auteur
@@ -448,7 +587,3 @@ npm run dev
 - GitHub : [@Mattia-FR](https://github.com/Mattia-FR)
 - Dépôt Backend : [SariBlogBack](https://github.com/Mattia-FR/SariBlogBack)
 - Dépôt Frontend : [SariBlogFront](https://github.com/Mattia-FR/SariBlogFront)
-
-## 📄 Licence
-
-Ce projet est sous licence ISC.

@@ -1,15 +1,53 @@
 import type { Request, Response } from "express";
 import commentsAdminModel from "../../model/admin/commentsAdminModel";
 import type { Comment, CommentStatus } from "../../types/comments";
+import logger from "../../utils/logger";
 
-// Liste tous les commentaires
-// GET /comments
+// Liste paginée des commentaires. Query : page, limit (1–20), status optionnel (pending | approved | rejected | spam).
+// GET /admin/comments?page=1&limit=10&status=pending
 const browseAll = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const comments: Comment[] = await commentsAdminModel.findAll();
-		res.status(200).json(comments);
+		const page = Number.parseInt(req.query.page as string, 10) || 1;
+		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
+
+		if (page < 1) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre page doit être un nombre positif" });
+			return;
+		}
+		if (limit < 1 || limit > 20) {
+			res
+				.status(400)
+				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			return;
+		}
+
+		let status: CommentStatus | undefined;
+		const statusRaw = req.query.status;
+		if (statusRaw !== undefined && statusRaw !== "") {
+			const s = String(statusRaw);
+			if (!["pending", "approved", "rejected", "spam"].includes(s)) {
+				res.status(400).json({ error: "Statut de filtre invalide" });
+				return;
+			}
+			status = s as CommentStatus;
+		}
+
+		const [{ comments, total }, counts] = await Promise.all([
+			commentsAdminModel.findAllPaginated(page, limit, status),
+			commentsAdminModel.findTabCounts(),
+		]);
+
+		res.status(200).json({
+			comments,
+			total,
+			page,
+			limit,
+			counts,
+		});
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de tous les commentaires :",
 			err,
 		);
@@ -31,7 +69,7 @@ const browseByStatus = async (req: Request, res: Response): Promise<void> => {
 		);
 		res.status(200).json(comments);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des commentaires par statut :",
 			err,
 		);
@@ -56,10 +94,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(comment);
 	} catch (err) {
-		console.error(
-			"Erreur lors de la récupération du commentaire par ID :",
-			err,
-		);
+		logger.error("Erreur lors de la récupération du commentaire par ID :", err);
 		res.sendStatus(500);
 	}
 };
@@ -86,7 +121,7 @@ const editStatus = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(updatedComment);
 	} catch (err) {
-		console.error("Erreur lors de la mise à jour du statut :", err);
+		logger.error("Erreur lors de la mise à jour du statut :", err);
 		res.sendStatus(500);
 	}
 };
@@ -107,7 +142,7 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.sendStatus(204);
 	} catch (err) {
-		console.error("Erreur lors de la suppression du commentaire :", err);
+		logger.error("Erreur lors de la suppression du commentaire :", err);
 		res.sendStatus(500);
 	}
 };

@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+import logger from "./src/utils/logger";
 import app from "./src/app";
 const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 4242;
 
@@ -10,5 +11,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-	console.log(`Server adress : http://localhost:${port}`);
+	logger.info(`Server adress : http://localhost:${port}`);
 });

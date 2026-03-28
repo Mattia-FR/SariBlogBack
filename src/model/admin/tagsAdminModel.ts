@@ -1,6 +1,7 @@
 import pool from "../db";
 import type { Tag } from "../../types/tags";
 import type { ResultSetHeader } from "mysql2/promise";
+import logger from "../../utils/logger";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Tag.
@@ -19,7 +20,7 @@ const findAll = async (): Promise<Tag[]> => {
 			slug: row.slug,
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -38,7 +39,7 @@ const findById = async (id: number): Promise<Tag | null> => {
 			slug: row.slug,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -56,7 +57,7 @@ const create = async (data: { name: string; slug: string }): Promise<Tag> => {
 			slug: data.slug,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -96,7 +97,7 @@ const update = async (
 
 		return await findById(id);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -109,7 +110,7 @@ const deleteOne = async (id: number): Promise<boolean> => {
 		);
 		return result.affectedRows > 0;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -120,7 +121,51 @@ const countAll = async (): Promise<number> => {
 		const [rows]: any = await pool.query("SELECT COUNT(*) as total FROM tags");
 		return rows[0].total;
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
+		throw err;
+	}
+};
+
+// Tags liés à au moins un article (tous statuts), pour filtre liste articles admin.
+const findUsedOnArticles = async (): Promise<Tag[]> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			`SELECT DISTINCT t.id, t.name, t.slug
+			FROM tags t
+			INNER JOIN articles_tags at ON t.id = at.tag_id
+			ORDER BY t.name`,
+		);
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		return rows.map((row: any) => ({
+			id: row.id,
+			name: row.name,
+			slug: row.slug,
+		}));
+	} catch (err) {
+		logger.error(err);
+		throw err;
+	}
+};
+
+// Tags liés à au moins une image (filtre admin liste images).
+const findUsedOnImages = async (): Promise<Tag[]> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query(
+			`SELECT DISTINCT t.id, t.name, t.slug
+			FROM tags t
+			INNER JOIN images_tags it ON t.id = it.tag_id
+			ORDER BY t.name`,
+		);
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		return rows.map((row: any) => ({
+			id: row.id,
+			name: row.name,
+			slug: row.slug,
+		}));
+	} catch (err) {
+		logger.error(err);
 		throw err;
 	}
 };
@@ -132,4 +177,6 @@ export default {
 	update,
 	deleteOne,
 	countAll,
+	findUsedOnArticles,
+	findUsedOnImages,
 };

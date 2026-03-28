@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import categoriesModel from "../model/categoriesModel";
 import type { Category } from "../types/categories";
+import logger from "../utils/logger";
 
 // Liste toutes les catégories (ordre d'affichage).
 // GET /categories
@@ -9,7 +10,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const categories: Category[] = await categoriesModel.findAll();
 		res.status(200).json(categories);
 	} catch (err) {
-		console.error("Erreur lors de la récupération des catégories :", err);
+		logger.error("Erreur lors de la récupération des catégories :", err);
 		res
 			.status(500)
 			.json({ error: "Erreur lors de la récupération des catégories" });
@@ -32,7 +33,7 @@ const getBySlug = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(category);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de la catégorie par slug :",
 			err,
 		);

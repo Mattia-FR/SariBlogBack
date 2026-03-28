@@ -87,9 +87,11 @@ CREATE TABLE images (
     is_in_gallery BOOLEAN DEFAULT FALSE,
     user_id INT UNSIGNED NOT NULL,
     article_id INT UNSIGNED,
+    category_id INT UNSIGNED NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_gallery (is_in_gallery),
+    INDEX idx_images_category (category_id),
     CONSTRAINT pk_images PRIMARY KEY (id),
     CONSTRAINT fk_images_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_images_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL
@@ -140,12 +142,5 @@ CREATE TABLE categories (
     CONSTRAINT uk_categories_slug UNIQUE (slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE images_categories (
-    image_id INT UNSIGNED NOT NULL,
-    category_id INT UNSIGNED NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_category (category_id),
-    CONSTRAINT pk_images_categories PRIMARY KEY (image_id, category_id),
-    CONSTRAINT fk_images_categories_image FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE,
-    CONSTRAINT fk_images_categories_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE images
+    ADD CONSTRAINT fk_images_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;

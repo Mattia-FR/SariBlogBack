@@ -2,6 +2,7 @@ import pool from "./db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type { Comment, CommentCreateData } from "../types/comments";
 import { toDateString } from "../utils/dateHelpers";
+import logger from "../utils/logger";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString), le frontend reçoit toujours des objets strictement conformes à l'interface Comment.
@@ -35,7 +36,7 @@ const findApprovedByArticleId = async (id: number): Promise<Comment[]> => {
 			lastname: comment.lastname ?? null,
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -66,7 +67,7 @@ const create = async (
 			created_at: toDateString(row.created_at) ?? "",
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

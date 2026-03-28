@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import tagsAdminModel from "../../model/admin/tagsAdminModel";
 import type { Tag } from "../../types/tags";
 import { buildSlug } from "../../utils/slug";
+import logger from "../../utils/logger";
 
 // Liste tous les tags (y compris non utilisés).
 // GET /admin/tags
@@ -10,8 +11,49 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const tags: Tag[] = await tagsAdminModel.findAll();
 		res.status(200).json(tags);
 	} catch (err) {
-		console.error("Erreur lors de la récupération des tags (admin) :", err);
+		logger.error("Erreur lors de la récupération des tags (admin) :", err);
 		res.status(500).json({ error: "Erreur lors de la récupération des tags" });
+	}
+};
+
+// Tags utilisés sur au moins un article (tous statuts), filtre liste articles admin.
+// GET /admin/tags/used-on-articles
+const browseUsedOnArticles = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
+	try {
+		const tags: Tag[] = await tagsAdminModel.findUsedOnArticles();
+		res.status(200).json(tags);
+	} catch (err) {
+		logger.error(
+			"Erreur lors de la récupération des tags utilisés sur des articles :",
+			err,
+		);
+		res.status(500).json({
+			error:
+				"Erreur lors de la récupération des tags utilisés sur des articles",
+		});
+	}
+};
+
+// Tags utilisés sur au moins une image (filtre liste images admin).
+// GET /admin/tags/used-on-images
+const browseUsedOnImages = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
+	try {
+		const tags: Tag[] = await tagsAdminModel.findUsedOnImages();
+		res.status(200).json(tags);
+	} catch (err) {
+		logger.error(
+			"Erreur lors de la récupération des tags utilisés sur des images :",
+			err,
+		);
+		res.status(500).json({
+			error: "Erreur lors de la récupération des tags utilisés sur des images",
+		});
 	}
 };
 
@@ -31,10 +73,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(tag);
 	} catch (err) {
-		console.error(
-			"Erreur lors de la récupération du tag par ID (admin) :",
-			err,
-		);
+		logger.error("Erreur lors de la récupération du tag par ID (admin) :", err);
 		res.status(500).json({ error: "Erreur lors de la récupération du tag" });
 	}
 };
@@ -57,7 +96,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		const newTag: Tag = await tagsAdminModel.create({ name, slug });
 		res.status(201).json(newTag);
 	} catch (err) {
-		console.error("Erreur lors de la création du tag (admin) :", err);
+		logger.error("Erreur lors de la création du tag (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
 			res.status(409).json({
@@ -105,7 +144,7 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(updatedTag);
 	} catch (err) {
-		console.error("Erreur lors de la mise à jour du tag (admin) :", err);
+		logger.error("Erreur lors de la mise à jour du tag (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
 			res.status(409).json({
@@ -134,9 +173,17 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.sendStatus(204);
 	} catch (err) {
-		console.error("Erreur lors de la suppression du tag (admin) :", err);
+		logger.error("Erreur lors de la suppression du tag (admin) :", err);
 		res.status(500).json({ error: "Erreur lors de la suppression du tag" });
 	}
 };
 
-export { browseAll, readById, add, edit, destroy };
+export {
+	browseAll,
+	browseUsedOnArticles,
+	browseUsedOnImages,
+	readById,
+	add,
+	edit,
+	destroy,
+};

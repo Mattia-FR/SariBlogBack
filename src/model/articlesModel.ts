@@ -2,51 +2,92 @@ import pool from "./db";
 import type { Article } from "../types/articles";
 import { buildImageUrl } from "../utils/imageUrl";
 import { toDateString } from "../utils/dateHelpers";
+import logger from "../utils/logger";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString, imageUrl, tags), le frontend reçoit toujours des objets strictement conformes à l’interface Article.
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n’apporteraient rien pour ce projet.
 
-const findPublished = async (): Promise<Article[]> => {
+const findPublished = async (
+	page = 1,
+	limit = 10,
+	tagId?: number,
+): Promise<{ articles: Article[]; total: number }> => {
+	const offset = (page - 1) * limit;
+
 	try {
+		const tagFilter =
+			tagId != null
+				? "INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?"
+				: "";
+
+		const listParams = tagId != null ? [tagId, limit, offset] : [limit, offset];
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [articles]: any = await pool.query(
 			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
-			FROM articles a
-			LEFT JOIN images i ON a.featured_image_id = i.id
-			WHERE a.status = 'published'
-			ORDER BY a.published_at DESC`,
+      FROM articles a
+      LEFT JOIN images i ON a.featured_image_id = i.id
+      ${tagFilter}
+      WHERE a.status = 'published'
+      ORDER BY a.published_at DESC
+      LIMIT ? OFFSET ?`,
+			listParams,
 		);
 
+		const countParams = tagId != null ? [tagId] : [];
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [tags]: any = await pool.query(
-			`SELECT at.article_id, t.id, t.name, t.slug
-			FROM articles_tags at
-			LEFT JOIN tags t ON at.tag_id = t.id`,
+		const [countResult]: any = await pool.query(
+			tagId != null
+				? `SELECT COUNT(DISTINCT a.id) as total
+          FROM articles a
+          INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?
+          WHERE a.status = 'published'`
+				: `SELECT COUNT(*) as total FROM articles WHERE status = 'published'`,
+			countParams,
 		);
 
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		return articles.map((article: any) => ({
-			id: article.id,
-			title: article.title,
-			slug: article.slug,
-			excerpt: article.excerpt,
-			status: article.status,
-			user_id: article.user_id,
-			created_at: toDateString(article.created_at) ?? "",
-			updated_at: toDateString(article.updated_at) ?? "",
-			published_at: toDateString(article.published_at) ?? null,
-			views: article.views,
-			featured_image_id: article.featured_image_id,
-			imageUrl: buildImageUrl(article.image_path),
-			tags: tags
-				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-				.filter((t: any) => t.article_id === article.id)
-				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
-		}));
+		let tags: any[] = [];
+		if (articles.length > 0) {
+			const articleIds: number[] = articles.map(
+				(row: { id: number }) => row.id,
+			);
+			const placeholders = articleIds.map(() => "?").join(",");
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			const [tagRows]: any = await pool.query(
+				`SELECT at.article_id, t.id, t.name, t.slug
+        FROM articles_tags at
+        LEFT JOIN tags t ON at.tag_id = t.id
+        WHERE at.article_id IN (${placeholders})`,
+				articleIds,
+			);
+			tags = tagRows;
+		}
+
+		return {
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			articles: articles.map((article: any) => ({
+				id: article.id,
+				title: article.title,
+				slug: article.slug,
+				excerpt: article.excerpt,
+				status: article.status,
+				user_id: article.user_id,
+				created_at: toDateString(article.created_at) ?? "",
+				updated_at: toDateString(article.updated_at) ?? "",
+				published_at: toDateString(article.published_at) ?? null,
+				views: article.views,
+				featured_image_id: article.featured_image_id,
+				imageUrl: buildImageUrl(article.image_path),
+				tags: tags
+					// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+					.filter((t: any) => t.article_id === article.id)
+					// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+					.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
+			})),
+			total: countResult[0].total,
+		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -92,7 +133,7 @@ const findPublishedById = async (id: number): Promise<Article | null> => {
 			tags: tags,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -138,7 +179,7 @@ const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
 			tags: tags,
 		};
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };
@@ -183,7 +224,7 @@ const findHomepagePreview = async (): Promise<Article[]> => {
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
 		}));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		throw err;
 	}
 };

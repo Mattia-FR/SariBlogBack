@@ -7,6 +7,7 @@ import type {
 	CategoryUpdateData,
 } from "../../types/categories";
 import { buildSlug } from "../../utils/slug";
+import logger from "../../utils/logger";
 
 // Liste toutes les catégories (ordre d'affichage).
 // GET /admin/categories
@@ -15,7 +16,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const categories: Category[] = await categoriesModel.findAll();
 		res.status(200).json(categories);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération des catégories (admin) :",
 			err,
 		);
@@ -42,7 +43,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(category);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la récupération de la catégorie par ID (admin) :",
 			err,
 		);
@@ -52,7 +53,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Crée une catégorie. Body : name (requis), slug (optionnel), display_order (optionnel, défaut 0).
+// Crée une catégorie. Body : name (requis), slug (optionnel), display_order (optionnel, défaut : dernière position).
 // POST /admin/categories
 const add = async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -66,17 +67,20 @@ const add = async (req: Request, res: Response): Promise<void> => {
 				? req.body.slug.trim()
 				: "";
 		const slug = slugProvided || buildSlug(name);
+
+		// Si display_order n'est pas fourni ou invalide, on passe undefined :
+		// le model se chargera de placer la catégorie en dernière position.
 		const display_order =
 			typeof req.body.display_order === "number" &&
 			Number.isInteger(req.body.display_order)
 				? req.body.display_order
-				: 0;
+				: undefined;
 
 		const data: CategoryCreateData = { name, slug, display_order };
 		const newCategory: Category = await categoriesAdminModel.create(data);
 		res.status(201).json(newCategory);
 	} catch (err) {
-		console.error("Erreur lors de la création de la catégorie (admin) :", err);
+		logger.error("Erreur lors de la création de la catégorie (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
 			res.status(409).json({
@@ -138,7 +142,7 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.status(200).json(updatedCategory);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la mise à jour de la catégorie (admin) :",
 			err,
 		);
@@ -172,7 +176,7 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		}
 		res.sendStatus(204);
 	} catch (err) {
-		console.error(
+		logger.error(
 			"Erreur lors de la suppression de la catégorie (admin) :",
 			err,
 		);

@@ -122,6 +122,167 @@ DELETE {{adminUrl}}/articles/1
 Authorization: Bearer {{accessToken}}
 
 ###############################################################################
+# 📊 DASHBOARD ADMIN (authentification requise : Authorization Bearer)
+###############################################################################
+
+### 1. Statistiques globales
+GET {{adminUrl}}/dashboard/stats
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 🖼️ IMAGES (admin - authentification requise : Authorization Bearer)
+###############################################################################
+
+### 1. Liste paginée (admin - tous champs, filtre tagId optionnel)
+GET {{adminUrl}}/images?page=1&limit=10&tagId=1
+Authorization: Bearer {{accessToken}}
+
+### 2. Image par ID (admin)
+GET {{adminUrl}}/images/1
+Authorization: Bearer {{accessToken}}
+
+### 3. Créer une image (POST - admin)
+POST {{adminUrl}}/images
+Authorization: Bearer {{accessToken}}
+# IMPORTANT: `POST /admin/images` nécessite `multipart/form-data` avec un fichier dans le champ `image`.
+# Dans l'extension REST Client, configure en `form-data` :
+# - image: (fichier)
+# - title: "Nouvelle image"
+# - description: "Description..."
+# - alt_descr: "Texte alternatif..."
+# - is_in_gallery: true
+# - article_id: 1
+# - category_id: 1 (optionnel, ID catégorie ; vide = aucune)
+# - tag_ids: [1,2] (ou JSON string)
+
+### 4. Modifier une image (PATCH - admin)
+PATCH {{adminUrl}}/images/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Image modifiée",
+  "description": "Description modifiée",
+  "alt_descr": "Texte alternatif modifié",
+  "is_in_gallery": true,
+  "article_id": 1,
+  "category_id": 1,
+  "tag_ids": [1, 2]
+}
+
+### 5. Supprimer une image (DELETE - admin)
+DELETE {{adminUrl}}/images/1
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 🏷️ TAGS (admin - authentification requise : Authorization Bearer)
+###############################################################################
+
+### 1. Liste tous les tags
+GET {{adminUrl}}/tags
+Authorization: Bearer {{accessToken}}
+
+### 2. Tags utilisés sur des articles (admin)
+GET {{adminUrl}}/tags/used-on-articles
+Authorization: Bearer {{accessToken}}
+
+### 3. Tags utilisés sur des images (admin)
+GET {{adminUrl}}/tags/used-on-images
+Authorization: Bearer {{accessToken}}
+
+### 4. Tag par ID (admin)
+GET {{adminUrl}}/tags/1
+Authorization: Bearer {{accessToken}}
+
+### 5. Créer un tag (POST - admin)
+POST {{adminUrl}}/tags
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Tag de test",
+  "slug": "tag-de-test"
+}
+
+### 6. Modifier un tag (PATCH - admin)
+PATCH {{adminUrl}}/tags/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Tag modifié"
+}
+
+### 7. Supprimer un tag (DELETE - admin)
+DELETE {{adminUrl}}/tags/1
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 🗂️ CATEGORIES (admin - authentification requise : Authorization Bearer)
+###############################################################################
+
+### 1. Liste toutes les catégories
+GET {{adminUrl}}/categories
+Authorization: Bearer {{accessToken}}
+
+### 2. Catégorie par ID
+GET {{adminUrl}}/categories/1
+Authorization: Bearer {{accessToken}}
+
+### 3. Créer une catégorie (POST - admin)
+POST {{adminUrl}}/categories
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Catégorie de test",
+  "slug": "categorie-de-test",
+  "display_order": 6
+}
+
+### 4. Modifier une catégorie (PATCH - admin)
+PATCH {{adminUrl}}/categories/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Catégorie modifiée"
+}
+
+### 5. Supprimer une catégorie (DELETE - admin)
+DELETE {{adminUrl}}/categories/1
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 💬 COMMENTS (admin - authentification requise : Authorization Bearer)
+###############################################################################
+
+### 1. Liste paginée des commentaires
+GET {{adminUrl}}/comments?page=1&limit=10&status=pending
+Authorization: Bearer {{accessToken}}
+
+### 2. Commentaires par statut (liste complète)
+GET {{adminUrl}}/comments/status/pending
+Authorization: Bearer {{accessToken}}
+
+### 3. Commentaire par ID
+GET {{adminUrl}}/comments/1
+Authorization: Bearer {{accessToken}}
+
+### 4. Mettre à jour le statut d'un commentaire (PATCH - admin)
+PATCH {{adminUrl}}/comments/1/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "status": "approved"
+}
+
+### 5. Supprimer un commentaire (DELETE - admin)
+DELETE {{adminUrl}}/comments/1
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
 # 🖼️ IMAGES (public)
 ###############################################################################
 
@@ -137,37 +298,67 @@ GET {{baseUrl}}/images/article/1
 ### 4. Images par TAG
 GET {{baseUrl}}/images/tag/1
 
-### 5. Image par ID
+### 5. Images de la galerie par CATÉGORIE (public - paginé)
+GET {{baseUrl}}/images/category/1?page=1&limit=4
+
+### 6. Image par ID
 GET {{baseUrl}}/images/1
 
 ###############################################################################
-# 👥 USERS (public + 1 route protégée)
+# 👥 USERS (public + admin)
 ###############################################################################
 
-### 1. Liste tous les utilisateurs (public)
-GET {{baseUrl}}/users
-
-### 2. Artiste principale (public)
+### 1. Artiste principale (public)
 GET {{baseUrl}}/users/artist
 
-### 3. Utilisateur connecté (protégé - nécessite Bearer token)
-GET {{baseUrl}}/users/me
+### 2. Utilisateur connecté (admin - nécessite Bearer token)
+GET {{adminUrl}}/users/me
 Authorization: Bearer {{accessToken}}
 
-### 4. Utilisateur par ID (public)
-GET {{baseUrl}}/users/1
+### 3. Mettre à jour le profil (PATCH - admin)
+PATCH {{adminUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "username": "nouvel_user",
+  "email": "newuser@example.com",
+  "bio_short": "Bio courte mise à jour"
+}
+
+### 4. Mettre à jour le mot de passe (PATCH - admin)
+PATCH {{adminUrl}}/users/me/password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "password": "NouveauMotDePasse123!"
+}
+
+###############################################################################
+# 🗂️ CATEGORIES (public)
+###############################################################################
+
+### 1. Liste des catégories
+GET {{baseUrl}}/categories
+
+### 2. Catégorie par slug
+GET {{baseUrl}}/categories/portraits
 
 ###############################################################################
 # 🏷️ TAGS (public)
 ###############################################################################
 
-### 1. Liste tous les tags
-GET {{baseUrl}}/tags
+### 1. Tags utilisés sur des articles publiés (filtre blog)
+GET {{baseUrl}}/tags/published-articles
 
-### 2. Tags d'un article
+### 2. Tags galerie pour une catégorie
+GET {{baseUrl}}/tags/category/1
+
+### 3. Tags d'un article
 GET {{baseUrl}}/tags/article/1
 
-### 3. Tags d'une image
+### 4. Tags d'une image
 GET {{baseUrl}}/tags/image/1
 
 ###############################################################################
@@ -176,6 +367,18 @@ GET {{baseUrl}}/tags/image/1
 
 ### Commentaires approuvés d'un article
 GET {{baseUrl}}/comments/article/1
+
+### Créer un commentaire (POST - public)
+POST {{baseUrl}}/comments
+Content-Type: application/json
+
+{
+  "article_id": 1,
+  "text": "Super ! Les explications sont très claires.",
+  "firstname": "John",
+  "lastname": "Doe",
+  "email": "john@example.com"
+}
 
 ###############################################################################
 # 📧 MESSAGES (public : POST uniquement)
@@ -255,14 +458,14 @@ GET {{baseUrl}}/images/article/99999
 ### Tag inexistant pour images (devrait retourner tableau vide)
 GET {{baseUrl}}/images/tag/99999
 
-### User inexistant (devrait retourner 404)
-GET {{baseUrl}}/users/99999
-
 ### Article inexistant pour tags (devrait retourner tableau vide)
 GET {{baseUrl}}/tags/article/99999
 
 ### Image inexistante pour tags (devrait retourner tableau vide)
 GET {{baseUrl}}/tags/image/99999
+
+### Images de catégorie avec limite invalide > 20 (devrait retourner 400)
+GET {{baseUrl}}/images/category/1?limit=25
 
 ### Article inexistant pour commentaires (devrait retourner tableau vide)
 GET {{baseUrl}}/comments/article/99999
@@ -284,12 +487,29 @@ Content-Type: application/json
   "status": "invalid"
 }
 
+### Mettre à jour commentaire avec statut invalide (devrait retourner 400)
+PATCH {{adminUrl}}/comments/1/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "status": "invalid"
+}
+
 ### Créer message avec champs manquants (devrait retourner 400)
 POST {{baseUrl}}/messages
 Content-Type: application/json
 
 {
   "firstname": "John"
+}
+
+### Créer commentaire avec champs manquants (devrait retourner 400)
+POST {{baseUrl}}/comments
+Content-Type: application/json
+
+{
+  "article_id": 1
 }
 
 ### Route admin sans token (devrait retourner 401)

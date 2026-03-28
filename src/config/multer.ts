@@ -22,7 +22,9 @@ export const uploadImage = multer({
 		if (file.mimetype.startsWith("image/")) {
 			callbackMulter(null, true);
 		} else {
-			callbackMulter(new Error("Le fichier doit être une image"));
+			// On rejette proprement pour éviter de tomber sur un 500.
+			// `add()` gère déjà le cas `!req.file` et renvoie un 400.
+			callbackMulter(null, false);
 		}
 	},
 });

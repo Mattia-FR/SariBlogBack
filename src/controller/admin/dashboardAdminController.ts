@@ -3,6 +3,7 @@ import articlesAdminModel from "../../model/admin/articlesAdminModel";
 import imagesAdminModel from "../../model/admin/imagesAdminModel";
 import messagesAdminModel from "../../model/admin/messagesAdminModel";
 import tagsAdminModel from "../../model/admin/tagsAdminModel";
+import logger from "../../utils/logger";
 
 export const getStats = async (req: Request, res: Response) => {
 	try {
@@ -28,7 +29,7 @@ export const getStats = async (req: Request, res: Response) => {
 
 		res.json(stats);
 	} catch (error) {
-		console.error("Erreur récupération stats dashboard:", error);
+		logger.error("Erreur récupération stats dashboard:", error);
 		res.status(500).json({ message: "Erreur serveur" });
 	}
 };
