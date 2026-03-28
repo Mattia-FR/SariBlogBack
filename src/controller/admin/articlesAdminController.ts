@@ -11,6 +11,7 @@ import type {
 	ArticleUpdateData,
 	ArticleStatus,
 } from "../../types/articles";
+import { excerptFromPlainText } from "../../utils/excerpt";
 import { buildSlug } from "../../utils/slug";
 import logger from "../../utils/logger";
 
@@ -138,14 +139,18 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			req.body.published_at != null && req.body.published_at !== ""
 				? String(req.body.published_at)
 				: null;
+		const content =
+			typeof req.body.content === "string" ? req.body.content : "";
+		const manualExcerpt =
+			req.body.excerpt != null && req.body.excerpt !== ""
+				? String(req.body.excerpt).trim()
+				: null;
+		const excerpt = manualExcerpt ?? excerptFromPlainText(content);
 		const articleData: ArticleCreateData = {
 			title,
 			slug: slugProvided || buildSlug(title),
-			content: typeof req.body.content === "string" ? req.body.content : "",
-			excerpt:
-				req.body.excerpt != null && req.body.excerpt !== ""
-					? String(req.body.excerpt).trim()
-					: null,
+			content,
+			excerpt,
 			status,
 			user_id: userId,
 			featured_image_id,
@@ -182,10 +187,54 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 					.map((id: unknown) => Number(id))
 					.filter((id: number) => !Number.isNaN(id))
 			: undefined;
-		const articleData: ArticleUpdateData = {
-			...req.body,
-			tag_ids: tagIds,
-		};
+
+		const articleData: ArticleUpdateData = {};
+
+		if (typeof req.body.title === "string") {
+			articleData.title = req.body.title.trim();
+		}
+		if (typeof req.body.slug === "string") {
+			articleData.slug = req.body.slug.trim();
+		}
+		if (typeof req.body.content === "string") {
+			articleData.content = req.body.content;
+		}
+
+		const explicitExcerptNonEmpty =
+			req.body.excerpt != null &&
+			req.body.excerpt !== "" &&
+			String(req.body.excerpt).trim() !== "";
+		if (explicitExcerptNonEmpty) {
+			articleData.excerpt = String(req.body.excerpt).trim();
+		} else if (typeof req.body.content === "string") {
+			articleData.excerpt = excerptFromPlainText(req.body.content);
+		}
+
+		const rawStatusEdit = req.body.status;
+		if (
+			typeof rawStatusEdit === "string" &&
+			VALID_STATUSES.includes(rawStatusEdit as ArticleStatus)
+		) {
+			articleData.status = rawStatusEdit as ArticleStatus;
+		}
+
+		if (req.body.featured_image_id !== undefined) {
+			const rawFeaturedEdit = req.body.featured_image_id;
+			articleData.featured_image_id =
+				rawFeaturedEdit != null && rawFeaturedEdit !== ""
+					? Number(rawFeaturedEdit) || null
+					: null;
+		}
+
+		if (req.body.published_at !== undefined) {
+			articleData.published_at =
+				req.body.published_at != null && req.body.published_at !== ""
+					? String(req.body.published_at)
+					: null;
+		}
+
+		articleData.tag_ids = tagIds;
+
 		const updatedArticle: ArticleWithCommentsCount | null =
 			await articlesAdminModel.update(articleId, articleData);
 
