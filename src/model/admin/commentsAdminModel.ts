@@ -219,12 +219,6 @@ const updateStatus = async (
 ): Promise<Comment | null> => {
 	try {
 		const { status } = data;
-		if (
-			status == null ||
-			!["pending", "approved", "rejected", "spam"].includes(status)
-		) {
-			throw new Error("Statut invalide ou manquant");
-		}
 		const [result] = await pool.query<ResultSetHeader>(
 			"UPDATE comments SET status = ? WHERE id = ?",
 			[status, id],

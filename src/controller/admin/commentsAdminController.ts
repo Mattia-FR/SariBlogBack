@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import commentsAdminModel from "../../model/admin/commentsAdminModel";
 import type { Comment, CommentStatus } from "../../types/comments";
+import { sendError } from "../../utils/httpErrors";
 import logger from "../../utils/logger";
 
 // Liste paginée des commentaires. Query : page, limit (1–20), status optionnel (pending | approved | rejected | spam).
@@ -11,15 +12,11 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
 
 		if (page < 1) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre page doit être un nombre positif" });
+			sendError(res, 400, "Le paramètre page doit être un nombre positif");
 			return;
 		}
 		if (limit < 1 || limit > 20) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			sendError(res, 400, "Le paramètre limit doit être entre 1 et 20");
 			return;
 		}
 
@@ -28,7 +25,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		if (statusRaw !== undefined && statusRaw !== "") {
 			const s = String(statusRaw);
 			if (!["pending", "approved", "rejected", "spam"].includes(s)) {
-				res.status(400).json({ error: "Statut de filtre invalide" });
+				sendError(res, 400, "Statut de filtre invalide");
 				return;
 			}
 			status = s as CommentStatus;
@@ -51,7 +48,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de tous les commentaires :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération des commentaires");
 	}
 };
 
@@ -61,7 +58,7 @@ const browseByStatus = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { status } = req.params;
 		if (!["pending", "approved", "rejected", "spam"].includes(status)) {
-			res.status(400).json({ error: "Statut invalide" });
+			sendError(res, 400, "Statut invalide");
 			return;
 		}
 		const comments: Comment[] = await commentsAdminModel.findByStatus(
@@ -73,7 +70,7 @@ const browseByStatus = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des commentaires par statut :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération des commentaires par statut");
 	}
 };
 
@@ -83,19 +80,19 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const commentId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(commentId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 		const comment: Comment | null =
 			await commentsAdminModel.findById(commentId);
 		if (!comment) {
-			res.sendStatus(404);
+			sendError(res, 404, "Commentaire non trouvé");
 			return;
 		}
 		res.status(200).json(comment);
 	} catch (err) {
 		logger.error("Erreur lors de la récupération du commentaire par ID :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération du commentaire");
 	}
 };
 
@@ -106,23 +103,23 @@ const editStatus = async (req: Request, res: Response): Promise<void> => {
 		const commentId: number = Number.parseInt(req.params.id, 10);
 		const { status } = req.body;
 		if (Number.isNaN(commentId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 		if (!["pending", "approved", "rejected", "spam"].includes(status)) {
-			res.status(400).json({ error: "Statut invalide" });
+			sendError(res, 400, "Statut invalide");
 			return;
 		}
 		const updatedComment: Comment | null =
 			await commentsAdminModel.updateStatus(commentId, { status });
 		if (!updatedComment) {
-			res.sendStatus(404);
+			sendError(res, 404, "Commentaire non trouvé");
 			return;
 		}
 		res.status(200).json(updatedComment);
 	} catch (err) {
 		logger.error("Erreur lors de la mise à jour du statut :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la mise à jour du statut du commentaire");
 	}
 };
 
@@ -132,18 +129,18 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const commentId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(commentId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 		const deleted: boolean = await commentsAdminModel.deleteOne(commentId);
 		if (!deleted) {
-			res.sendStatus(404);
+			sendError(res, 404, "Commentaire non trouvé");
 			return;
 		}
 		res.sendStatus(204);
 	} catch (err) {
 		logger.error("Erreur lors de la suppression du commentaire :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la suppression du commentaire");
 	}
 };
 

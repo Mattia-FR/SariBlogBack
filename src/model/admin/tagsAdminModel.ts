@@ -80,10 +80,6 @@ const update = async (
 			values.push(data.slug);
 		}
 
-		if (updates.length === 0) {
-			throw new Error("Aucun champ à mettre à jour");
-		}
-
 		values.push(id);
 
 		const [result] = await pool.query<ResultSetHeader>(

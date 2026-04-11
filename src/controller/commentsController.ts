@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import commentsModel from "../model/commentsModel";
 import type { Comment } from "../types/comments";
+import { sendError } from "../utils/httpErrors";
 import logger from "../utils/logger";
 
 // Récupère tous les commentaires approuvés associés à un article par son ID (public)
@@ -9,7 +10,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.articleId, 10);
 		if (Number.isNaN(articleId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
@@ -21,7 +22,11 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des commentaires approuvés par ID d'article :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des commentaires approuvés par ID d'article",
+		);
 	}
 };
 
@@ -47,7 +52,7 @@ const create = async (req: Request, res: Response): Promise<void> => {
 		res.status(201).json(created);
 	} catch (err) {
 		logger.error("Erreur lors de la création du commentaire :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la création du commentaire");
 	}
 };
 

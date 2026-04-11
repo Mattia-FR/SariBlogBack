@@ -5,6 +5,7 @@ import argon2 from "argon2";
 import type { User } from "../types/users";
 import type { TokenPayload } from "../types/auth";
 import { argon2Options } from "../config/argon2";
+import { sendError } from "../utils/httpErrors";
 import logger from "../utils/logger";
 
 export async function login(req: Request, res: Response) {
@@ -16,7 +17,8 @@ export async function login(req: Request, res: Response) {
 		const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 		if (!ACCESS_SECRET || !REFRESH_SECRET) {
 			logger.error("JWT secrets non définis");
-			return res.sendStatus(500);
+			sendError(res, 500, "JWT secrets non définis");
+			return;
 		}
 
 		// 1. Récupération de l'utilisateur par email OU username
@@ -67,7 +69,7 @@ export async function login(req: Request, res: Response) {
 		});
 	} catch (err) {
 		logger.error("Erreur lors de la connexion :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la connexion");
 	}
 }
 
@@ -87,7 +89,8 @@ export async function refresh(req: Request, res: Response) {
 
 		if (!REFRESH_SECRET || !ACCESS_SECRET) {
 			logger.error("JWT secrets non définis");
-			return res.sendStatus(500);
+			sendError(res, 500, "JWT secrets non définis");
+			return;
 		}
 
 		// 3. Vérifier et décoder le refresh token
@@ -127,7 +130,8 @@ export async function refresh(req: Request, res: Response) {
 			return res.sendStatus(401);
 		}
 		logger.error("Erreur lors du refresh:", err);
-		return res.sendStatus(500);
+		sendError(res, 500, "Erreur lors du refresh");
+		return;
 	}
 }
 
@@ -145,7 +149,8 @@ export async function logout(req: Request, res: Response) {
 		const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 		if (!REFRESH_SECRET) {
 			logger.error("REFRESH_TOKEN_SECRET non défini");
-			return res.sendStatus(500);
+			sendError(res, 500, "REFRESH_TOKEN_SECRET non défini");
+			return;
 		}
 
 		try {
@@ -170,6 +175,7 @@ export async function logout(req: Request, res: Response) {
 		return res.sendStatus(200);
 	} catch (err) {
 		logger.error("Erreur lors de la déconnexion :", err);
-		return res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la déconnexion");
+		return;
 	}
 }

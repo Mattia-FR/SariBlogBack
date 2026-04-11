@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import imagesAdminModel from "../../model/admin/imagesAdminModel";
 import type { Image, ImageUpdateData } from "../../types/images";
+import { sendError } from "../../utils/httpErrors";
 import { buildImageUrl } from "../../utils/imageUrl";
 import logger from "../../utils/logger";
 
@@ -21,15 +22,11 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
 
 		if (page < 1) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre page doit être un nombre positif" });
+			sendError(res, 400, "Le paramètre page doit être un nombre positif");
 			return;
 		}
 		if (limit < 1 || limit > 20) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			sendError(res, 400, "Le paramètre limit doit être entre 1 et 20");
 			return;
 		}
 
@@ -38,9 +35,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		if (tagIdRaw !== undefined && tagIdRaw !== "") {
 			const parsed = Number.parseInt(String(tagIdRaw), 10);
 			if (Number.isNaN(parsed) || parsed < 1) {
-				res.status(400).json({
-					error: "Le paramètre tagId doit être un nombre positif",
-				});
+				sendError(res, 400, "Le paramètre tagId doit être un nombre positif");
 				return;
 			}
 			tagId = parsed;
@@ -60,7 +55,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		});
 	} catch (err) {
 		logger.error("Erreur lors de la récupération des images (admin) :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération des images");
 	}
 };
 
@@ -70,12 +65,12 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const id = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(id)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 		const image: Image | null = await imagesAdminModel.findById(id);
 		if (!image) {
-			res.sendStatus(404);
+			sendError(res, 404, "Image non trouvée");
 			return;
 		}
 		res.status(200).json(enrichWithImageUrl(image));
@@ -84,7 +79,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de l'image par ID (admin) :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération de l'image");
 	}
 };
 
@@ -94,11 +89,11 @@ const add = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const userId = req.user?.userId;
 		if (!userId) {
-			res.status(401).json({ error: "Non authentifié" });
+			sendError(res, 401, "Non authentifié");
 			return;
 		}
 		if (!req.file) {
-			res.status(400).json({ error: "Fichier image requis" });
+			sendError(res, 400, "Fichier image requis");
 			return;
 		}
 		const path = `/uploads/images/${req.file.filename}`;
@@ -129,10 +124,11 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			Number.isNaN(resolvedCategoryId) ||
 			resolvedCategoryId < 1
 		) {
-			res.status(400).json({
-				error:
-					"Une catégorie est requise pour une image affichée dans la galerie",
-			});
+			sendError(
+				res,
+				400,
+				"Une catégorie est requise pour une image affichée dans la galerie",
+			);
 			return;
 		}
 
@@ -151,7 +147,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		res.status(201).json(enrichWithImageUrl(image));
 	} catch (err) {
 		logger.error("Erreur lors de la création de l'image (admin) :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la création de l'image");
 	}
 };
 
@@ -161,12 +157,12 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const id = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(id)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 		const existing = await imagesAdminModel.findById(id);
 		if (!existing) {
-			res.sendStatus(404);
+			sendError(res, 404, "Image non trouvée");
 			return;
 		}
 
@@ -214,23 +210,24 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 				Number.isNaN(Number(mergedCategoryId)) ||
 				Number(mergedCategoryId) < 1
 			) {
-				res.status(400).json({
-					error:
-						"Une catégorie est requise pour une image affichée dans la galerie",
-				});
+				sendError(
+					res,
+					400,
+					"Une catégorie est requise pour une image affichée dans la galerie",
+				);
 				return;
 			}
 		}
 
 		const image = await imagesAdminModel.update(id, data);
 		if (!image) {
-			res.sendStatus(404);
+			sendError(res, 404, "Image non trouvée");
 			return;
 		}
 		res.status(200).json(enrichWithImageUrl(image));
 	} catch (err) {
 		logger.error("Erreur lors de la mise à jour de l'image (admin) :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la mise à jour de l'image");
 	}
 };
 
@@ -240,19 +237,19 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const id = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(id)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
 		const image = await imagesAdminModel.findById(id);
 		if (!image) {
-			res.sendStatus(404);
+			sendError(res, 404, "Image non trouvée");
 			return;
 		}
 
 		const deleted = await imagesAdminModel.deleteOne(id);
 		if (!deleted) {
-			res.sendStatus(404);
+			sendError(res, 404, "Image non trouvée");
 			return;
 		}
 
@@ -276,7 +273,7 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 		res.sendStatus(204);
 	} catch (err) {
 		logger.error("Erreur lors de la suppression de l'image (admin) :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la suppression de l'image");
 	}
 };
 

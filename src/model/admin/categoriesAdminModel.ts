@@ -138,10 +138,6 @@ const update = async (
 			values.push(data.display_order);
 		}
 
-		if (updates.length === 0) {
-			throw new Error("Aucun champ à mettre à jour");
-		}
-
 		values.push(id);
 
 		const [result] = await connection.query<ResultSetHeader>(

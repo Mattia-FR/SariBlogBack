@@ -310,9 +310,6 @@ const update = async (
 		}
 
 		const hasTagIds = "tag_ids" in data;
-		if (updates.length === 0 && !hasTagIds) {
-			throw new Error("Aucun champ à mettre à jour");
-		}
 
 		if (updates.length > 0) {
 			values.push(id);

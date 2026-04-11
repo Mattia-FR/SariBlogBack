@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import tagsAdminModel from "../../model/admin/tagsAdminModel";
 import type { Tag } from "../../types/tags";
+import { sendError } from "../../utils/httpErrors";
 import { buildSlug } from "../../utils/slug";
 import logger from "../../utils/logger";
 
@@ -12,7 +13,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		res.status(200).json(tags);
 	} catch (err) {
 		logger.error("Erreur lors de la récupération des tags (admin) :", err);
-		res.status(500).json({ error: "Erreur lors de la récupération des tags" });
+		sendError(res, 500, "Erreur lors de la récupération des tags");
 	}
 };
 
@@ -30,10 +31,11 @@ const browseUsedOnArticles = async (
 			"Erreur lors de la récupération des tags utilisés sur des articles :",
 			err,
 		);
-		res.status(500).json({
-			error:
-				"Erreur lors de la récupération des tags utilisés sur des articles",
-		});
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des tags utilisés sur des articles",
+		);
 	}
 };
 
@@ -51,9 +53,11 @@ const browseUsedOnImages = async (
 			"Erreur lors de la récupération des tags utilisés sur des images :",
 			err,
 		);
-		res.status(500).json({
-			error: "Erreur lors de la récupération des tags utilisés sur des images",
-		});
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des tags utilisés sur des images",
+		);
 	}
 };
 
@@ -63,18 +67,18 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const tagId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(tagId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 		const tag: Tag | null = await tagsAdminModel.findById(tagId);
 		if (!tag) {
-			res.status(404).json({ error: "Tag non trouvé" });
+			sendError(res, 404, "Tag non trouvé");
 			return;
 		}
 		res.status(200).json(tag);
 	} catch (err) {
 		logger.error("Erreur lors de la récupération du tag par ID (admin) :", err);
-		res.status(500).json({ error: "Erreur lors de la récupération du tag" });
+		sendError(res, 500, "Erreur lors de la récupération du tag");
 	}
 };
 
@@ -84,7 +88,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
 		if (!name) {
-			res.status(400).json({ error: "Le nom est requis" });
+			sendError(res, 400, "Le nom est requis");
 			return;
 		}
 		const slugProvided =
@@ -99,13 +103,11 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		logger.error("Erreur lors de la création du tag (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
-			res.status(409).json({
-				error: "Un tag avec ce nom ou ce slug existe déjà",
-			});
+			sendError(res, 409, "Un tag avec ce nom ou ce slug existe déjà");
 			return;
 		}
 
-		res.status(500).json({ error: "Erreur lors de la création du tag" });
+		sendError(res, 500, "Erreur lors de la création du tag");
 	}
 };
 
@@ -115,7 +117,7 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const tagId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(tagId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
@@ -131,15 +133,17 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		}
 
 		if (Object.keys(data).length === 0) {
-			res.status(400).json({
-				error: "Au moins un champ (name ou slug) doit être fourni et non vide",
-			});
+			sendError(
+				res,
+				400,
+				"Au moins un champ (name ou slug) doit être fourni et non vide",
+			);
 			return;
 		}
 
 		const updatedTag: Tag | null = await tagsAdminModel.update(tagId, data);
 		if (!updatedTag) {
-			res.status(404).json({ error: "Tag non trouvé" });
+			sendError(res, 404, "Tag non trouvé");
 			return;
 		}
 		res.status(200).json(updatedTag);
@@ -147,13 +151,11 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		logger.error("Erreur lors de la mise à jour du tag (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
-			res.status(409).json({
-				error: "Un tag avec ce nom ou ce slug existe déjà",
-			});
+			sendError(res, 409, "Un tag avec ce nom ou ce slug existe déjà");
 			return;
 		}
 
-		res.status(500).json({ error: "Erreur lors de la mise à jour du tag" });
+		sendError(res, 500, "Erreur lors de la mise à jour du tag");
 	}
 };
 
@@ -163,18 +165,18 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const tagId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(tagId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 		const deleted: boolean = await tagsAdminModel.deleteOne(tagId);
 		if (!deleted) {
-			res.status(404).json({ error: "Tag non trouvé" });
+			sendError(res, 404, "Tag non trouvé");
 			return;
 		}
 		res.sendStatus(204);
 	} catch (err) {
 		logger.error("Erreur lors de la suppression du tag (admin) :", err);
-		res.status(500).json({ error: "Erreur lors de la suppression du tag" });
+		sendError(res, 500, "Erreur lors de la suppression du tag");
 	}
 };
 

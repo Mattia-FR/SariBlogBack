@@ -99,9 +99,6 @@ const updateStatus = async (
 ): Promise<Message | null> => {
 	try {
 		const { status } = data;
-		if (status == null || !["unread", "read", "archived"].includes(status)) {
-			throw new Error("Statut invalide ou manquant");
-		}
 		const [result] = await pool.query<ResultSetHeader>(
 			"UPDATE messages SET status = ? WHERE id = ?",
 			[status, id],
