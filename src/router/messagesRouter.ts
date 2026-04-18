@@ -6,6 +6,6 @@ import { messageVisitorSchema } from "../schemas/messageSchemas";
 
 const router: Router = express.Router();
 
-router.post("/", messagesLimiter, validate(messageVisitorSchema), add);
+router.post("/", validate(messageVisitorSchema), messagesLimiter, add);
 
 export default router;
