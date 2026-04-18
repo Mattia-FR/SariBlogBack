@@ -1,6 +1,6 @@
-import type { Request, Response } from "express";
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { Request, Response } from "express";
 import imagesAdminModel from "../../model/admin/imagesAdminModel";
 import type { Image, ImageUpdateData } from "../../types/images";
 import { sendError } from "../../utils/httpErrors";

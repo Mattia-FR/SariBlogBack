@@ -1,9 +1,9 @@
 import express, { type Router } from "express";
 import {
 	browsePublished,
+	readHomepagePreview,
 	readPublishedById,
 	readPublishedBySlug,
-	readHomepagePreview,
 } from "../controller/articlesController";
 
 const router: Router = express.Router();

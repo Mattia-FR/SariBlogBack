@@ -404,23 +404,15 @@ Content-Type: application/json
 GET {{adminUrl}}/messages
 Authorization: Bearer {{accessToken}}
 
-### 2. Messages par statut : non lus (GET - admin)
-GET {{adminUrl}}/messages/status/unread
+### 2. Liste avec filtre de statut (GET - admin)
+GET {{adminUrl}}/messages?page=1&limit=10&status=unread
 Authorization: Bearer {{accessToken}}
 
-### 3. Messages par statut : lus (GET - admin)
-GET {{adminUrl}}/messages/status/read
-Authorization: Bearer {{accessToken}}
-
-### 4. Messages par statut : archivés (GET - admin)
-GET {{adminUrl}}/messages/status/archived
-Authorization: Bearer {{accessToken}}
-
-### 5. Message par ID (GET - admin)
+### 3. Message par ID (GET - admin)
 GET {{adminUrl}}/messages/1
 Authorization: Bearer {{accessToken}}
 
-### 6. Mettre à jour le statut d'un message (PATCH - admin)
+### 4. Mettre à jour le statut d'un message (PATCH - admin)
 PATCH {{adminUrl}}/messages/1/status
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
@@ -429,7 +421,7 @@ Content-Type: application/json
   "status": "read"
 }
 
-### 7. Supprimer un message (DELETE - admin)
+### 5. Supprimer un message (DELETE - admin)
 DELETE {{adminUrl}}/messages/1
 Authorization: Bearer {{accessToken}}
 
@@ -474,8 +466,8 @@ GET {{baseUrl}}/comments/article/99999
 GET {{adminUrl}}/messages/99999
 Authorization: Bearer {{accessToken}}
 
-### Messages par statut invalide (devrait retourner 400)
-GET {{adminUrl}}/messages/status/invalid
+### Liste messages avec statut de filtre invalide (devrait retourner 400)
+GET {{adminUrl}}/messages?status=invalid
 Authorization: Bearer {{accessToken}}
 
 ### Mettre à jour message avec statut invalide (devrait retourner 400)

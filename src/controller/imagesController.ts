@@ -29,7 +29,11 @@ const browseGallery = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de la galerie d'images :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération de la galerie d'images");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de la galerie d'images",
+		);
 	}
 };
 
@@ -75,7 +79,11 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des images par ID d'article :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération des images par ID d'article");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des images par ID d'article",
+		);
 	}
 };
 
@@ -97,7 +105,11 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des images par ID de tag :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération des images par ID de tag");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des images par ID de tag",
+		);
 	}
 };
 
@@ -152,7 +164,11 @@ const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des images par ID de catégorie :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération des images par ID de catégorie");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des images par ID de catégorie",
+		);
 	}
 };
 

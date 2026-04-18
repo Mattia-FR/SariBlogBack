@@ -1,8 +1,8 @@
 import express, { type Router } from "express";
-import { add } from "../controller/messagesController";
 import { messagesLimiter } from "../config/rateLimit";
-import { messageVisitorSchema } from "../schemas/messageSchemas";
+import { add } from "../controller/messagesController";
 import { validate } from "../middleware/validateMiddleware";
+import { messageVisitorSchema } from "../schemas/messageSchemas";
 
 const router: Router = express.Router();
 

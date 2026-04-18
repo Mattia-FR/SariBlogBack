@@ -1,10 +1,10 @@
+import argon2 from "argon2";
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import usersModel from "../model/usersModel";
-import argon2 from "argon2";
-import type { User } from "../types/users";
-import type { TokenPayload } from "../types/auth";
 import { argon2Options } from "../config/argon2";
+import usersModel from "../model/usersModel";
+import type { TokenPayload } from "../types/auth";
+import type { User } from "../types/users";
 import { sendError } from "../utils/httpErrors";
 import logger from "../utils/logger";
 

@@ -1,8 +1,9 @@
-import pool from "../db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type { User, UserUpdateData } from "../../types/users";
-import usersModel from "../usersModel";
+import { HttpError } from "../../utils/httpErrors";
 import logger from "../../utils/logger";
+import pool from "../db";
+import usersModel from "../usersModel";
 
 const ALLOWED_UPDATE_FIELDS: (keyof UserUpdateData)[] = [
 	"username",
@@ -30,7 +31,7 @@ const updateMeProfile = async (
 		}
 
 		if (updates.length === 0) {
-			throw new Error("Aucun champ à mettre à jour");
+			throw new HttpError(400, "Aucun champ à mettre à jour");
 		}
 
 		values.push(id);

@@ -52,28 +52,6 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Liste les commentaires par statut
-// GET /comments/status/:status
-const browseByStatus = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const { status } = req.params;
-		if (!["pending", "approved", "rejected", "spam"].includes(status)) {
-			sendError(res, 400, "Statut invalide");
-			return;
-		}
-		const comments: Comment[] = await commentsAdminModel.findByStatus(
-			status as CommentStatus,
-		);
-		res.status(200).json(comments);
-	} catch (err) {
-		logger.error(
-			"Erreur lors de la récupération des commentaires par statut :",
-			err,
-		);
-		sendError(res, 500, "Erreur lors de la récupération des commentaires par statut");
-	}
-};
-
 // Récupère un commentaire par ID
 // GET /comments/:id
 const readById = async (req: Request, res: Response): Promise<void> => {
@@ -119,7 +97,11 @@ const editStatus = async (req: Request, res: Response): Promise<void> => {
 		res.status(200).json(updatedComment);
 	} catch (err) {
 		logger.error("Erreur lors de la mise à jour du statut :", err);
-		sendError(res, 500, "Erreur lors de la mise à jour du statut du commentaire");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la mise à jour du statut du commentaire",
+		);
 	}
 };
 
@@ -144,4 +126,4 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseAll, browseByStatus, readById, editStatus, destroy };
+export { browseAll, readById, editStatus, destroy };

@@ -2,8 +2,8 @@ import type { Request, Response } from "express";
 import tagsAdminModel from "../../model/admin/tagsAdminModel";
 import type { Tag } from "../../types/tags";
 import { sendError } from "../../utils/httpErrors";
-import { buildSlug } from "../../utils/slug";
 import logger from "../../utils/logger";
+import { buildSlug } from "../../utils/slug";
 
 // Liste tous les tags (y compris non utilisés).
 // GET /admin/tags
@@ -95,7 +95,16 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			req.body.slug && typeof req.body.slug === "string"
 				? req.body.slug.trim()
 				: "";
-		const slug = slugProvided || buildSlug(name);
+		let slug: string;
+		if (slugProvided) {
+			slug = buildSlug(slugProvided);
+			if (!slug) {
+				sendError(res, 400, "Slug invalide");
+				return;
+			}
+		} else {
+			slug = buildSlug(name);
+		}
 
 		const newTag: Tag = await tagsAdminModel.create({ name, slug });
 		res.status(201).json(newTag);
@@ -129,7 +138,14 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		}
 		if (slug !== undefined) {
 			const trimmed = typeof slug === "string" ? slug.trim() : "";
-			if (trimmed) data.slug = trimmed;
+			if (trimmed) {
+				const sanitized = buildSlug(trimmed);
+				if (!sanitized) {
+					sendError(res, 400, "Slug invalide");
+					return;
+				}
+				data.slug = sanitized;
+			}
 		}
 
 		if (Object.keys(data).length === 0) {

@@ -1,12 +1,12 @@
-import type { Request, Response } from "express";
 import argon2 from "argon2";
-import type { User } from "../../types/users";
-import type { UserUpdateData } from "../../types/users";
-import { sendError } from "../../utils/httpErrors";
-import { buildImageUrl } from "../../utils/imageUrl";
+import type { Request, Response } from "express";
+import { argon2Options } from "../../config/argon2";
 import usersAdminModel from "../../model/admin/usersAdminModel";
 import usersModel from "../../model/usersModel";
-import { argon2Options } from "../../config/argon2";
+import type { User } from "../../types/users";
+import type { UserUpdateData } from "../../types/users";
+import { isHttpError, sendError } from "../../utils/httpErrors";
+import { buildImageUrl } from "../../utils/imageUrl";
 import logger from "../../utils/logger";
 
 /** Enrichit un utilisateur avec l'URL complète de son avatar (User → User avec avatarUrl). */
@@ -41,7 +41,11 @@ const readMe = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de l'utilisateur connecté (admin) :",
 			error,
 		);
-		sendError(res, 500, "Erreur lors de la récupération de l'utilisateur connecté");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de l'utilisateur connecté",
+		);
 	}
 };
 
@@ -74,6 +78,10 @@ const updateMeProfile = async (req: Request, res: Response): Promise<void> => {
 
 		res.status(200).json(enrichUserWithAvatarUrl(user));
 	} catch (error) {
+		if (isHttpError(error)) {
+			sendError(res, error.statusCode, error.message, error.code);
+			return;
+		}
 		logger.error("Erreur lors de la mise à jour du profil (admin) :", error);
 		sendError(res, 500, "Erreur lors de la mise à jour du profil");
 	}

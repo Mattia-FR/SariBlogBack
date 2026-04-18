@@ -18,4 +18,21 @@ function sendError(
 	res.status(status).json(body);
 }
 
-export { sendError };
+/** Erreur métier / client avec statut HTTP explicite (à gérer dans le middleware ou le catch du contrôleur). */
+class HttpError extends Error {
+	readonly statusCode: number;
+	readonly code?: string;
+
+	constructor(statusCode: number, message: string, code?: string) {
+		super(message);
+		this.name = "HttpError";
+		this.statusCode = statusCode;
+		this.code = code;
+	}
+}
+
+function isHttpError(err: unknown): err is HttpError {
+	return err instanceof HttpError;
+}
+
+export { sendError, HttpError, isHttpError };

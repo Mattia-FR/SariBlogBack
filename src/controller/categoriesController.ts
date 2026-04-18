@@ -36,7 +36,11 @@ const getBySlug = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de la catégorie par slug :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération de la catégorie par slug");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de la catégorie par slug",
+		);
 	}
 };
 

@@ -49,28 +49,6 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-// Liste les messages par statut
-// GET /messages/status/:status
-const browseByStatus = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const { status } = req.params;
-		if (!["unread", "read", "archived"].includes(status)) {
-			sendError(res, 400, "Statut invalide");
-			return;
-		}
-		const messages: Message[] = await messagesAdminModel.findByStatus(
-			status as MessageStatus,
-		);
-		res.status(200).json(messages);
-	} catch (err) {
-		logger.error(
-			"Erreur lors de la récupération des messages par statut :",
-			err,
-		);
-		sendError(res, 500, "Erreur lors de la récupération des messages par statut");
-	}
-};
-
 // Récupère un message par ID
 // GET /messages/:id
 const readById = async (req: Request, res: Response): Promise<void> => {
@@ -141,4 +119,4 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseAll, browseByStatus, readById, editStatus, destroy };
+export { browseAll, readById, editStatus, destroy };

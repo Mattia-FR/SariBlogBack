@@ -1,10 +1,10 @@
 import express, { type Router } from "express";
 import {
 	browseGallery,
-	readById,
 	readByArticleId,
-	readByTag,
 	readByCategoryId,
+	readById,
+	readByTag,
 	readImageOfTheDay,
 } from "../controller/imagesController";
 

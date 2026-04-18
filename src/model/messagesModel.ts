@@ -1,8 +1,8 @@
-import pool from "./db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type { Message, MessageCreateData } from "../types/messages";
-import messagesAdminModel from "./admin/messagesAdminModel";
 import logger from "../utils/logger";
+import messagesAdminModel from "./admin/messagesAdminModel";
+import pool from "./db";
 
 const { findById } = messagesAdminModel;
 

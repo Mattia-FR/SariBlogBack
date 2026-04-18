@@ -1,11 +1,11 @@
-import pool from "../db";
+import type { PoolConnection, ResultSetHeader } from "mysql2/promise";
 import type {
 	Category,
 	CategoryCreateData,
 	CategoryUpdateData,
 } from "../../types/categories";
-import type { ResultSetHeader, PoolConnection } from "mysql2/promise";
 import logger from "../../utils/logger";
+import pool from "../db";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Category.

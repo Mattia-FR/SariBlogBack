@@ -1,6 +1,6 @@
 /**
  * Controller admin des articles.
- * CRUD : liste, détail, création, mise à jour, suppression.
+ * CRUD : liste, détail par ID ou par slug, création, mise à jour, suppression.
  * Les articles renvoyés par le model sont déjà au format Article (dates string, imageUrl).
  */
 import type { Request, Response } from "express";
@@ -8,13 +8,14 @@ import articlesAdminModel from "../../model/admin/articlesAdminModel";
 import type {
 	Article,
 	ArticleCreateData,
-	ArticleUpdateData,
 	ArticleStatus,
+	ArticleUpdateData,
 } from "../../types/articles";
-import { sendError } from "../../utils/httpErrors";
 import { excerptFromPlainText } from "../../utils/excerpt";
-import { buildSlug } from "../../utils/slug";
+import { sendError } from "../../utils/httpErrors";
 import logger from "../../utils/logger";
+import { publishedAtForCreate } from "../../utils/publishedAt";
+import { buildSlug } from "../../utils/slug";
 
 const VALID_STATUSES: ArticleStatus[] = ["draft", "published", "archived"];
 
@@ -60,6 +61,30 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 	} catch (err) {
 		logger.error("Erreur lors de la récupération des articles (admin) :", err);
 		sendError(res, 500, "Erreur lors de la récupération des articles");
+	}
+};
+
+// Récupère un article par slug (tous statuts). Retourne Article avec content et imageUrl.
+// GET /admin/articles/slug/:slug
+const readBySlug = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const slug: string = req.params.slug;
+		if (!slug) {
+			sendError(res, 400, "Slug invalide");
+			return;
+		}
+
+		const article: Article | null =
+			await articlesAdminModel.findBySlugForAdmin(slug);
+		if (!article) {
+			sendError(res, 404, "Article non trouvé");
+			return;
+		}
+
+		res.status(200).json(article);
+	} catch (err) {
+		logger.error("Erreur lors de la récupération de l'article par slug :", err);
+		sendError(res, 500, "Erreur lors de la récupération de l'article par slug");
 	}
 };
 
@@ -110,6 +135,16 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			req.body.slug && typeof req.body.slug === "string"
 				? req.body.slug.trim()
 				: "";
+		let finalSlug: string;
+		if (slugProvided) {
+			finalSlug = buildSlug(slugProvided);
+			if (!finalSlug) {
+				sendError(res, 400, "Slug invalide");
+				return;
+			}
+		} else {
+			finalSlug = buildSlug(title);
+		}
 		const tagIds = Array.isArray(req.body.tag_ids)
 			? req.body.tag_ids
 					.map((id: unknown) => Number(id))
@@ -126,10 +161,11 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			rawFeatured != null && rawFeatured !== ""
 				? Number(rawFeatured) || null
 				: null;
-		const published_at =
+		const published_atRaw =
 			req.body.published_at != null && req.body.published_at !== ""
 				? String(req.body.published_at)
 				: null;
+		const published_at = publishedAtForCreate(status, published_atRaw);
 		const content =
 			typeof req.body.content === "string" ? req.body.content : "";
 		const manualExcerpt =
@@ -139,7 +175,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		const excerpt = manualExcerpt ?? excerptFromPlainText(content);
 		const articleData: ArticleCreateData = {
 			title,
-			slug: slugProvided || buildSlug(title),
+			slug: finalSlug,
 			content,
 			excerpt,
 			status,
@@ -173,6 +209,14 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			sendError(res, 400, "ID invalide");
 			return;
 		}
+
+		const existingArticle: Article | null =
+			await articlesAdminModel.findByIdForAdmin(articleId);
+		if (!existingArticle) {
+			sendError(res, 404, "Article non trouvé");
+			return;
+		}
+
 		const tagIds = Array.isArray(req.body.tag_ids)
 			? req.body.tag_ids
 					.map((id: unknown) => Number(id))
@@ -185,7 +229,15 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 			articleData.title = req.body.title.trim();
 		}
 		if (typeof req.body.slug === "string") {
-			articleData.slug = req.body.slug.trim();
+			const trimmedSlug = req.body.slug.trim();
+			if (trimmedSlug) {
+				const sanitized = buildSlug(trimmedSlug);
+				if (!sanitized) {
+					sendError(res, 400, "Slug invalide");
+					return;
+				}
+				articleData.slug = sanitized;
+			}
 		}
 		if (typeof req.body.content === "string") {
 			articleData.content = req.body.content;
@@ -225,6 +277,18 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		}
 
 		articleData.tag_ids = tagIds;
+
+		const mergedStatus = articleData.status ?? existingArticle.status;
+		const mergedPublishedAt =
+			"published_at" in articleData
+				? articleData.published_at
+				: existingArticle.published_at;
+		if (
+			mergedStatus === "published" &&
+			(mergedPublishedAt == null || mergedPublishedAt === "")
+		) {
+			articleData.published_at = new Date().toISOString();
+		}
 
 		const updatedArticle: ArticleWithCommentsCount | null =
 			await articlesAdminModel.update(articleId, articleData);
@@ -268,4 +332,4 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseAll, readById, add, edit, destroy };
+export { browseAll, readBySlug, readById, add, edit, destroy };

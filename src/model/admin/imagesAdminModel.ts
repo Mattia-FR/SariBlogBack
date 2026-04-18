@@ -1,4 +1,3 @@
-import pool from "../db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type {
 	Image,
@@ -6,57 +5,15 @@ import type {
 	ImageUpdateData,
 } from "../../types/images";
 import { toDateString } from "../../utils/dateHelpers";
-import imagesModel from "../imagesModel";
 import logger from "../../utils/logger";
+import pool from "../db";
+import imagesModel from "../imagesModel";
 
 const { findById } = imagesModel;
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString), le frontend reçoit toujours des objets strictement conformes à l'interface Image.
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
-
-const findAll = async (): Promise<Image[]> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query(
-			`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id, created_at, updated_at
-			FROM images
-			ORDER BY created_at DESC`,
-		);
-
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [tagsRows]: any = await pool.query(
-			`SELECT it.image_id, t.id, t.name, t.slug
-			FROM images_tags it
-			LEFT JOIN tags t ON it.tag_id = t.id`,
-		);
-
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		return rows.map((row: any) => ({
-			id: row.id,
-			title: row.title,
-			description: row.description,
-			path: row.path,
-			alt_descr: row.alt_descr,
-			is_in_gallery: row.is_in_gallery,
-			user_id: row.user_id,
-			article_id: row.article_id,
-			category_id: row.category_id ?? null,
-			created_at: toDateString(row.created_at),
-			updated_at: toDateString(row.updated_at),
-			tags: tagsRows
-				.filter((t: { image_id: number }) => t.image_id === row.id)
-				.map((t: { id: number; name: string; slug: string }) => ({
-					id: t.id,
-					name: t.name,
-					slug: t.slug,
-				})),
-		}));
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
-};
 
 const findAllPaginated = async (
 	page: number,
@@ -267,7 +224,6 @@ const countInGallery = async (): Promise<number> => {
 };
 
 export default {
-	findAll,
 	findAllPaginated,
 	findById,
 	create,

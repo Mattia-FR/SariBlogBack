@@ -1,12 +1,12 @@
 import express, { type Router } from "express";
-import {
-	browseAll,
-	readById,
-	add,
-	edit,
-	destroy,
-} from "../../controller/admin/imagesAdminController";
 import { uploadImage } from "../../config/multer";
+import {
+	add,
+	browseAll,
+	destroy,
+	edit,
+	readById,
+} from "../../controller/admin/imagesAdminController";
 
 const router: Router = express.Router();
 

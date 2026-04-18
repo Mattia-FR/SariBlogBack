@@ -1,8 +1,8 @@
 import express, { type Router } from "express";
 import {
 	readMe,
-	updateMeProfile,
 	updateMePassword,
+	updateMeProfile,
 } from "../../controller/admin/usersAdminController";
 
 const router: Router = express.Router();

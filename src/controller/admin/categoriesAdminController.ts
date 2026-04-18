@@ -1,29 +1,13 @@
 import type { Request, Response } from "express";
 import categoriesAdminModel from "../../model/admin/categoriesAdminModel";
-import categoriesModel from "../../model/categoriesModel";
 import type {
 	Category,
 	CategoryCreateData,
 	CategoryUpdateData,
 } from "../../types/categories";
 import { sendError } from "../../utils/httpErrors";
-import { buildSlug } from "../../utils/slug";
 import logger from "../../utils/logger";
-
-// Liste toutes les catégories (ordre d'affichage).
-// GET /admin/categories
-const browseAll = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const categories: Category[] = await categoriesModel.findAll();
-		res.status(200).json(categories);
-	} catch (err) {
-		logger.error(
-			"Erreur lors de la récupération des catégories (admin) :",
-			err,
-		);
-		sendError(res, 500, "Erreur lors de la récupération des catégories");
-	}
-};
+import { buildSlug } from "../../utils/slug";
 
 // Récupère une catégorie par ID.
 // GET /admin/categories/:id
@@ -63,7 +47,16 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			req.body.slug && typeof req.body.slug === "string"
 				? req.body.slug.trim()
 				: "";
-		const slug = slugProvided || buildSlug(name);
+		let slug: string;
+		if (slugProvided) {
+			slug = buildSlug(slugProvided);
+			if (!slug) {
+				sendError(res, 400, "Slug invalide");
+				return;
+			}
+		} else {
+			slug = buildSlug(name);
+		}
 
 		// Si display_order n'est pas fourni ou invalide, on passe undefined :
 		// le model se chargera de placer la catégorie en dernière position.
@@ -106,7 +99,14 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		}
 		if (slug !== undefined) {
 			const trimmed = typeof slug === "string" ? slug.trim() : "";
-			if (trimmed) data.slug = trimmed;
+			if (trimmed) {
+				const sanitized = buildSlug(trimmed);
+				if (!sanitized) {
+					sendError(res, 400, "Slug invalide");
+					return;
+				}
+				data.slug = sanitized;
+			}
 		}
 		if (display_order !== undefined) {
 			if (
@@ -174,4 +174,4 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	}
 };
 
-export { browseAll, readById, add, edit, destroy };
+export { readById, add, edit, destroy };

@@ -74,7 +74,11 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des tags par ID d'article :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération des tags par ID d'article");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des tags par ID d'article",
+		);
 	}
 };
 
@@ -95,7 +99,11 @@ const readByImageId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des tags par ID d'image :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération des tags par ID d'image");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des tags par ID d'image",
+		);
 	}
 };
 

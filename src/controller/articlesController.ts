@@ -1,73 +1,12 @@
 /**
- * Controller des articles (public et admin lecture).
+ * Controller des articles (API publique).
  * Les articles renvoyés par le model sont déjà au format Article (dates string, imageUrl).
  */
 import type { Request, Response } from "express";
 import articlesModel from "../model/articlesModel";
-import articlesAdminModel from "../model/admin/articlesAdminModel";
 import type { Article } from "../types/articles";
 import { sendError } from "../utils/httpErrors";
 import logger from "../utils/logger";
-
-// Liste tous les articles (admin - tous statuts). Retourne Article[] sans content.
-// GET /articles
-const browseAll = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const articles: Article[] = await articlesAdminModel.findAllForAdmin();
-		res.status(200).json(articles);
-	} catch (err) {
-		logger.error("Erreur lors de la récupération de tous les articles :", err);
-		sendError(res, 500, "Erreur lors de la récupération de tous les articles");
-	}
-};
-
-// Récupère un article par ID (admin - tous statuts). Retourne Article avec content et imageUrl.
-// GET /articles/:id
-const readById = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const articleId: number = Number.parseInt(req.params.id, 10);
-		if (Number.isNaN(articleId)) {
-			sendError(res, 400, "ID invalide");
-			return;
-		}
-
-		const article: Article | null =
-			await articlesAdminModel.findByIdForAdmin(articleId);
-		if (!article) {
-			sendError(res, 404, "Article non trouvé");
-			return;
-		}
-
-		res.status(200).json(article);
-	} catch (err) {
-		logger.error("Erreur lors de la récupération de l'article par ID :", err);
-		sendError(res, 500, "Erreur lors de la récupération de l'article par ID");
-	}
-};
-
-// Récupère un article par slug (admin - tous statuts). Retourne Article avec content et imageUrl.
-// GET /articles/slug/:slug
-const readBySlug = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const slug: string = req.params.slug;
-		if (!slug) {
-			sendError(res, 400, "Slug invalide");
-			return;
-		}
-
-		const article: Article | null =
-			await articlesAdminModel.findBySlugForAdmin(slug);
-		if (!article) {
-			sendError(res, 404, "Article non trouvé");
-			return;
-		}
-
-		res.status(200).json(article);
-	} catch (err) {
-		logger.error("Erreur lors de la récupération de l'article par slug :", err);
-		sendError(res, 500, "Erreur lors de la récupération de l'article par slug");
-	}
-};
 
 // Liste les articles publiés (public). Option limit (max 20). Retourne Article[] avec imageUrl et tags.
 // GET /articles/published?limit=4
@@ -135,7 +74,11 @@ const readPublishedById = async (
 			"Erreur lors de la récupération de l'article publié par ID :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération de l'article publié par ID");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de l'article publié par ID",
+		);
 	}
 };
 
@@ -165,7 +108,11 @@ const readPublishedBySlug = async (
 			"Erreur lors de la récupération de l'article publié par slug :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération de l'article publié par slug");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de l'article publié par slug",
+		);
 	}
 };
 
@@ -183,14 +130,15 @@ const readHomepagePreview = async (
 			"Erreur lors de la récupération de la preview homepage :",
 			err,
 		);
-		sendError(res, 500, "Erreur lors de la récupération de la preview homepage");
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de la preview homepage",
+		);
 	}
 };
 
 export {
-	browseAll,
-	readById,
-	readBySlug,
 	browsePublished,
 	readPublishedById,
 	readPublishedBySlug,

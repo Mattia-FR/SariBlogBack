@@ -1,8 +1,8 @@
-import pool from "./db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type { Comment, CommentCreateData } from "../types/comments";
 import { toDateString } from "../utils/dateHelpers";
 import logger from "../utils/logger";
+import pool from "./db";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString), le frontend reçoit toujours des objets strictement conformes à l'interface Comment.

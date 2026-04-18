@@ -1,7 +1,7 @@
-import pool from "./db";
 import type { Image } from "../types/images";
 import { toDateString } from "../utils/dateHelpers";
 import logger from "../utils/logger";
+import pool from "./db";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString, tags), le frontend reçoit toujours des objets strictement conformes à l'interface Image.
@@ -18,11 +18,20 @@ const findGallery = async (): Promise<Image[]> => {
 			ORDER BY i.created_at DESC`,
 		);
 
+		if (images.length === 0) {
+			return [];
+		}
+
+		const imageIds: number[] = images.map((image: { id: number }) => image.id);
+		const placeholders = imageIds.map(() => "?").join(",");
+
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [tags]: any = await pool.query(
 			`SELECT it.image_id, t.id, t.name, t.slug
 			FROM images_tags it
-			LEFT JOIN tags t ON it.tag_id = t.id`,
+			LEFT JOIN tags t ON it.tag_id = t.id
+			WHERE it.image_id IN (${placeholders})`,
+			imageIds,
 		);
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing

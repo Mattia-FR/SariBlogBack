@@ -1,6 +1,6 @@
 import express, { type Router } from "express";
-import { readByArticleId, create } from "../controller/commentsController";
 import { commentsLimiter } from "../config/rateLimit";
+import { create, readByArticleId } from "../controller/commentsController";
 import { validate } from "../middleware/validateMiddleware";
 import { commentCreateSchema } from "../schemas/commentSchemas";
 
