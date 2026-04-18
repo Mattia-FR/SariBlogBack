@@ -5,6 +5,7 @@
 import type { Request, Response } from "express";
 import imagesModel from "../model/imagesModel";
 import type { Image } from "../types/images";
+import { sendError } from "../utils/httpErrors";
 import { buildImageUrl } from "../utils/imageUrl";
 import logger from "../utils/logger";
 
@@ -28,7 +29,11 @@ const browseGallery = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de la galerie d'images :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de la galerie d'images",
+		);
 	}
 };
 
@@ -38,13 +43,13 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const imageId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(imageId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
 		const image: Image | null = await imagesModel.findById(imageId);
 		if (!image) {
-			res.sendStatus(404);
+			sendError(res, 404, "Image non trouvée");
 			return;
 		}
 
@@ -52,7 +57,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 		res.status(200).json(enrichedImage);
 	} catch (err) {
 		logger.error("Erreur lors de la récupération de l'image par ID :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération de l'image par ID");
 	}
 };
 
@@ -62,7 +67,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.articleId, 10);
 		if (Number.isNaN(articleId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
@@ -74,7 +79,11 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des images par ID d'article :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des images par ID d'article",
+		);
 	}
 };
 
@@ -84,7 +93,7 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const tagId: number = Number.parseInt(req.params.tagId, 10);
 		if (Number.isNaN(tagId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
@@ -96,7 +105,11 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des images par ID de tag :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des images par ID de tag",
+		);
 	}
 };
 
@@ -106,7 +119,7 @@ const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const categoryId: number = Number.parseInt(req.params.categoryId, 10);
 		if (Number.isNaN(categoryId)) {
-			res.status(400).json({ error: "ID de catégorie invalide" });
+			sendError(res, 400, "ID de catégorie invalide");
 			return;
 		}
 
@@ -114,15 +127,11 @@ const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
 
 		if (page < 1) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre page doit être un nombre positif" });
+			sendError(res, 400, "Le paramètre page doit être un nombre positif");
 			return;
 		}
 		if (limit < 1 || limit > 20) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			sendError(res, 400, "Le paramètre limit doit être entre 1 et 20");
 			return;
 		}
 
@@ -131,9 +140,7 @@ const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 		if (tagIdRaw !== undefined && tagIdRaw !== "") {
 			const parsed = Number.parseInt(String(tagIdRaw), 10);
 			if (Number.isNaN(parsed) || parsed < 1) {
-				res.status(400).json({
-					error: "Le paramètre tagId doit être un nombre positif",
-				});
+				sendError(res, 400, "Le paramètre tagId doit être un nombre positif");
 				return;
 			}
 			tagId = parsed;
@@ -157,7 +164,11 @@ const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des images par ID de catégorie :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des images par ID de catégorie",
+		);
 	}
 };
 
@@ -171,9 +182,7 @@ const readImageOfTheDay = async (
 		const image = await imagesModel.findImageOfTheDay();
 
 		if (!image) {
-			res.status(404).json({
-				error: "Aucune image disponible dans la galerie",
-			});
+			sendError(res, 404, "Aucune image disponible dans la galerie");
 			return;
 		}
 
@@ -181,7 +190,7 @@ const readImageOfTheDay = async (
 		res.status(200).json(enrichedImage);
 	} catch (err) {
 		logger.error("Erreur lors de la récupération de l'image du jour :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération de l'image du jour");
 	}
 };
 

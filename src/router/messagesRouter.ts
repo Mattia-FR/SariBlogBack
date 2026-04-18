@@ -1,11 +1,11 @@
 import express, { type Router } from "express";
-import { add } from "../controller/messagesController";
 import { messagesLimiter } from "../config/rateLimit";
-import { messageVisitorSchema } from "../schemas/messageSchemas";
+import { add } from "../controller/messagesController";
 import { validate } from "../middleware/validateMiddleware";
+import { messageVisitorSchema } from "../schemas/messageSchemas";
 
 const router: Router = express.Router();
 
-router.post("/", messagesLimiter, validate(messageVisitorSchema), add);
+router.post("/", validate(messageVisitorSchema), messagesLimiter, add);
 
 export default router;

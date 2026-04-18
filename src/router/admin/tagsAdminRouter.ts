@@ -1,12 +1,12 @@
 import express, { type Router } from "express";
 import {
+	add,
 	browseAll,
 	browseUsedOnArticles,
 	browseUsedOnImages,
-	readById,
-	add,
-	edit,
 	destroy,
+	edit,
+	readById,
 } from "../../controller/admin/tagsAdminController";
 
 const router: Router = express.Router();

@@ -1,8 +1,8 @@
-import pool from "./db";
 import type { Article } from "../types/articles";
-import { buildImageUrl } from "../utils/imageUrl";
 import { toDateString } from "../utils/dateHelpers";
+import { buildImageUrl } from "../utils/imageUrl";
 import logger from "../utils/logger";
+import pool from "./db";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString, imageUrl, tags), le frontend reçoit toujours des objets strictement conformes à l’interface Article.
@@ -46,6 +46,7 @@ const findPublished = async (
 			countParams,
 		);
 
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		let tags: any[] = [];
 		if (articles.length > 0) {
 			const articleIds: number[] = articles.map(
@@ -197,11 +198,22 @@ const findHomepagePreview = async (): Promise<Article[]> => {
 		);
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [tags]: any = await pool.query(
-			`SELECT at.article_id, t.id, t.name, t.slug
-			FROM articles_tags at
-			LEFT JOIN tags t ON at.tag_id = t.id`,
-		);
+		let tags: any[] = [];
+		if (articles.length > 0) {
+			const articleIds: number[] = articles.map(
+				(row: { id: number }) => row.id,
+			);
+			const placeholders = articleIds.map(() => "?").join(",");
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			const [tagRows]: any = await pool.query(
+				`SELECT at.article_id, t.id, t.name, t.slug
+        FROM articles_tags at
+        LEFT JOIN tags t ON at.tag_id = t.id
+        WHERE at.article_id IN (${placeholders})`,
+				articleIds,
+			);
+			tags = tagRows;
+		}
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		return articles.map((article: any) => ({

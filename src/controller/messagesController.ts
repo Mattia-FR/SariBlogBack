@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import messagesModel from "../model/messagesModel";
 import type { Message, MessageCreateData } from "../types/messages";
+import { sendError } from "../utils/httpErrors";
 import logger from "../utils/logger";
 
 // Crée un nouveau message via le formulaire de contact (visiteur uniquement)
@@ -24,7 +25,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		res.status(201).json(newMessage);
 	} catch (err) {
 		logger.error("Erreur lors de la création du message :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la création du message");
 	}
 };
 

@@ -1,11 +1,11 @@
-import pool from "../db";
+import type { PoolConnection, ResultSetHeader } from "mysql2/promise";
 import type {
 	Category,
 	CategoryCreateData,
 	CategoryUpdateData,
 } from "../../types/categories";
-import type { ResultSetHeader, PoolConnection } from "mysql2/promise";
 import logger from "../../utils/logger";
+import pool from "../db";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Category.
@@ -136,10 +136,6 @@ const update = async (
 		if (data.display_order !== undefined) {
 			updates.push("display_order = ?");
 			values.push(data.display_order);
-		}
-
-		if (updates.length === 0) {
-			throw new Error("Aucun champ à mettre à jour");
 		}
 
 		values.push(id);

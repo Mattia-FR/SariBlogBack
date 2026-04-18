@@ -1,7 +1,7 @@
-import pool from "../db";
-import type { Tag } from "../../types/tags";
 import type { ResultSetHeader } from "mysql2/promise";
+import type { Tag } from "../../types/tags";
 import logger from "../../utils/logger";
+import pool from "../db";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce au mapping explicite, le frontend reçoit toujours des objets strictement conformes à l'interface Tag.
@@ -71,17 +71,13 @@ const update = async (
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const values: any[] = [];
 
-		if (data.name) {
+		if (data.name !== undefined) {
 			updates.push("name = ?");
 			values.push(data.name);
 		}
-		if (data.slug) {
+		if (data.slug !== undefined) {
 			updates.push("slug = ?");
 			values.push(data.slug);
-		}
-
-		if (updates.length === 0) {
-			throw new Error("Aucun champ à mettre à jour");
 		}
 
 		values.push(id);

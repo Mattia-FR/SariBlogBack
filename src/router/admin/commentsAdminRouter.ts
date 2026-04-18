@@ -1,16 +1,14 @@
 import express, { type Router } from "express";
 import {
 	browseAll,
-	browseByStatus,
-	readById,
-	editStatus,
 	destroy,
+	editStatus,
+	readById,
 } from "../../controller/admin/commentsAdminController";
 
 const router: Router = express.Router();
 
 router.get("/", browseAll);
-router.get("/status/:status", browseByStatus);
 router.get("/:id", readById);
 router.patch("/:id/status", editStatus);
 router.delete("/:id", destroy);

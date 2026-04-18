@@ -1,72 +1,12 @@
 /**
- * Controller des articles (public et admin lecture).
+ * Controller des articles (API publique).
  * Les articles renvoyés par le model sont déjà au format Article (dates string, imageUrl).
  */
 import type { Request, Response } from "express";
 import articlesModel from "../model/articlesModel";
-import articlesAdminModel from "../model/admin/articlesAdminModel";
 import type { Article } from "../types/articles";
+import { sendError } from "../utils/httpErrors";
 import logger from "../utils/logger";
-
-// Liste tous les articles (admin - tous statuts). Retourne Article[] sans content.
-// GET /articles
-const browseAll = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const articles: Article[] = await articlesAdminModel.findAllForAdmin();
-		res.status(200).json(articles);
-	} catch (err) {
-		logger.error("Erreur lors de la récupération de tous les articles :", err);
-		res.sendStatus(500);
-	}
-};
-
-// Récupère un article par ID (admin - tous statuts). Retourne Article avec content et imageUrl.
-// GET /articles/:id
-const readById = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const articleId: number = Number.parseInt(req.params.id, 10);
-		if (Number.isNaN(articleId)) {
-			res.status(400).json({ error: "ID invalide" });
-			return;
-		}
-
-		const article: Article | null =
-			await articlesAdminModel.findByIdForAdmin(articleId);
-		if (!article) {
-			res.sendStatus(404);
-			return;
-		}
-
-		res.status(200).json(article);
-	} catch (err) {
-		logger.error("Erreur lors de la récupération de l'article par ID :", err);
-		res.sendStatus(500);
-	}
-};
-
-// Récupère un article par slug (admin - tous statuts). Retourne Article avec content et imageUrl.
-// GET /articles/slug/:slug
-const readBySlug = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const slug: string = req.params.slug;
-		if (!slug) {
-			res.status(400).json({ error: "Slug invalide" });
-			return;
-		}
-
-		const article: Article | null =
-			await articlesAdminModel.findBySlugForAdmin(slug);
-		if (!article) {
-			res.sendStatus(404);
-			return;
-		}
-
-		res.status(200).json(article);
-	} catch (err) {
-		logger.error("Erreur lors de la récupération de l'article par slug :", err);
-		res.sendStatus(500);
-	}
-};
 
 // Liste les articles publiés (public). Option limit (max 20). Retourne Article[] avec imageUrl et tags.
 // GET /articles/published?limit=4
@@ -76,15 +16,12 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
 
 		if (page < 1) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre page doit être un nombre positif" });
+			sendError(res, 400, "Le paramètre page doit être un nombre positif");
 			return;
 		}
+		// Pour éviter que quelqu'un envoie "?page=-5" (qui serait truthy) et que la requête soit exécutée :
 		if (limit < 1 || limit > 20) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			sendError(res, 400, "Le paramètre limit doit être entre 1 et 20");
 			return;
 		}
 
@@ -93,9 +30,7 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 		if (tagIdRaw !== undefined && tagIdRaw !== "") {
 			const parsed = Number.parseInt(String(tagIdRaw), 10);
 			if (Number.isNaN(parsed) || parsed < 1) {
-				res.status(400).json({
-					error: "Le paramètre tagId doit être un nombre positif",
-				});
+				sendError(res, 400, "Le paramètre tagId doit être un nombre positif");
 				return;
 			}
 			tagId = parsed;
@@ -109,7 +44,7 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 		res.status(200).json({ articles, total, page, limit });
 	} catch (err) {
 		logger.error("Erreur lors de la récupération des articles publiés :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération des articles publiés");
 	}
 };
 
@@ -122,14 +57,14 @@ const readPublishedById = async (
 	try {
 		const articleId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(articleId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
 		const article: Article | null =
 			await articlesModel.findPublishedById(articleId);
 		if (!article) {
-			res.sendStatus(404);
+			sendError(res, 404, "Article publié non trouvé");
 			return;
 		}
 
@@ -139,7 +74,11 @@ const readPublishedById = async (
 			"Erreur lors de la récupération de l'article publié par ID :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de l'article publié par ID",
+		);
 	}
 };
 
@@ -152,14 +91,14 @@ const readPublishedBySlug = async (
 	try {
 		const slug: string = req.params.slug;
 		if (!slug) {
-			res.status(400).json({ error: "Slug invalide" });
+			sendError(res, 400, "Slug invalide");
 			return;
 		}
 
 		const article: Article | null =
 			await articlesModel.findPublishedBySlug(slug);
 		if (!article) {
-			res.sendStatus(404);
+			sendError(res, 404, "Article publié non trouvé");
 			return;
 		}
 
@@ -169,7 +108,11 @@ const readPublishedBySlug = async (
 			"Erreur lors de la récupération de l'article publié par slug :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de l'article publié par slug",
+		);
 	}
 };
 
@@ -187,14 +130,15 @@ const readHomepagePreview = async (
 			"Erreur lors de la récupération de la preview homepage :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de la preview homepage",
+		);
 	}
 };
 
 export {
-	browseAll,
-	readById,
-	readBySlug,
 	browsePublished,
 	readPublishedById,
 	readPublishedBySlug,

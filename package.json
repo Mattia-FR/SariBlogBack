@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "nodemon --exec ts-node index.ts",
-    "db:init": "ts-node init.ts"
+    "db:init": "ts-node init.ts",
+    "format": "biome format --write ./src",
+    "lint": "biome check --write ./src"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

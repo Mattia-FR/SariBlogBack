@@ -71,7 +71,7 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
   - Public : profil de l'artiste principale (`GET /api/users/artist`)
   - Admin : `GET/PATCH /api/admin/users/me`, `PATCH /api/admin/users/me/password`
 
-- **Messages** : Formulaire de contact (1 endpoint public) + gestion admin (5 endpoints)
+- **Messages** : Formulaire de contact (1 endpoint public) + gestion admin (4 endpoints)
   - Public : création de message (visiteur)
   - Admin : liste, par statut, par ID, mise à jour statut, suppression
 
@@ -80,7 +80,7 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 
 - **Dashboard** : Statistiques admin (1 endpoint)
 
-**Total : 60 endpoints (23 routes publiques incluant `/api/auth`, 37 sous `/api/admin` avec JWT + rôle éditeur ou admin)**
+**Total : 59 endpoints (23 routes publiques incluant `/api/auth`, 36 sous `/api/admin` avec JWT + rôle éditeur ou admin)**
 
 ## 🛠️ Technologies
 
@@ -93,7 +93,7 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 | **Driver DB** | mysql2 | 3.15.3 |
 | **Sécurité** | Argon2 | 0.44.0 |
 | **Auth** | jsonwebtoken | 9.0.3 |
-| **Validation** | Zod | 4.1.x |
+| **Validation** | Zod | 4.1.12 |
 | **Upload** | Multer | 2.1.0 |
 | **Rate limiting** | express-rate-limit | 8.2.1 |
 | **Logging** | winston | 3.19.x |
@@ -101,6 +101,7 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 | **Sécurité HTTP** | Helmet | 8.1.0 |
 | **CORS** | cors | 2.8.5 |
 | **Dev** | Nodemon, ts-node | 3.1.x / 10.9.x |
+| **Qualité** | Biome (format + lint) | 1.x |
 
 ## 📁 Architecture
 
@@ -188,8 +189,11 @@ Back/
 │   │   └── users.ts
 │   └── utils/
 │       ├── dateHelpers.ts
+│       ├── excerpt.ts               # Génération d'extraits texte (tronqués à N mots)
+│       ├── httpErrors.ts            # HttpError, isHttpError, sendError
 │       ├── imageUrl.ts
 │       ├── logger.ts                # Winston (logs)
+│       ├── publishedAt.ts           # Calcul de published_at à la création d'article
 │       └── slug.ts
 ├── uploads/
 │   └── images/                      # Fichiers images (servis statiquement)
@@ -412,7 +416,6 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
 | `GET` | `/admin/messages` | Liste paginée des messages. Query : `page`, `limit` (1–20, défaut 10), `status` optionnel (`unread` \| `read` \| `archived`). Réponse : `{ messages, total, page, limit, counts }` où `counts` est `{ total, unread, read, archived }` pour les onglets admin. |
-| `GET` | `/admin/messages/status/:status` | Messages par statut (`unread`, `read`, `archived`), liste complète (non paginée) |
 | `GET` | `/admin/messages/:id` | Message par ID |
 | `PATCH` | `/admin/messages/:id/status` | Mettre à jour le statut |
 | `DELETE` | `/admin/messages/:id` | Supprimer un message |
@@ -578,6 +581,12 @@ npm run db:init
 # Tests unitaires (Vitest)
 npm test
 npm run test:watch
+
+# Formatage du code (Biome)
+npm run format
+
+# Analyse statique / lint (Biome)
+npm run lint
 ```
 
 ## 👤 Auteur

@@ -1,6 +1,6 @@
 import express, { type Router } from "express";
-import { login, logout, refresh } from "../controller/authController";
 import { loginLimiter } from "../config/rateLimit";
+import { login, logout, refresh } from "../controller/authController";
 import { validate } from "../middleware/validateMiddleware";
 import { loginSchema } from "../schemas/authSchemas";
 

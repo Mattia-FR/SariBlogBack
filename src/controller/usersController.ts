@@ -5,6 +5,7 @@
 import type { Request, Response } from "express";
 import usersModel from "../model/usersModel";
 import type { User } from "../types/users";
+import { sendError } from "../utils/httpErrors";
 import { buildImageUrl } from "../utils/imageUrl";
 import logger from "../utils/logger";
 
@@ -24,7 +25,7 @@ const readArtist = async (req: Request, res: Response): Promise<void> => {
 		const artist: User | null = await usersModel.findArtist();
 
 		if (!artist) {
-			res.sendStatus(404);
+			sendError(res, 404, "Artiste non trouvé");
 			return;
 		}
 
@@ -32,7 +33,7 @@ const readArtist = async (req: Request, res: Response): Promise<void> => {
 		res.status(200).json(enrichedArtist);
 	} catch (err) {
 		logger.error("Erreur lors de la récupération de l'artiste :", err);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la récupération de l'artiste");
 	}
 };
 

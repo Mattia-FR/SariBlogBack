@@ -1,10 +1,10 @@
-import express from "express";
-import cors from "cors";
 import path from "node:path";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import express from "express";
 import { helmetMiddleware } from "./config/helmet";
-import router from "./router";
 import { errorHandler } from "./middleware/errorMiddleware";
+import router from "./router";
 import logger from "./utils/logger";
 
 const app = express();

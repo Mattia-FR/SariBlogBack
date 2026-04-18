@@ -1,11 +1,12 @@
-import type { Request, Response } from "express";
 import argon2 from "argon2";
-import type { User } from "../../types/users";
-import type { UserUpdateData } from "../../types/users";
-import { buildImageUrl } from "../../utils/imageUrl";
+import type { Request, Response } from "express";
+import { argon2Options } from "../../config/argon2";
 import usersAdminModel from "../../model/admin/usersAdminModel";
 import usersModel from "../../model/usersModel";
-import { argon2Options } from "../../config/argon2";
+import type { User } from "../../types/users";
+import type { UserUpdateData } from "../../types/users";
+import { isHttpError, sendError } from "../../utils/httpErrors";
+import { buildImageUrl } from "../../utils/imageUrl";
 import logger from "../../utils/logger";
 
 /** Enrichit un utilisateur avec l'URL complète de son avatar (User → User avec avatarUrl). */
@@ -22,7 +23,7 @@ function enrichUserWithAvatarUrl(user: User): User {
 const readMe = async (req: Request, res: Response): Promise<void> => {
 	try {
 		if (!req.user || !req.user.userId) {
-			res.sendStatus(401);
+			sendError(res, 401, "Non authentifié");
 			return;
 		}
 
@@ -30,7 +31,7 @@ const readMe = async (req: Request, res: Response): Promise<void> => {
 		const user: User | null = await usersModel.findById(userId);
 
 		if (!user) {
-			res.sendStatus(404);
+			sendError(res, 404, "Utilisateur non trouvé");
 			return;
 		}
 
@@ -40,14 +41,18 @@ const readMe = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de l'utilisateur connecté (admin) :",
 			error,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération de l'utilisateur connecté",
+		);
 	}
 };
 
 const updateMeProfile = async (req: Request, res: Response): Promise<void> => {
 	try {
 		if (!req.user || !req.user.userId) {
-			res.sendStatus(401);
+			sendError(res, 401, "Non authentifié");
 			return;
 		}
 
@@ -67,21 +72,25 @@ const updateMeProfile = async (req: Request, res: Response): Promise<void> => {
 
 		const user = await usersAdminModel.updateMeProfile(userId, data);
 		if (!user) {
-			res.sendStatus(404);
+			sendError(res, 404, "Utilisateur non trouvé");
 			return;
 		}
 
 		res.status(200).json(enrichUserWithAvatarUrl(user));
 	} catch (error) {
+		if (isHttpError(error)) {
+			sendError(res, error.statusCode, error.message, error.code);
+			return;
+		}
 		logger.error("Erreur lors de la mise à jour du profil (admin) :", error);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la mise à jour du profil");
 	}
 };
 
 const updateMePassword = async (req: Request, res: Response): Promise<void> => {
 	try {
 		if (!req.user || !req.user.userId) {
-			res.sendStatus(401);
+			sendError(res, 401, "Non authentifié");
 			return;
 		}
 
@@ -89,7 +98,7 @@ const updateMePassword = async (req: Request, res: Response): Promise<void> => {
 		const { password } = req.body;
 
 		if (typeof password !== "string" || password.trim().length === 0) {
-			res.status(400).json({ error: "Mot de passe invalide" });
+			sendError(res, 400, "Mot de passe invalide");
 			return;
 		}
 
@@ -99,7 +108,7 @@ const updateMePassword = async (req: Request, res: Response): Promise<void> => {
 			hashedPassword,
 		);
 		if (success === false) {
-			res.sendStatus(404);
+			sendError(res, 404, "Utilisateur non trouvé");
 			return;
 		}
 
@@ -109,7 +118,7 @@ const updateMePassword = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la mise à jour du mot de passe (admin) :",
 			error,
 		);
-		res.sendStatus(500);
+		sendError(res, 500, "Erreur lors de la mise à jour du mot de passe");
 	}
 };
 

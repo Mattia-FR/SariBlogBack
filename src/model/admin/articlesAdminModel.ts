@@ -1,61 +1,18 @@
-import pool from "../db";
+import type { ResultSetHeader } from "mysql2/promise";
 import type {
 	Article,
 	ArticleCreateData,
 	ArticleUpdateData,
 } from "../../types/articles";
-import type { ResultSetHeader } from "mysql2/promise";
-import { buildImageUrl } from "../../utils/imageUrl";
-import { buildSlug } from "../../utils/slug";
 import { toDateString } from "../../utils/dateHelpers";
+import { buildImageUrl } from "../../utils/imageUrl";
 import logger from "../../utils/logger";
+import { buildSlug } from "../../utils/slug";
+import pool from "../db";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString, imageUrl, tags), le frontend reçoit toujours des objets strictement conformes à l’interface Article.
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n’apporteraient rien pour ce projet.
-
-const findAllForAdmin = async (): Promise<Article[]> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [articles]: any = await pool.query(
-			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
-			FROM articles a
-			LEFT JOIN images i ON a.featured_image_id = i.id
-			ORDER BY a.created_at DESC`,
-		);
-
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [tags]: any = await pool.query(
-			`SELECT at.article_id, t.id, t.name, t.slug
-			FROM articles_tags at
-			LEFT JOIN tags t ON at.tag_id = t.id`,
-		);
-
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		return articles.map((article: any) => ({
-			id: article.id,
-			title: article.title,
-			slug: article.slug,
-			excerpt: article.excerpt,
-			status: article.status,
-			user_id: article.user_id,
-			created_at: toDateString(article.created_at) ?? "",
-			updated_at: toDateString(article.updated_at) ?? "",
-			published_at: toDateString(article.published_at) ?? null,
-			views: article.views,
-			featured_image_id: article.featured_image_id,
-			imageUrl: buildImageUrl(article.image_path),
-			tags: tags
-				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-				.filter((t: any) => t.article_id === article.id)
-				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
-		}));
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
-};
 
 /** Liste admin paginée (tous statuts), optionnellement filtrée par tag. */
 const findAllForAdminPaginated = async (
@@ -236,8 +193,12 @@ const findBySlugForAdmin = async (slug: string): Promise<Article | null> => {
 const create = async (data: ArticleCreateData): Promise<Article> => {
 	try {
 		const slug = data.slug ?? buildSlug(data.title);
+		const publishedAt =
+			data.published_at != null && data.published_at !== ""
+				? data.published_at
+				: null;
 		const [result] = await pool.query<ResultSetHeader>(
-			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			"INSERT INTO articles (title, slug, excerpt, content, status, user_id, featured_image_id, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 			[
 				data.title,
 				slug,
@@ -246,6 +207,7 @@ const create = async (data: ArticleCreateData): Promise<Article> => {
 				data.status,
 				data.user_id,
 				data.featured_image_id,
+				publishedAt,
 			],
 		);
 		const articleId = result.insertId;
@@ -259,24 +221,11 @@ const create = async (data: ArticleCreateData): Promise<Article> => {
 			);
 		}
 
-		return {
-			id: articleId,
-			title: data.title,
-			slug,
-			excerpt: data.excerpt ?? null,
-			content: data.content,
-			status: data.status ?? "draft",
-			user_id: data.user_id,
-			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString(),
-			published_at: data.published_at ? toDateString(data.published_at) : null,
-			views: 0,
-			featured_image_id: data.featured_image_id ?? null,
-			imageUrl: buildImageUrl(
-				data.featured_image_id ? `/images/${data.featured_image_id}` : null,
-			),
-			tags: [],
-		};
+		const created = await findByIdForAdmin(articleId);
+		if (!created) {
+			throw new Error("Article introuvable après insertion");
+		}
+		return created;
 	} catch (err) {
 		logger.error(err);
 		throw err;
@@ -310,9 +259,6 @@ const update = async (
 		}
 
 		const hasTagIds = "tag_ids" in data;
-		if (updates.length === 0 && !hasTagIds) {
-			throw new Error("Aucun champ à mettre à jour");
-		}
 
 		if (updates.length > 0) {
 			values.push(id);
@@ -384,7 +330,6 @@ const countByStatus = async (status: string): Promise<number> => {
 };
 
 export default {
-	findAllForAdmin,
 	findAllForAdminPaginated,
 	findByIdForAdmin,
 	findBySlugForAdmin,

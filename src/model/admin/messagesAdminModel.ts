@@ -1,92 +1,44 @@
-import pool from "../db";
 import type { ResultSetHeader } from "mysql2/promise";
 import type {
 	Message,
-	MessageUpdateData,
 	MessageStatus,
+	MessageUpdateData,
 } from "../../types/messages";
 import { toDateString } from "../../utils/dateHelpers";
 import logger from "../../utils/logger";
+import pool from "../db";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 // Grâce aux transformations (toDateString), le frontend reçoit toujours des objets strictement conformes à l'interface Message.
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
 
-const findAll = async (): Promise<Message[]> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query(
-			"SELECT * FROM messages ORDER BY created_at DESC",
-		);
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		return rows.map((row: any) => ({
-			id: row.id,
-			firstname: row.firstname,
-			lastname: row.lastname,
-			email: row.email,
-			username: row.username,
-			ip: row.ip,
-			subject: row.subject,
-			text: row.text,
-			status: row.status,
-			user_id: row.user_id,
-			created_at: toDateString(row.created_at) ?? "",
-		}));
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
-};
+const MESSAGE_SELECT_COLUMNS =
+	"id, firstname, lastname, email, username, ip, subject, `text`, status, user_id, created_at";
 
-const findByStatus = async (status: MessageStatus): Promise<Message[]> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query(
-			"SELECT * FROM messages WHERE status = ? ORDER BY created_at DESC",
-			[status],
-		);
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		return rows.map((row: any) => ({
-			id: row.id,
-			firstname: row.firstname,
-			lastname: row.lastname,
-			email: row.email,
-			username: row.username,
-			ip: row.ip,
-			subject: row.subject,
-			text: row.text,
-			status: row.status,
-			user_id: row.user_id,
-			created_at: toDateString(row.created_at) ?? "",
-		}));
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
-};
+// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+const mapRowToMessage = (row: any): Message => ({
+	id: row.id,
+	firstname: row.firstname,
+	lastname: row.lastname,
+	email: row.email,
+	username: row.username,
+	ip: row.ip,
+	subject: row.subject,
+	text: row.text,
+	status: row.status,
+	user_id: row.user_id,
+	created_at: toDateString(row.created_at) ?? "",
+});
 
 const findById = async (id: number): Promise<Message | null> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			"SELECT * FROM messages WHERE id = ?",
+			`SELECT ${MESSAGE_SELECT_COLUMNS} FROM messages WHERE id = ?`,
 			[id],
 		);
 		if (!rows[0]) return null;
-		const row = rows[0];
-		return {
-			id: row.id,
-			firstname: row.firstname,
-			lastname: row.lastname,
-			email: row.email,
-			username: row.username,
-			ip: row.ip,
-			subject: row.subject,
-			text: row.text,
-			status: row.status,
-			user_id: row.user_id,
-			created_at: toDateString(row.created_at) ?? "",
-		};
+		return mapRowToMessage(rows[0]);
 	} catch (err) {
 		logger.error(err);
 		throw err;
@@ -99,9 +51,6 @@ const updateStatus = async (
 ): Promise<Message | null> => {
 	try {
 		const { status } = data;
-		if (status == null || !["unread", "read", "archived"].includes(status)) {
-			throw new Error("Statut invalide ou manquant");
-		}
 		const [result] = await pool.query<ResultSetHeader>(
 			"UPDATE messages SET status = ? WHERE id = ?",
 			[status, id],
@@ -164,24 +113,11 @@ const findAllPaginated = async (
 
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT * FROM messages ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+			`SELECT ${MESSAGE_SELECT_COLUMNS} FROM messages ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
 			listParams,
 		);
 
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const messages: Message[] = rows.map((row: any) => ({
-			id: row.id,
-			firstname: row.firstname,
-			lastname: row.lastname,
-			email: row.email,
-			username: row.username,
-			ip: row.ip,
-			subject: row.subject,
-			text: row.text,
-			status: row.status,
-			user_id: row.user_id,
-			created_at: toDateString(row.created_at) ?? "",
-		}));
+		const messages: Message[] = rows.map(mapRowToMessage);
 
 		return { messages, total };
 	} catch (err) {
@@ -221,10 +157,8 @@ const findTabCounts = async (): Promise<{
 };
 
 export default {
-	findAll,
 	findAllPaginated,
 	findTabCounts,
-	findByStatus,
 	findById,
 	updateStatus,
 	deleteOne,

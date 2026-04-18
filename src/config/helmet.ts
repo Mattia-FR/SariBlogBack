@@ -1,34 +1,34 @@
 import helmet from "helmet";
 
 export const helmetMiddleware = helmet({
-  contentSecurityPolicy: {
-  directives: {
-    defaultSrc: ["'self'"],
+	contentSecurityPolicy: {
+		directives: {
+			defaultSrc: ["'self'"],
 
-    scriptSrc: ["'self'"],
+			scriptSrc: ["'self'"],
 
-    styleSrc: ["'self'", "https://fonts.googleapis.com"],
+			styleSrc: ["'self'", "https://fonts.googleapis.com"],
 
-    fontSrc: ["'self'", "https://fonts.gstatic.com"],
+			fontSrc: ["'self'", "https://fonts.gstatic.com"],
 
-    imgSrc: ["'self'", "data:"],
+			imgSrc: ["'self'", "data:"],
 
-    connectSrc: ["'self'", "http://localhost:4242"],
+			connectSrc: ["'self'", "http://localhost:4242"],
 
-    frameAncestors: ["'self'"],
+			frameAncestors: ["'self'"],
 
-    objectSrc: ["'none'"],
-    
-    baseUri: ["'self'"],
-  },
-},
-  crossOriginResourcePolicy: { policy: "cross-origin" },
+			objectSrc: ["'none'"],
 
-  frameguard: {
-    action: "sameorigin",
-  },
+			baseUri: ["'self'"],
+		},
+	},
+	crossOriginResourcePolicy: { policy: "cross-origin" },
 
-  referrerPolicy: {
-    policy: "no-referrer",
-  },
+	frameguard: {
+		action: "sameorigin",
+	},
+
+	referrerPolicy: {
+		policy: "no-referrer",
+	},
 });

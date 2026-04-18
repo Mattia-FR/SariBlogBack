@@ -1,6 +1,6 @@
-import pool from "./db";
 import type { Tag } from "../types/tags";
 import logger from "../utils/logger";
+import pool from "./db";
 
 /* J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
 Le frontend reçoit toujours des objets strictement conformes à l'interface Tag.

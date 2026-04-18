@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import tagsModel from "../model/tagsModel";
 
 import type { Tag } from "../types/tags";
+import { sendError } from "../utils/httpErrors";
 import logger from "../utils/logger";
 
 // Tags utilisés sur au moins un article publié (public, filtre blog).
@@ -19,7 +20,11 @@ const browseUsedOnPublishedArticles = async (
 			"Erreur lors de la récupération des tags des articles publiés :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des tags des articles publiés",
+		);
 	}
 };
 
@@ -32,7 +37,7 @@ const readUsedOnGalleryByCategoryId = async (
 	try {
 		const categoryId: number = Number.parseInt(req.params.categoryId, 10);
 		if (Number.isNaN(categoryId)) {
-			res.status(400).json({ error: "ID de catégorie invalide" });
+			sendError(res, 400, "ID de catégorie invalide");
 			return;
 		}
 
@@ -44,7 +49,11 @@ const readUsedOnGalleryByCategoryId = async (
 			"Erreur lors de la récupération des tags de galerie par catégorie :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des tags de galerie par catégorie",
+		);
 	}
 };
 
@@ -54,7 +63,7 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.articleId, 10);
 		if (Number.isNaN(articleId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
@@ -65,7 +74,11 @@ const readByArticleId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des tags par ID d'article :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des tags par ID d'article",
+		);
 	}
 };
 
@@ -75,7 +88,7 @@ const readByImageId = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const imageId: number = Number.parseInt(req.params.imageId, 10);
 		if (Number.isNaN(imageId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
@@ -86,7 +99,11 @@ const readByImageId = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération des tags par ID d'image :",
 			err,
 		);
-		res.sendStatus(500);
+		sendError(
+			res,
+			500,
+			"Erreur lors de la récupération des tags par ID d'image",
+		);
 	}
 };
 

@@ -1,5 +1,6 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { sendError } from "../utils/httpErrors";
 import logger from "../utils/logger";
 
 declare global {
@@ -18,27 +19,27 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 	const authHeader = req.headers.authorization;
 
 	if (!authHeader) {
-		return res.sendStatus(401); // non authentifié
+		return sendError(res, 401, "Non authentifié");
 	}
 
 	// Format attendu : "Bearer <token>"
 	const parts = authHeader.split(" ");
 
 	if (parts.length !== 2 || parts[0] !== "Bearer") {
-		return res.sendStatus(401); // format invalide
+		return sendError(res, 401, "Format Authorization invalide");
 	}
 
 	const token = parts[1];
 
 	if (!token) {
-		return res.sendStatus(401); // token manquant
+		return sendError(res, 401, "Token manquant");
 	}
 
 	// 2. Vérifier que le secret existe
 	const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
 	if (!ACCESS_SECRET) {
 		logger.error("ACCESS_TOKEN_SECRET non défini");
-		return res.sendStatus(500);
+		return sendError(res, 500, "JWT secrets non définis");
 	}
 
 	try {
@@ -50,7 +51,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 		// Validation du payload
 		if (!payload.userId || !payload.role) {
-			return res.sendStatus(401);
+			return sendError(res, 401, "Token invalide");
 		}
 
 		// 4. On attache l'utilisateur à la requête
@@ -66,10 +67,10 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 			err instanceof jwt.JsonWebTokenError ||
 			err instanceof jwt.TokenExpiredError
 		) {
-			return res.sendStatus(401);
+			return sendError(res, 401, "Token invalide ou expiré");
 		}
 		logger.error("Erreur lors de la vérification du token :", err);
-		return res.sendStatus(500);
+		return sendError(res, 500, "Erreur lors de la vérification du token");
 	}
 }
 

@@ -1,15 +1,15 @@
 import express, { type Router } from "express";
-import articlesRouter from "./articlesRouter";
-import imagesRouter from "./imagesRouter";
-import usersRouter from "./usersRouter";
-import tagsRouter from "./tagsRouter";
-import commentsRouter from "./commentsRouter";
-import messagesRouter from "./messagesRouter";
-import authRouter from "./authRouter";
-import adminRouter from "./admin";
 import { requireAuth } from "../middleware/authMiddleware";
 import { requireEditor } from "../middleware/roleMiddleware";
+import adminRouter from "./admin";
+import articlesRouter from "./articlesRouter";
+import authRouter from "./authRouter";
 import categoriesRouter from "./categoriesRouter";
+import commentsRouter from "./commentsRouter";
+import imagesRouter from "./imagesRouter";
+import messagesRouter from "./messagesRouter";
+import tagsRouter from "./tagsRouter";
+import usersRouter from "./usersRouter";
 
 const router: Router = express.Router();
 

@@ -1,12 +1,12 @@
 import express, { type Router } from "express";
 import {
-	browseAll,
-	readById,
 	add,
-	edit,
+	browseAll,
 	destroy,
+	edit,
+	readById,
+	readBySlug,
 } from "../../controller/admin/articlesAdminController";
-import { readBySlug } from "../../controller/articlesController";
 
 const router: Router = express.Router();
 

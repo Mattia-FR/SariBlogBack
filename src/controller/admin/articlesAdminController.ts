@@ -1,6 +1,6 @@
 /**
  * Controller admin des articles.
- * CRUD : liste, détail, création, mise à jour, suppression.
+ * CRUD : liste, détail par ID ou par slug, création, mise à jour, suppression.
  * Les articles renvoyés par le model sont déjà au format Article (dates string, imageUrl).
  */
 import type { Request, Response } from "express";
@@ -8,11 +8,14 @@ import articlesAdminModel from "../../model/admin/articlesAdminModel";
 import type {
 	Article,
 	ArticleCreateData,
-	ArticleUpdateData,
 	ArticleStatus,
+	ArticleUpdateData,
 } from "../../types/articles";
-import { buildSlug } from "../../utils/slug";
+import { excerptFromPlainText } from "../../utils/excerpt";
+import { sendError } from "../../utils/httpErrors";
 import logger from "../../utils/logger";
+import { publishedAtForCreate } from "../../utils/publishedAt";
+import { buildSlug } from "../../utils/slug";
 
 const VALID_STATUSES: ArticleStatus[] = ["draft", "published", "archived"];
 
@@ -27,15 +30,11 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
 
 		if (page < 1) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre page doit être un nombre positif" });
+			sendError(res, 400, "Le paramètre page doit être un nombre positif");
 			return;
 		}
 		if (limit < 1 || limit > 20) {
-			res
-				.status(400)
-				.json({ error: "Le paramètre limit doit être entre 1 et 20" });
+			sendError(res, 400, "Le paramètre limit doit être entre 1 et 20");
 			return;
 		}
 
@@ -44,9 +43,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		if (tagIdRaw !== undefined && tagIdRaw !== "") {
 			const parsed = Number.parseInt(String(tagIdRaw), 10);
 			if (Number.isNaN(parsed) || parsed < 1) {
-				res.status(400).json({
-					error: "Le paramètre tagId doit être un nombre positif",
-				});
+				sendError(res, 400, "Le paramètre tagId doit être un nombre positif");
 				return;
 			}
 			tagId = parsed;
@@ -63,9 +60,31 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		});
 	} catch (err) {
 		logger.error("Erreur lors de la récupération des articles (admin) :", err);
-		res
-			.status(500)
-			.json({ error: "Erreur lors de la récupération des articles" });
+		sendError(res, 500, "Erreur lors de la récupération des articles");
+	}
+};
+
+// Récupère un article par slug (tous statuts). Retourne Article avec content et imageUrl.
+// GET /admin/articles/slug/:slug
+const readBySlug = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const slug: string = req.params.slug;
+		if (!slug) {
+			sendError(res, 400, "Slug invalide");
+			return;
+		}
+
+		const article: Article | null =
+			await articlesAdminModel.findBySlugForAdmin(slug);
+		if (!article) {
+			sendError(res, 404, "Article non trouvé");
+			return;
+		}
+
+		res.status(200).json(article);
+	} catch (err) {
+		logger.error("Erreur lors de la récupération de l'article par slug :", err);
+		sendError(res, 500, "Erreur lors de la récupération de l'article par slug");
 	}
 };
 
@@ -75,14 +94,14 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(articleId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 
 		const article: ArticleWithCommentsCount | null =
 			await articlesAdminModel.findByIdForAdmin(articleId);
 		if (!article) {
-			res.status(404).json({ error: "Article non trouvé" });
+			sendError(res, 404, "Article non trouvé");
 			return;
 		}
 
@@ -92,9 +111,7 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 			"Erreur lors de la récupération de l'article par ID (admin) :",
 			err,
 		);
-		res
-			.status(500)
-			.json({ error: "Erreur lors de la récupération de l'article" });
+		sendError(res, 500, "Erreur lors de la récupération de l'article");
 	}
 };
 
@@ -104,20 +121,30 @@ const add = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const userId = req.user?.userId;
 		if (!userId) {
-			res.status(401).json({ error: "Non authentifié" });
+			sendError(res, 401, "Non authentifié");
 			return;
 		}
 
 		const title =
 			typeof req.body.title === "string" ? req.body.title.trim() : "";
 		if (!title) {
-			res.status(400).json({ error: "Le titre est requis" });
+			sendError(res, 400, "Le titre est requis");
 			return;
 		}
 		const slugProvided =
 			req.body.slug && typeof req.body.slug === "string"
 				? req.body.slug.trim()
 				: "";
+		let finalSlug: string;
+		if (slugProvided) {
+			finalSlug = buildSlug(slugProvided);
+			if (!finalSlug) {
+				sendError(res, 400, "Slug invalide");
+				return;
+			}
+		} else {
+			finalSlug = buildSlug(title);
+		}
 		const tagIds = Array.isArray(req.body.tag_ids)
 			? req.body.tag_ids
 					.map((id: unknown) => Number(id))
@@ -134,18 +161,23 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			rawFeatured != null && rawFeatured !== ""
 				? Number(rawFeatured) || null
 				: null;
-		const published_at =
+		const published_atRaw =
 			req.body.published_at != null && req.body.published_at !== ""
 				? String(req.body.published_at)
 				: null;
+		const published_at = publishedAtForCreate(status, published_atRaw);
+		const content =
+			typeof req.body.content === "string" ? req.body.content : "";
+		const manualExcerpt =
+			req.body.excerpt != null && req.body.excerpt !== ""
+				? String(req.body.excerpt).trim()
+				: null;
+		const excerpt = manualExcerpt ?? excerptFromPlainText(content);
 		const articleData: ArticleCreateData = {
 			title,
-			slug: slugProvided || buildSlug(title),
-			content: typeof req.body.content === "string" ? req.body.content : "",
-			excerpt:
-				req.body.excerpt != null && req.body.excerpt !== ""
-					? String(req.body.excerpt).trim()
-					: null,
+			slug: finalSlug,
+			content,
+			excerpt,
 			status,
 			user_id: userId,
 			featured_image_id,
@@ -160,11 +192,11 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		logger.error("Erreur lors de la création de l'article (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
-			res.status(409).json({ error: "Un article avec ce slug existe déjà" });
+			sendError(res, 409, "Un article avec ce slug existe déjà");
 			return;
 		}
 
-		res.status(500).json({ error: "Erreur lors de la création de l'article" });
+		sendError(res, 500, "Erreur lors de la création de l'article");
 	}
 };
 
@@ -174,23 +206,95 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(articleId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
+
+		const existingArticle: Article | null =
+			await articlesAdminModel.findByIdForAdmin(articleId);
+		if (!existingArticle) {
+			sendError(res, 404, "Article non trouvé");
+			return;
+		}
+
 		const tagIds = Array.isArray(req.body.tag_ids)
 			? req.body.tag_ids
 					.map((id: unknown) => Number(id))
 					.filter((id: number) => !Number.isNaN(id))
 			: undefined;
-		const articleData: ArticleUpdateData = {
-			...req.body,
-			tag_ids: tagIds,
-		};
+
+		const articleData: ArticleUpdateData = {};
+
+		if (typeof req.body.title === "string") {
+			articleData.title = req.body.title.trim();
+		}
+		if (typeof req.body.slug === "string") {
+			const trimmedSlug = req.body.slug.trim();
+			if (trimmedSlug) {
+				const sanitized = buildSlug(trimmedSlug);
+				if (!sanitized) {
+					sendError(res, 400, "Slug invalide");
+					return;
+				}
+				articleData.slug = sanitized;
+			}
+		}
+		if (typeof req.body.content === "string") {
+			articleData.content = req.body.content;
+		}
+
+		const explicitExcerptNonEmpty =
+			req.body.excerpt != null &&
+			req.body.excerpt !== "" &&
+			String(req.body.excerpt).trim() !== "";
+		if (explicitExcerptNonEmpty) {
+			articleData.excerpt = String(req.body.excerpt).trim();
+		} else if (typeof req.body.content === "string") {
+			articleData.excerpt = excerptFromPlainText(req.body.content);
+		}
+
+		const rawStatusEdit = req.body.status;
+		if (
+			typeof rawStatusEdit === "string" &&
+			VALID_STATUSES.includes(rawStatusEdit as ArticleStatus)
+		) {
+			articleData.status = rawStatusEdit as ArticleStatus;
+		}
+
+		if (req.body.featured_image_id !== undefined) {
+			const rawFeaturedEdit = req.body.featured_image_id;
+			articleData.featured_image_id =
+				rawFeaturedEdit != null && rawFeaturedEdit !== ""
+					? Number(rawFeaturedEdit) || null
+					: null;
+		}
+
+		if (req.body.published_at !== undefined) {
+			articleData.published_at =
+				req.body.published_at != null && req.body.published_at !== ""
+					? String(req.body.published_at)
+					: null;
+		}
+
+		articleData.tag_ids = tagIds;
+
+		const mergedStatus = articleData.status ?? existingArticle.status;
+		const mergedPublishedAt =
+			"published_at" in articleData
+				? articleData.published_at
+				: existingArticle.published_at;
+		if (
+			mergedStatus === "published" &&
+			(mergedPublishedAt == null || mergedPublishedAt === "")
+		) {
+			articleData.published_at = new Date().toISOString();
+		}
+
 		const updatedArticle: ArticleWithCommentsCount | null =
 			await articlesAdminModel.update(articleId, articleData);
 
 		if (!updatedArticle) {
-			res.status(404).json({ error: "Article non trouvé" });
+			sendError(res, 404, "Article non trouvé");
 			return;
 		}
 
@@ -199,13 +303,11 @@ const edit = async (req: Request, res: Response): Promise<void> => {
 		logger.error("Erreur lors de la mise à jour de l'article (admin) :", err);
 
 		if (err instanceof Error && err.message.includes("Duplicate entry")) {
-			res.status(409).json({ error: "Un article avec ce slug existe déjà" });
+			sendError(res, 409, "Un article avec ce slug existe déjà");
 			return;
 		}
 
-		res
-			.status(500)
-			.json({ error: "Erreur lors de la mise à jour de l'article" });
+		sendError(res, 500, "Erreur lors de la mise à jour de l'article");
 	}
 };
 
@@ -215,21 +317,19 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const articleId: number = Number.parseInt(req.params.id, 10);
 		if (Number.isNaN(articleId)) {
-			res.status(400).json({ error: "ID invalide" });
+			sendError(res, 400, "ID invalide");
 			return;
 		}
 		const deleted: boolean = await articlesAdminModel.deleteOne(articleId);
 		if (!deleted) {
-			res.status(404).json({ error: "Article non trouvé" });
+			sendError(res, 404, "Article non trouvé");
 			return;
 		}
 		res.sendStatus(204);
 	} catch (err) {
 		logger.error("Erreur lors de la suppression de l'article (admin) :", err);
-		res
-			.status(500)
-			.json({ error: "Erreur lors de la suppression de l'article" });
+		sendError(res, 500, "Erreur lors de la suppression de l'article");
 	}
 };
 
-export { browseAll, readById, add, edit, destroy };
+export { browseAll, readBySlug, readById, add, edit, destroy };
