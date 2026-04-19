@@ -9,16 +9,6 @@ import logger from "./utils/logger";
 
 const app = express();
 
-// Fichiers statiques
-app.use(
-	"/uploads",
-	express.static(path.join(__dirname, "../uploads"), {
-	  setHeaders: (res) => {
-		res.setHeader("Access-Control-Allow-Origin", "*");
-	  },
-	}),
-  );
-
 // Sécurité HTTP
 app.use(helmetMiddleware);
 
@@ -41,6 +31,9 @@ app.use((req, _res, next) => {
 	logger.info(`${req.method} ${req.url}`);
 	next();
 });
+
+// Fichiers statiques
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // API
 app.use("/api", router);
