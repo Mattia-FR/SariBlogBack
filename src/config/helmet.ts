@@ -11,9 +11,9 @@ export const helmetMiddleware = helmet({
 
 			fontSrc: ["'self'", "https://fonts.gstatic.com"],
 
-			imgSrc: ["'self'", "data:"],
+			imgSrc: ["'self'", "data:", "https://sariblogback-production.up.railway.app"],
 
-			connectSrc: ["'self'", "http://localhost:4242"],
+			connectSrc: ["'self'", "http://localhost:4242", "https://sariblogback-production.up.railway.app"],
 
 			frameAncestors: ["'self'"],
 
