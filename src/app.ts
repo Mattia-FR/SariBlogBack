@@ -12,7 +12,7 @@ const app = express();
 // Fichiers statiques
 app.use(
 	"/uploads",
-	express.static(path.join(__dirname, "../uploads"), {
+	express.static(path.join(__dirname, "/uploads"), {
 	  setHeaders: (res) => {
 		res.setHeader("Access-Control-Allow-Origin", "*");
 	  },
