@@ -33,7 +33,14 @@ app.use((req, _res, next) => {
 });
 
 // Fichiers statiques
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use(
+	"/uploads",
+	express.static(path.join(__dirname, "../uploads"), {
+		setHeaders: (res) => {
+			res.setHeader("Access-Control-Allow-Origin", "*");
+		},
+	}),
+);
 
 // API
 app.use("/api", router);
