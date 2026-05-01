@@ -57,7 +57,7 @@ CREATE TABLE articles (
     INDEX idx_views (views),
     CONSTRAINT pk_articles PRIMARY KEY (id),
     CONSTRAINT uk_articles_slug UNIQUE (slug),
-    CONSTRAINT fk_articles_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT fk_articles_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE comments (
@@ -74,7 +74,7 @@ CREATE TABLE comments (
     INDEX idx_status (status),
     INDEX idx_created (created_at),
     CONSTRAINT pk_comments PRIMARY KEY (id),
-    CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     CONSTRAINT fk_comments_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -93,7 +93,7 @@ CREATE TABLE images (
     INDEX idx_gallery (is_in_gallery),
     INDEX idx_images_category (category_id),
     CONSTRAINT pk_images PRIMARY KEY (id),
-    CONSTRAINT fk_images_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_images_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
     CONSTRAINT fk_images_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -114,7 +114,7 @@ const readByTag = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Récupère les images de la galerie associées à une catégorie par ID (paginé). Retourne { images, total, page, limit } + imageUrl.
-// GET /images/category/:categoryId?page=1&limit=10
+// GET /images/category/:categoryId?page=1&limit=9
 const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const categoryId: number = Number.parseInt(req.params.categoryId, 10);
@@ -124,7 +124,7 @@ const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 		}
 
 		const page = Number.parseInt(req.query.page as string, 10) || 1;
-		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
+		const limit = Number.parseInt(req.query.limit as string, 10) || 9;
 
 		if (page < 1) {
 			sendError(res, 400, "Le paramètre page doit être un nombre positif");
