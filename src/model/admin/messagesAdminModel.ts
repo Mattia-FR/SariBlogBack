@@ -13,7 +13,7 @@ import pool from "../db";
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
 
 const MESSAGE_SELECT_COLUMNS =
-	"id, firstname, lastname, email, username, ip, subject, `text`, status, user_id, created_at";
+	"id, firstname, lastname, email, ip, subject, `text`, status, created_at";
 
 // biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 const mapRowToMessage = (row: any): Message => ({
@@ -21,12 +21,10 @@ const mapRowToMessage = (row: any): Message => ({
 	firstname: row.firstname,
 	lastname: row.lastname,
 	email: row.email,
-	username: row.username,
 	ip: row.ip,
 	subject: row.subject,
 	text: row.text,
 	status: row.status,
-	user_id: row.user_id,
 	created_at: toDateString(row.created_at) ?? "",
 });
 

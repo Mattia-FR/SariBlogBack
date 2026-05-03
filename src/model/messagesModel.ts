@@ -13,17 +13,15 @@ const { findById } = messagesAdminModel;
 const create = async (data: MessageCreateData): Promise<Message> => {
 	try {
 		const [result] = await pool.query<ResultSetHeader>(
-			`INSERT INTO messages (firstname, lastname, email, username, ip, subject, text, user_id)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO messages (firstname, lastname, email, ip, subject, text)
+			VALUES (?, ?, ?, ?, ?, ?)`,
 			[
 				data.firstname ?? null,
 				data.lastname ?? null,
 				data.email,
-				data.username ?? null,
 				data.ip ?? null,
 				data.subject,
 				data.text,
-				data.user_id ?? null,
 			],
 		);
 

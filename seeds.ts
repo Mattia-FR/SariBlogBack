@@ -358,17 +358,17 @@ export async function runSeeds(connection: Connection): Promise<void> {
 	// MESSAGES
 	// ============================================
 	await connection.query(`
-    INSERT INTO messages (firstname, lastname, email, ip, subject, text, status, user_id) VALUES
-    ("Jean", "Dupont", "jean.dupont@example.com", "192.168.1.100", "Question sur votre tutoriel aquarelle", "Bonjour, j'ai lu votre article sur l'aquarelle et j'aimerais en savoir plus sur les techniques de lavis. Pourriez-vous m'aider ?", "unread", NULL),
-    ("Marie", "Dubois", "marie.dubois@example.com", "192.168.1.101", "Demande de commission", "Bonjour, je suis éditrice et nous recherchons une illustratrice pour un livre jeunesse. Vos œuvres nous intéressent beaucoup. Pourrions-nous discuter ?", "read", NULL),
-    ("Thomas", "Lefebvre", "thomas.lefebvre@example.com", "192.168.1.102", "Demande de prix", "Bonjour, j'adore vos illustrations fantasy ! Pourriez-vous me donner une estimation pour un portrait personnalisé ?", "unread", NULL),
-    ("Julie", "Garcia", "julie.garcia@example.com", "192.168.1.103", "Proposition d'exposition", "Excellente galerie ! J'organise une exposition d'illustration numérique et j'aimerais vous y inviter. Seriez-vous intéressée ?", "read", NULL),
-    ("Antoine", "Petit", "antoine.petit@example.com", "192.168.1.104", "Demande d'information", "Bonjour, pourriez-vous me donner plus d'informations sur vos créneaux disponibles pour une commande ? Je suis intéressé par une illustration personnalisée.", "unread", NULL),
-    ("Laura", "Robert", "laura.robert@example.com", "192.168.1.105", "Proposition de collaboration", "Bonjour, je suis autrice de fantasy et j'aimerais collaborer avec vous sur des illustrations pour mon prochain roman. Êtes-vous ouverte à cela ?", "read", NULL),
-    ("Nicolas", "Richard", "nicolas.richard@example.com", "192.168.1.106", "Félicitations pour votre travail", "Bravo pour votre magnifique portfolio ! Vos illustrations sont vraiment inspirantes et pleines de poésie. Continuez ainsi !", "archived", NULL),
-    ("Sophie", "Bernard", "sophie.bernard@example.com", "192.168.1.107", "Question sur les techniques", "J'ai une question sur votre technique de portrait numérique. Pourriez-vous m'expliquer comment vous travaillez les textures ?", "unread", NULL),
-    ("Maxime", "Simon", "maxime.simon@example.com", "192.168.1.108", "Demande de workshop", "Bonjour, j'anime des ateliers d'illustration et j'aimerais vous inviter à donner un workshop. Êtes-vous intéressée ?", "read", NULL),
-    ("Sarah", "Michel", "sarah.michel@example.com", "192.168.1.109", "Remerciement", "Un grand merci pour tous vos tutoriels ! Ils m'ont beaucoup aidé dans mon apprentissage de l'illustration numérique.", "archived", NULL)
+    INSERT INTO messages (firstname, lastname, email, ip, subject, text, status) VALUES
+    ("Jean", "Dupont", "jean.dupont@example.com", "192.168.1.100", "Question sur votre tutoriel aquarelle", "Bonjour, j'ai lu votre article sur l'aquarelle et j'aimerais en savoir plus sur les techniques de lavis. Pourriez-vous m'aider ?", "unread"),
+    ("Marie", "Dubois", "marie.dubois@example.com", "192.168.1.101", "Demande de commission", "Bonjour, je suis éditrice et nous recherchons une illustratrice pour un livre jeunesse. Vos œuvres nous intéressent beaucoup. Pourrions-nous discuter ?", "read"),
+    ("Thomas", "Lefebvre", "thomas.lefebvre@example.com", "192.168.1.102", "Demande de prix", "Bonjour, j'adore vos illustrations fantasy ! Pourriez-vous me donner une estimation pour un portrait personnalisé ?", "unread"),
+    ("Julie", "Garcia", "julie.garcia@example.com", "192.168.1.103", "Proposition d'exposition", "Excellente galerie ! J'organise une exposition d'illustration numérique et j'aimerais vous y inviter. Seriez-vous intéressée ?", "read"),
+    ("Antoine", "Petit", "antoine.petit@example.com", "192.168.1.104", "Demande d'information", "Bonjour, pourriez-vous me donner plus d'informations sur vos créneaux disponibles pour une commande ? Je suis intéressé par une illustration personnalisée.", "unread"),
+    ("Laura", "Robert", "laura.robert@example.com", "192.168.1.105", "Proposition de collaboration", "Bonjour, je suis autrice de fantasy et j'aimerais collaborer avec vous sur des illustrations pour mon prochain roman. Êtes-vous ouverte à cela ?", "read"),
+    ("Nicolas", "Richard", "nicolas.richard@example.com", "192.168.1.106", "Félicitations pour votre travail", "Bravo pour votre magnifique portfolio ! Vos illustrations sont vraiment inspirantes et pleines de poésie. Continuez ainsi !", "archived"),
+    ("Sophie", "Bernard", "sophie.bernard@example.com", "192.168.1.107", "Question sur les techniques", "J'ai une question sur votre technique de portrait numérique. Pourriez-vous m'expliquer comment vous travaillez les textures ?", "unread"),
+    ("Maxime", "Simon", "maxime.simon@example.com", "192.168.1.108", "Demande de workshop", "Bonjour, j'anime des ateliers d'illustration et j'aimerais vous inviter à donner un workshop. Êtes-vous intéressée ?", "read"),
+    ("Sarah", "Michel", "sarah.michel@example.com", "192.168.1.109", "Remerciement", "Un grand merci pour tous vos tutoriels ! Ils m'ont beaucoup aidé dans mon apprentissage de l'illustration numérique.", "archived")
   `);
 
 	// ============================================

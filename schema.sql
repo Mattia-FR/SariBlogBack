@@ -26,17 +26,14 @@ CREATE TABLE messages (
     firstname VARCHAR(50),
     lastname VARCHAR(50),
     email VARCHAR(100) NOT NULL,
-    username VARCHAR(50),
     ip VARCHAR(45),
     subject VARCHAR(200) NOT NULL,
     text TEXT NOT NULL,
     status ENUM('unread', 'read', 'archived') DEFAULT 'unread',
-    user_id INT UNSIGNED,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_status (status),
     INDEX idx_created (created_at),
-    CONSTRAINT pk_messages PRIMARY KEY (id),
-    CONSTRAINT fk_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    CONSTRAINT pk_messages PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE articles (

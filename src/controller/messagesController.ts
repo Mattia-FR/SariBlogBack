@@ -18,7 +18,6 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			subject,
 			text,
 			ip,
-			user_id: null,
 		};
 
 		const newMessage: Message = await messagesModel.create(messageData);
