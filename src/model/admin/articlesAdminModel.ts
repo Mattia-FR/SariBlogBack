@@ -14,6 +14,11 @@ import pool from "../db";
 // Grâce aux transformations (toDateString, imageUrl, tags), le frontend reçoit toujours des objets strictement conformes à l’interface Article.
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n’apporteraient rien pour ce projet.
 
+const ARTICLE_DETAIL_SELECT = `
+	a.id, a.title, a.slug, a.excerpt, a.content, a.status, a.user_id,
+	a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id
+`;
+
 /** Liste admin paginée (tous statuts), optionnellement filtrée par tag. */
 const findAllForAdminPaginated = async (
 	page: number,
@@ -102,7 +107,7 @@ const findByIdForAdmin = async (id: number): Promise<Article | null> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT a.*, i.path as image_path
+			`SELECT ${ARTICLE_DETAIL_SELECT}, i.path as image_path
 			FROM articles a
 			LEFT JOIN images i ON a.featured_image_id = i.id
 			WHERE a.id = ?`,
@@ -148,7 +153,7 @@ const findBySlugForAdmin = async (slug: string): Promise<Article | null> => {
 	try {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 		const [rows]: any = await pool.query(
-			`SELECT a.*, i.path as image_path
+			`SELECT ${ARTICLE_DETAIL_SELECT}, i.path as image_path
 			FROM articles a
 			LEFT JOIN images i ON a.featured_image_id = i.id
 			WHERE a.slug = ?`,

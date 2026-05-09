@@ -8,9 +8,9 @@ export async function runSeeds(connection: Connection): Promise<void> {
 	//   sari.eliott  → Serenite26
 	// ============================================
 	await connection.query(`
-    INSERT INTO users (username, email, password, firstname, lastname, role, bio, bio_short) VALUES
-    ("admin", "admin@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$2eNt3aySYfYyyervEcFtiQ$6wM6Qj0SggDgPTd0Ycnl5KJYZcIjeiRg87Tm2AZTUfI", NULL, NULL, "admin", NULL, NULL),
-    ("sari.eliott", "sari.eliott@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wkio5piGN9BZtJAdkecJ3Q$tgbsy5tWsPXS5/bs7apwAqRGzupLzIay/rudaEMlPWU", "Sari", "Eliott", "editor", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d'atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy")
+    INSERT INTO users (username, email, password, firstname, lastname, role, avatar, bio, bio_short) VALUES
+    ("admin", "admin@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$2eNt3aySYfYyyervEcFtiQ$6wM6Qj0SggDgPTd0Ycnl5KJYZcIjeiRg87Tm2AZTUfI", NULL, NULL, "admin", NULL, NULL, NULL),
+    ("sari.eliott", "sari.eliott@sariblog.com", "$argon2id$v=19$m=65536,t=3,p=4$wkio5piGN9BZtJAdkecJ3Q$tgbsy5tWsPXS5/bs7apwAqRGzupLzIay/rudaEMlPWU", "Sari", "Eliott", "editor", "/uploads/avatar.png", "Illustratrice et autrice visuelle spécialisée en aquarelle et illustration numérique. Son travail explore des univers poétiques et fantasy, entre narration visuelle et recherche d'atmosphères. Elle partage régulièrement son processus créatif, ses projets personnels et des tutoriels destinés aux artistes en devenir.", "Illustratrice aquarelle & numérique, univers poétiques et fantasy")
   `);
 
 	// ============================================
