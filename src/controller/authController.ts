@@ -24,13 +24,13 @@ export async function login(req: Request, res: Response) {
 		// 1. Récupération de l'utilisateur par email OU username
 		const user = await usersModel.findByIdentifier(identifier);
 		if (!user) {
-			return res.sendStatus(401);
+			return sendError(res, 401, "Identifiants invalides");
 		}
 
 		// 2. Vérification du mot de passe (argon2)
 		const isValid = await argon2.verify(user.password, password);
 		if (!isValid) {
-			return res.sendStatus(401);
+			return sendError(res, 401, "Identifiants invalides");
 		}
 
 		// 3. Création ACCESS TOKEN
@@ -78,7 +78,7 @@ export async function refresh(req: Request, res: Response) {
 		// 1. Lire le refresh token depuis le cookie
 		const refreshToken = req.cookies?.refreshToken;
 		if (!refreshToken) {
-			return res.sendStatus(401);
+			return sendError(res, 401, "Refresh token manquant");
 		}
 
 		// 2. Vérifier que les secrets existent
@@ -98,13 +98,13 @@ export async function refresh(req: Request, res: Response) {
 
 		// Validation du payload
 		if (!payload.userId || !payload.role) {
-			return res.sendStatus(401);
+			return sendError(res, 401, "Refresh token invalide");
 		}
 
 		// 4. Vérifier que le token est toujours valide en DB
 		const user = await usersModel.findByIdWithRefreshToken(payload.userId);
 		if (!user || user.refresh_token !== refreshToken) {
-			return res.sendStatus(401);
+			return sendError(res, 401, "Refresh token invalide");
 		}
 
 		// 5. Générer un NOUVEL access token
@@ -127,7 +127,7 @@ export async function refresh(req: Request, res: Response) {
 			err instanceof jwt.JsonWebTokenError ||
 			err instanceof jwt.TokenExpiredError
 		) {
-			return res.sendStatus(401);
+			return sendError(res, 401, "Refresh token invalide ou expiré");
 		}
 		logger.error("Erreur lors du refresh:", err);
 		sendError(res, 500, "Erreur lors du refresh");

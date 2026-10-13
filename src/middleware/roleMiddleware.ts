@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { UserRole } from "../types/users";
+import { sendError } from "../utils/httpErrors";
 
 // ========================================
 // MIDDLEWARE DE VÉRIFICATION DES RÔLES
@@ -26,7 +27,7 @@ function requireRole(allowedRoles: UserRole | UserRole[]) {
 	return (req: Request, res: Response, next: NextFunction) => {
 		// 1. Vérifier que requireAuth a été appelé avant
 		if (!req.user || !req.user.role) {
-			return res.sendStatus(401); // non authentifié
+			return sendError(res, 401, "Non authentifié");
 		}
 
 		// 2. Normaliser les rôles autorisés en tableau
@@ -37,7 +38,7 @@ function requireRole(allowedRoles: UserRole | UserRole[]) {
 		// 3. Vérifier que le rôle de l'utilisateur est dans la liste autorisée
 		const userRole = req.user.role as UserRole;
 		if (!rolesArray.includes(userRole)) {
-			return res.sendStatus(403); // rôle insuffisant
+			return sendError(res, 403, "Accès refusé");
 		}
 
 		// 4. Rôle autorisé, on continue

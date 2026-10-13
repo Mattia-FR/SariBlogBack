@@ -101,6 +101,38 @@ const findByEmail = async (email: string): Promise<UserWithPassword | null> => {
 	}
 };
 
+const findByIdWithPassword = async (
+	id: number,
+): Promise<UserWithPassword | null> => {
+	try {
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [rows]: any = await pool.query("SELECT * FROM users WHERE id = ?", [
+			id,
+		]);
+
+		if (!rows[0]) return null;
+
+		const row = rows[0];
+		return {
+			id: row.id,
+			username: row.username,
+			email: row.email,
+			firstname: row.firstname,
+			lastname: row.lastname,
+			role: row.role,
+			avatar: row.avatar,
+			bio: row.bio,
+			bio_short: row.bio_short,
+			password: row.password,
+			created_at: toDateString(row.created_at) ?? "",
+			updated_at: toDateString(row.updated_at) ?? "",
+		};
+	} catch (err) {
+		logger.error(err);
+		throw err;
+	}
+};
+
 const findByIdentifier = async (
 	identifier: string,
 ): Promise<UserWithPassword | null> => {
@@ -273,6 +305,7 @@ export default {
 	findAll,
 	findById,
 	findByEmail,
+	findByIdWithPassword,
 	findByIdentifier,
 	findArtist,
 	create,

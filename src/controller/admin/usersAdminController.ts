@@ -95,10 +95,17 @@ const updateMePassword = async (req: Request, res: Response): Promise<void> => {
 		}
 
 		const userId = req.user.userId;
-		const { password } = req.body;
+		const { currentPassword, password } = req.body;
 
-		if (typeof password !== "string" || password.trim().length === 0) {
-			sendError(res, 400, "Mot de passe invalide");
+		const user = await usersModel.findByIdWithPassword(userId);
+		if (!user) {
+			sendError(res, 404, "Utilisateur non trouvé");
+			return;
+		}
+
+		const isValid = await argon2.verify(user.password, currentPassword);
+		if (!isValid) {
+			sendError(res, 400, "Mot de passe actuel incorrect");
 			return;
 		}
 
@@ -111,6 +118,15 @@ const updateMePassword = async (req: Request, res: Response): Promise<void> => {
 			sendError(res, 404, "Utilisateur non trouvé");
 			return;
 		}
+
+		await usersModel.deleteRefreshToken(userId);
+
+		res.cookie("refreshToken", "", {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict",
+			maxAge: 0,
+		});
 
 		res.sendStatus(204);
 	} catch (error) {

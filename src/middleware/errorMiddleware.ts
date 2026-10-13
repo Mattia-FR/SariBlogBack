@@ -18,7 +18,7 @@ export function errorHandler(
 		});
 	}
 
-	const error = err as { code?: string };
+	const error = err as { code?: string; type?: string };
 
 	if (error.code === "LIMIT_FILE_SIZE") {
 		return res.status(400).json({ error: "Fichier trop volumineux" });
@@ -30,6 +30,10 @@ export function errorHandler(
 
 	if (error.code === "LIMIT_FILE_COUNT") {
 		return res.status(400).json({ error: "Trop de fichiers envoyés" });
+	}
+
+	if (error.type === "entity.parse.failed") {
+		return res.status(400).json({ error: "JSON invalide" });
 	}
 
 	if (err instanceof HttpError) {

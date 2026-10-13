@@ -34,6 +34,30 @@ const updateMeProfile = async (
 			throw new HttpError(400, "Aucun champ à mettre à jour");
 		}
 
+		// Unicité croisée : un username ne doit coller ni à un username ni à un email
+		// existant (et inversement), hors compte courant.
+		const identifiers: string[] = [];
+		if (typeof data.username === "string") identifiers.push(data.username);
+		if (typeof data.email === "string") identifiers.push(data.email);
+
+		if (identifiers.length > 0) {
+			const placeholders = identifiers.map(() => "?").join(", ");
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			const [existing]: any = await pool.query(
+				`SELECT id, email, username FROM users
+				 WHERE id <> ?
+				   AND (email IN (${placeholders}) OR username IN (${placeholders}))`,
+				[id, ...identifiers, ...identifiers],
+			);
+
+			if (existing.length > 0) {
+				throw new HttpError(
+					409,
+					"Cet email ou ce nom d'utilisateur est déjà utilisé",
+				);
+			}
+		}
+
 		values.push(id);
 		await pool.query(
 			`UPDATE users SET ${updates.join(", ")} WHERE id = ?`,

@@ -11,7 +11,7 @@ describe("buildImageUrl", () => {
   // La fonction ne doit pas planter et retourner undefined.
   it("retourne undefined si path est null/undefined/empty", async () => {
     process.env.IMAGE_BASE_URL = "http://localhost:4242";
-    const { buildImageUrl } = await import("../../src/utils/imageUrl");
+    const { buildImageUrl } = await import("../../src/utils/imageUrl.js");
 
     expect(buildImageUrl(null)).toBeUndefined();
     expect(buildImageUrl(undefined)).toBeUndefined();
@@ -22,7 +22,7 @@ describe("buildImageUrl", () => {
   // et que le chemin commence par /.
   it("gère le double slash (base avec / final, path avec / initial)", async () => {
     process.env.IMAGE_BASE_URL = "http://localhost:4242/";
-    const { buildImageUrl } = await import("../../src/utils/imageUrl");
+    const { buildImageUrl } = await import("../../src/utils/imageUrl.js");
 
     expect(buildImageUrl("/uploads/images/photo.jpg")).toBe(
       "http://localhost:4242/uploads/images/photo.jpg",
@@ -32,7 +32,7 @@ describe("buildImageUrl", () => {
   // Ici je teste le cas où il manque un slash : la fonction doit le rajouter pour construire une URL correcte.
   it("ajoute le slash au path si nécessaire (path sans / initial)", async () => {
     process.env.IMAGE_BASE_URL = "https://cdn.example.com";
-    const { buildImageUrl } = await import("../../src/utils/imageUrl");
+    const { buildImageUrl } = await import("../../src/utils/imageUrl.js");
 
     expect(buildImageUrl("uploads/images/photo.jpg")).toBe(
       "https://cdn.example.com/uploads/images/photo.jpg",
