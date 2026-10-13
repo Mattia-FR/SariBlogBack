@@ -2,10 +2,11 @@ import path from "node:path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import morgan from "morgan";
 import { helmetMiddleware } from "./config/helmet";
 import { errorHandler } from "./middleware/errorMiddleware";
 import router from "./router";
-import logger from "./utils/logger";
+import { morganStream } from "./utils/logger";
 
 const app = express();
 
@@ -27,10 +28,11 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Logging
-app.use((req, _res, next) => {
-	logger.info(`${req.method} ${req.url}`);
-	next();
-});
+app.use(
+	morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", {
+		stream: morganStream,
+	}),
+);
 
 // Fichiers statiques
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

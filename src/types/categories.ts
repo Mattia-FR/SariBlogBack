@@ -9,7 +9,7 @@ export interface Category {
 export interface CategoryCreateData {
 	name: string;
 	slug: string;
-	display_order: number;
+	display_order?: number;
 }
 
 /** Données optionnelles pour une mise à jour partielle (PATCH). */

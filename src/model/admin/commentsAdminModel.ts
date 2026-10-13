@@ -5,7 +5,6 @@ import type {
 	CommentUpdateData,
 } from "../../types/comments";
 import { toDateString } from "../../utils/dateHelpers";
-import logger from "../../utils/logger";
 import pool from "../db";
 
 // J'ai choisi d'utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
@@ -39,33 +38,28 @@ const mapRowToComment = (row: any): Comment => {
 };
 
 const findById = async (id: number): Promise<Comment | null> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query(
-			`SELECT
-				c.id,
-				c.text,
-				c.created_at,
-				c.status,
-				c.user_id,
-				u.username,
-				u.avatar,
-				u.firstname   AS user_firstname,
-				u.lastname    AS user_lastname,
-				c.firstname   AS guest_firstname,
-				c.lastname    AS guest_lastname,
-				c.email
-			FROM comments c
-			LEFT JOIN users u ON c.user_id = u.id
-			WHERE c.id = ?`,
-			[id],
-		);
-		if (!rows[0]) return null;
-		return mapRowToComment(rows[0]);
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [rows]: any = await pool.query(
+		`SELECT
+			c.id,
+			c.text,
+			c.created_at,
+			c.status,
+			c.user_id,
+			u.username,
+			u.avatar,
+			u.firstname   AS user_firstname,
+			u.lastname    AS user_lastname,
+			c.firstname   AS guest_firstname,
+			c.lastname    AS guest_lastname,
+			c.email
+		FROM comments c
+		LEFT JOIN users u ON c.user_id = u.id
+		WHERE c.id = ?`,
+		[id],
+	);
+	if (!rows[0]) return null;
+	return mapRowToComment(rows[0]);
 };
 
 const findAllPaginated = async (
@@ -77,45 +71,40 @@ const findAllPaginated = async (
 	const whereClause = status ? "WHERE c.status = ?" : "";
 	const countParams = status ? [status] : [];
 	const listParams = status ? [status, limit, offset] : [limit, offset];
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [countResult]: any = await pool.query(
-			`SELECT COUNT(*) as total FROM comments c ${whereClause}`,
-			countParams,
-		);
-		const total = countResult[0].total as number;
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [countResult]: any = await pool.query(
+		`SELECT COUNT(*) as total FROM comments c ${whereClause}`,
+		countParams,
+	);
+	const total = countResult[0].total as number;
 
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query(
-			`SELECT
-				c.id,
-				c.text,
-				c.created_at,
-				c.status,
-				c.user_id,
-				u.username,
-				u.avatar,
-				u.firstname   AS user_firstname,
-				u.lastname    AS user_lastname,
-				c.firstname   AS guest_firstname,
-				c.lastname    AS guest_lastname,
-				c.email
-			FROM comments c
-			LEFT JOIN users u ON c.user_id = u.id
-			${whereClause}
-			ORDER BY c.created_at DESC
-			LIMIT ? OFFSET ?`,
-			listParams,
-		);
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [rows]: any = await pool.query(
+		`SELECT
+			c.id,
+			c.text,
+			c.created_at,
+			c.status,
+			c.user_id,
+			u.username,
+			u.avatar,
+			u.firstname   AS user_firstname,
+			u.lastname    AS user_lastname,
+			c.firstname   AS guest_firstname,
+			c.lastname    AS guest_lastname,
+			c.email
+		FROM comments c
+		LEFT JOIN users u ON c.user_id = u.id
+		${whereClause}
+		ORDER BY c.created_at DESC
+		LIMIT ? OFFSET ?`,
+		listParams,
+	);
 
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const comments: Comment[] = rows.map((row: any) => mapRowToComment(row));
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const comments: Comment[] = rows.map((row: any) => mapRowToComment(row));
 
-		return { comments, total };
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
+	return { comments, total };
 };
 
 /** Totaux pour les onglets (tous statuts confondus). */
@@ -126,64 +115,49 @@ const findTabCounts = async (): Promise<{
 	rejected: number;
 	spam: number;
 }> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query(
-			`SELECT
-				COUNT(*) AS total,
-				COALESCE(SUM(c.status = 'pending'), 0) AS pending,
-				COALESCE(SUM(c.status = 'approved'), 0) AS approved,
-				COALESCE(SUM(c.status = 'rejected'), 0) AS rejected,
-				COALESCE(SUM(c.status = 'spam'), 0) AS spam
-			FROM comments c`,
-		);
-		const r = rows[0];
-		return {
-			total: Number(r.total),
-			pending: Number(r.pending),
-			approved: Number(r.approved),
-			rejected: Number(r.rejected),
-			spam: Number(r.spam),
-		};
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [rows]: any = await pool.query(
+		`SELECT
+			COUNT(*) AS total,
+			COALESCE(SUM(c.status = 'pending'), 0) AS pending,
+			COALESCE(SUM(c.status = 'approved'), 0) AS approved,
+			COALESCE(SUM(c.status = 'rejected'), 0) AS rejected,
+			COALESCE(SUM(c.status = 'spam'), 0) AS spam
+		FROM comments c`,
+	);
+	const r = rows[0];
+	return {
+		total: Number(r.total),
+		pending: Number(r.pending),
+		approved: Number(r.approved),
+		rejected: Number(r.rejected),
+		spam: Number(r.spam),
+	};
 };
 
 const updateStatus = async (
 	id: number,
 	data: CommentUpdateData,
 ): Promise<Comment | null> => {
-	try {
-		const { status } = data;
-		const [result] = await pool.query<ResultSetHeader>(
-			"UPDATE comments SET status = ? WHERE id = ?",
-			[status, id],
-		);
+	const { status } = data;
+	const [result] = await pool.query<ResultSetHeader>(
+		"UPDATE comments SET status = ? WHERE id = ?",
+		[status, id],
+	);
 
-		if (result.affectedRows === 0) {
-			return null;
-		}
-
-		return findById(id);
-	} catch (err) {
-		logger.error(err);
-		throw err;
+	if (result.affectedRows === 0) {
+		return null;
 	}
+
+	return findById(id);
 };
 
 const deleteOne = async (id: number): Promise<boolean> => {
-	try {
-		const [result] = await pool.query<ResultSetHeader>(
-			"DELETE FROM comments WHERE id = ?",
-			[id],
-		);
-		return result.affectedRows > 0;
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
+	const [result] = await pool.query<ResultSetHeader>(
+		"DELETE FROM comments WHERE id = ?",
+		[id],
+	);
+	return result.affectedRows > 0;
 };
 
 export default {

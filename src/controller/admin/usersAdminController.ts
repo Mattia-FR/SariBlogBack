@@ -5,9 +5,8 @@ import usersAdminModel from "../../model/admin/usersAdminModel";
 import usersModel from "../../model/usersModel";
 import type { User } from "../../types/users";
 import type { UserUpdateData } from "../../types/users";
-import { isHttpError, sendError } from "../../utils/httpErrors";
+import { HttpError } from "../../utils/httpErrors";
 import { buildImageUrl } from "../../utils/imageUrl";
-import logger from "../../utils/logger";
 
 /** Enrichit un utilisateur avec l'URL complète de son avatar (User → User avec avatarUrl). */
 function enrichUserWithAvatarUrl(user: User): User {
@@ -18,124 +17,82 @@ function enrichUserWithAvatarUrl(user: User): User {
 	return user;
 }
 
+function requireUserId(req: Request): number {
+	if (!req.user || !req.user.userId) {
+		throw new HttpError(401, "Non authentifié");
+	}
+	return req.user.userId;
+}
+
 // Récupère l'utilisateur connecté (req.user fourni par le middleware requireAuth).
 // GET /admin/users/me
 const readMe = async (req: Request, res: Response): Promise<void> => {
-	try {
-		if (!req.user || !req.user.userId) {
-			sendError(res, 401, "Non authentifié");
-			return;
-		}
+	const userId = requireUserId(req);
+	const user: User | null = await usersModel.findById(userId);
 
-		const userId = req.user.userId;
-		const user: User | null = await usersModel.findById(userId);
-
-		if (!user) {
-			sendError(res, 404, "Utilisateur non trouvé");
-			return;
-		}
-
-		res.status(200).json(enrichUserWithAvatarUrl(user));
-	} catch (error) {
-		logger.error(
-			"Erreur lors de la récupération de l'utilisateur connecté (admin) :",
-			error,
-		);
-		sendError(
-			res,
-			500,
-			"Erreur lors de la récupération de l'utilisateur connecté",
-		);
+	if (!user) {
+		throw new HttpError(404, "Utilisateur non trouvé");
 	}
+
+	res.status(200).json(enrichUserWithAvatarUrl(user));
 };
 
 const updateMeProfile = async (req: Request, res: Response): Promise<void> => {
-	try {
-		if (!req.user || !req.user.userId) {
-			sendError(res, 401, "Non authentifié");
-			return;
-		}
+	const userId = requireUserId(req);
+	const { username, email, firstname, lastname, avatar, bio, bio_short } =
+		req.body;
 
-		const userId = req.user.userId;
-		const { username, email, firstname, lastname, avatar, bio, bio_short } =
-			req.body;
+	// PATCH partiel : on n'ajoute que les champs effectivement présents dans le body.
+	const data: UserUpdateData = {};
+	if (username !== undefined) data.username = username;
+	if (email !== undefined) data.email = email;
+	if (firstname !== undefined) data.firstname = firstname;
+	if (lastname !== undefined) data.lastname = lastname;
+	if (avatar !== undefined) data.avatar = avatar;
+	if (bio !== undefined) data.bio = bio;
+	if (bio_short !== undefined) data.bio_short = bio_short;
 
-		// PATCH partiel : on n'ajoute que les champs effectivement présents dans le body.
-		const data: UserUpdateData = {};
-		if (username !== undefined) data.username = username;
-		if (email !== undefined) data.email = email;
-		if (firstname !== undefined) data.firstname = firstname;
-		if (lastname !== undefined) data.lastname = lastname;
-		if (avatar !== undefined) data.avatar = avatar;
-		if (bio !== undefined) data.bio = bio;
-		if (bio_short !== undefined) data.bio_short = bio_short;
-
-		const user = await usersAdminModel.updateMeProfile(userId, data);
-		if (!user) {
-			sendError(res, 404, "Utilisateur non trouvé");
-			return;
-		}
-
-		res.status(200).json(enrichUserWithAvatarUrl(user));
-	} catch (error) {
-		if (isHttpError(error)) {
-			sendError(res, error.statusCode, error.message, error.code);
-			return;
-		}
-		logger.error("Erreur lors de la mise à jour du profil (admin) :", error);
-		sendError(res, 500, "Erreur lors de la mise à jour du profil");
+	const user = await usersAdminModel.updateMeProfile(userId, data);
+	if (!user) {
+		throw new HttpError(404, "Utilisateur non trouvé");
 	}
+
+	res.status(200).json(enrichUserWithAvatarUrl(user));
 };
 
 const updateMePassword = async (req: Request, res: Response): Promise<void> => {
-	try {
-		if (!req.user || !req.user.userId) {
-			sendError(res, 401, "Non authentifié");
-			return;
-		}
+	const userId = requireUserId(req);
+	const { currentPassword, password } = req.body;
 
-		const userId = req.user.userId;
-		const { currentPassword, password } = req.body;
-
-		const user = await usersModel.findByIdWithPassword(userId);
-		if (!user) {
-			sendError(res, 404, "Utilisateur non trouvé");
-			return;
-		}
-
-		const isValid = await argon2.verify(user.password, currentPassword);
-		if (!isValid) {
-			sendError(res, 400, "Mot de passe actuel incorrect");
-			return;
-		}
-
-		const hashedPassword = await argon2.hash(password, argon2Options);
-		const success = await usersAdminModel.updateMePassword(
-			userId,
-			hashedPassword,
-		);
-		if (success === false) {
-			sendError(res, 404, "Utilisateur non trouvé");
-			return;
-		}
-
-		await usersModel.deleteRefreshToken(userId);
-
-		res.cookie("refreshToken", "", {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
-			maxAge: 0,
-		});
-
-		res.sendStatus(204);
-	} catch (error) {
-		logger.error(
-			"Erreur lors de la mise à jour du mot de passe (admin) :",
-			error,
-		);
-		sendError(res, 500, "Erreur lors de la mise à jour du mot de passe");
+	const user = await usersModel.findByIdWithPassword(userId);
+	if (!user) {
+		throw new HttpError(404, "Utilisateur non trouvé");
 	}
+
+	const isValid = await argon2.verify(user.password, currentPassword);
+	if (!isValid) {
+		throw new HttpError(400, "Mot de passe actuel incorrect");
+	}
+
+	const hashedPassword = await argon2.hash(password, argon2Options);
+	const success = await usersAdminModel.updateMePassword(
+		userId,
+		hashedPassword,
+	);
+	if (success === false) {
+		throw new HttpError(404, "Utilisateur non trouvé");
+	}
+
+	await usersModel.deleteRefreshToken(userId);
+
+	res.cookie("refreshToken", "", {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "strict",
+		maxAge: 0,
+	});
+
+	res.sendStatus(204);
 };
 
 export { readMe, updateMeProfile, updateMePassword };

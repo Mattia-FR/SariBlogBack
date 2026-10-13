@@ -1,7 +1,6 @@
 import type { Article } from "../types/articles";
 import { toDateString } from "../utils/dateHelpers";
 import { buildImageUrl } from "../utils/imageUrl";
-import logger from "../utils/logger";
 import pool from "./db";
 
 // J’ai choisi d’utiliser any pour les résultats bruts de MySQL afin de simplifier le Model et rester concentré sur la logique métier.
@@ -20,208 +19,55 @@ const findPublished = async (
 ): Promise<{ articles: Article[]; total: number }> => {
 	const offset = (page - 1) * limit;
 
-	try {
-		const tagFilter =
-			tagId != null
-				? "INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?"
-				: "";
+	const tagFilter =
+		tagId != null
+			? "INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?"
+			: "";
 
-		const listParams = tagId != null ? [tagId, limit, offset] : [limit, offset];
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [articles]: any = await pool.query(
-			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
+	const listParams = tagId != null ? [tagId, limit, offset] : [limit, offset];
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [articles]: any = await pool.query(
+		`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
       FROM articles a
       LEFT JOIN images i ON a.featured_image_id = i.id
       ${tagFilter}
       WHERE a.status = 'published'
       ORDER BY a.published_at DESC
       LIMIT ? OFFSET ?`,
-			listParams,
-		);
+		listParams,
+	);
 
-		const countParams = tagId != null ? [tagId] : [];
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [countResult]: any = await pool.query(
-			tagId != null
-				? `SELECT COUNT(DISTINCT a.id) as total
+	const countParams = tagId != null ? [tagId] : [];
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [countResult]: any = await pool.query(
+		tagId != null
+			? `SELECT COUNT(DISTINCT a.id) as total
           FROM articles a
           INNER JOIN articles_tags filt ON filt.article_id = a.id AND filt.tag_id = ?
           WHERE a.status = 'published'`
-				: `SELECT COUNT(*) as total FROM articles WHERE status = 'published'`,
-			countParams,
-		);
+			: `SELECT COUNT(*) as total FROM articles WHERE status = 'published'`,
+		countParams,
+	);
 
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	let tags: any[] = [];
+	if (articles.length > 0) {
+		const articleIds: number[] = articles.map((row: { id: number }) => row.id);
+		const placeholders = articleIds.map(() => "?").join(",");
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		let tags: any[] = [];
-		if (articles.length > 0) {
-			const articleIds: number[] = articles.map(
-				(row: { id: number }) => row.id,
-			);
-			const placeholders = articleIds.map(() => "?").join(",");
-			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-			const [tagRows]: any = await pool.query(
-				`SELECT at.article_id, t.id, t.name, t.slug
+		const [tagRows]: any = await pool.query(
+			`SELECT at.article_id, t.id, t.name, t.slug
         FROM articles_tags at
         LEFT JOIN tags t ON at.tag_id = t.id
         WHERE at.article_id IN (${placeholders})`,
-				articleIds,
-			);
-			tags = tagRows;
-		}
-
-		return {
-			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-			articles: articles.map((article: any) => ({
-				id: article.id,
-				title: article.title,
-				slug: article.slug,
-				excerpt: article.excerpt,
-				status: article.status,
-				user_id: article.user_id,
-				created_at: toDateString(article.created_at) ?? "",
-				updated_at: toDateString(article.updated_at) ?? "",
-				published_at: toDateString(article.published_at) ?? null,
-				views: article.views,
-				featured_image_id: article.featured_image_id,
-				imageUrl: buildImageUrl(article.image_path),
-				tags: tags
-					// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-					.filter((t: any) => t.article_id === article.id)
-					// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-					.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
-			})),
-			total: countResult[0].total,
-		};
-	} catch (err) {
-		logger.error(err);
-		throw err;
+			articleIds,
+		);
+		tags = tagRows;
 	}
-};
 
-const findPublishedById = async (id: number): Promise<Article | null> => {
-	try {
+	return {
 		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query(
-			`SELECT ${ARTICLE_DETAIL_SELECT}, i.path as image_path
-			FROM articles a
-			LEFT JOIN images i ON a.featured_image_id = i.id
-			WHERE a.status = 'published' AND a.id = ?`,
-			[id],
-		);
-
-		if (!rows[0]) return null;
-
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [tags]: any = await pool.query(
-			`SELECT t.id, t.name, t.slug
-			FROM articles_tags at
-			LEFT JOIN tags t ON at.tag_id = t.id
-			WHERE at.article_id = ?`,
-			[id],
-		);
-
-		const article = rows[0];
-
-		return {
-			id: article.id,
-			title: article.title,
-			slug: article.slug,
-			excerpt: article.excerpt,
-			content: article.content,
-			status: article.status,
-			user_id: article.user_id,
-			created_at: toDateString(article.created_at) ?? "",
-			updated_at: toDateString(article.updated_at) ?? "",
-			published_at: toDateString(article.published_at) ?? null,
-			views: article.views,
-			featured_image_id: article.featured_image_id,
-			imageUrl: buildImageUrl(article.image_path),
-			tags: tags,
-		};
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
-};
-
-const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [rows]: any = await pool.query(
-			`SELECT ${ARTICLE_DETAIL_SELECT}, i.path as image_path
-			FROM articles a
-			LEFT JOIN images i ON a.featured_image_id = i.id
-			WHERE a.status = 'published' AND a.slug = ?`,
-			[slug],
-		);
-
-		if (!rows[0]) return null;
-
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [tags]: any = await pool.query(
-			`SELECT t.id, t.name, t.slug
-			FROM articles_tags at
-			LEFT JOIN tags t ON at.tag_id = t.id
-			WHERE at.article_id = ?`,
-			[rows[0].id],
-		);
-
-		const article = rows[0];
-
-		return {
-			id: article.id,
-			title: article.title,
-			slug: article.slug,
-			excerpt: article.excerpt,
-			content: article.content,
-			status: article.status,
-			user_id: article.user_id,
-			created_at: toDateString(article.created_at) ?? "",
-			updated_at: toDateString(article.updated_at) ?? "",
-			published_at: toDateString(article.published_at) ?? null,
-			views: article.views,
-			featured_image_id: article.featured_image_id,
-			imageUrl: buildImageUrl(article.image_path),
-			tags: tags,
-		};
-	} catch (err) {
-		logger.error(err);
-		throw err;
-	}
-};
-
-const findHomepagePreview = async (): Promise<Article[]> => {
-	try {
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		const [articles]: any = await pool.query(
-			`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
-			FROM articles a
-			LEFT JOIN images i ON a.featured_image_id = i.id
-			WHERE a.status = 'published'
-			ORDER BY a.published_at DESC
-			LIMIT 4`,
-		);
-
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		let tags: any[] = [];
-		if (articles.length > 0) {
-			const articleIds: number[] = articles.map(
-				(row: { id: number }) => row.id,
-			);
-			const placeholders = articleIds.map(() => "?").join(",");
-			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-			const [tagRows]: any = await pool.query(
-				`SELECT at.article_id, t.id, t.name, t.slug
-        FROM articles_tags at
-        LEFT JOIN tags t ON at.tag_id = t.id
-        WHERE at.article_id IN (${placeholders})`,
-				articleIds,
-			);
-			tags = tagRows;
-		}
-
-		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-		return articles.map((article: any) => ({
+		articles: articles.map((article: any) => ({
 			id: article.id,
 			title: article.title,
 			slug: article.slug,
@@ -239,11 +85,140 @@ const findHomepagePreview = async (): Promise<Article[]> => {
 				.filter((t: any) => t.article_id === article.id)
 				// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 				.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
-		}));
-	} catch (err) {
-		logger.error(err);
-		throw err;
+		})),
+		total: countResult[0].total,
+	};
+};
+
+const findPublishedById = async (id: number): Promise<Article | null> => {
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [rows]: any = await pool.query(
+		`SELECT ${ARTICLE_DETAIL_SELECT}, i.path as image_path
+		FROM articles a
+		LEFT JOIN images i ON a.featured_image_id = i.id
+		WHERE a.status = 'published' AND a.id = ?`,
+		[id],
+	);
+
+	if (!rows[0]) return null;
+
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [tags]: any = await pool.query(
+		`SELECT t.id, t.name, t.slug
+		FROM articles_tags at
+		LEFT JOIN tags t ON at.tag_id = t.id
+		WHERE at.article_id = ?`,
+		[id],
+	);
+
+	const article = rows[0];
+
+	return {
+		id: article.id,
+		title: article.title,
+		slug: article.slug,
+		excerpt: article.excerpt,
+		content: article.content,
+		status: article.status,
+		user_id: article.user_id,
+		created_at: toDateString(article.created_at) ?? "",
+		updated_at: toDateString(article.updated_at) ?? "",
+		published_at: toDateString(article.published_at) ?? null,
+		views: article.views,
+		featured_image_id: article.featured_image_id,
+		imageUrl: buildImageUrl(article.image_path),
+		tags: tags,
+	};
+};
+
+const findPublishedBySlug = async (slug: string): Promise<Article | null> => {
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [rows]: any = await pool.query(
+		`SELECT ${ARTICLE_DETAIL_SELECT}, i.path as image_path
+		FROM articles a
+		LEFT JOIN images i ON a.featured_image_id = i.id
+		WHERE a.status = 'published' AND a.slug = ?`,
+		[slug],
+	);
+
+	if (!rows[0]) return null;
+
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [tags]: any = await pool.query(
+		`SELECT t.id, t.name, t.slug
+		FROM articles_tags at
+		LEFT JOIN tags t ON at.tag_id = t.id
+		WHERE at.article_id = ?`,
+		[rows[0].id],
+	);
+
+	const article = rows[0];
+
+	return {
+		id: article.id,
+		title: article.title,
+		slug: article.slug,
+		excerpt: article.excerpt,
+		content: article.content,
+		status: article.status,
+		user_id: article.user_id,
+		created_at: toDateString(article.created_at) ?? "",
+		updated_at: toDateString(article.updated_at) ?? "",
+		published_at: toDateString(article.published_at) ?? null,
+		views: article.views,
+		featured_image_id: article.featured_image_id,
+		imageUrl: buildImageUrl(article.image_path),
+		tags: tags,
+	};
+};
+
+const findHomepagePreview = async (): Promise<Article[]> => {
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [articles]: any = await pool.query(
+		`SELECT a.id, a.title, a.slug, a.excerpt, a.status, a.user_id, a.created_at, a.updated_at, a.published_at, a.views, a.featured_image_id, i.path as image_path
+		FROM articles a
+		LEFT JOIN images i ON a.featured_image_id = i.id
+		WHERE a.status = 'published'
+		ORDER BY a.published_at DESC
+		LIMIT 4`,
+	);
+
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	let tags: any[] = [];
+	if (articles.length > 0) {
+		const articleIds: number[] = articles.map((row: { id: number }) => row.id);
+		const placeholders = articleIds.map(() => "?").join(",");
+		// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+		const [tagRows]: any = await pool.query(
+			`SELECT at.article_id, t.id, t.name, t.slug
+        FROM articles_tags at
+        LEFT JOIN tags t ON at.tag_id = t.id
+        WHERE at.article_id IN (${placeholders})`,
+			articleIds,
+		);
+		tags = tagRows;
 	}
+
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	return articles.map((article: any) => ({
+		id: article.id,
+		title: article.title,
+		slug: article.slug,
+		excerpt: article.excerpt,
+		status: article.status,
+		user_id: article.user_id,
+		created_at: toDateString(article.created_at) ?? "",
+		updated_at: toDateString(article.updated_at) ?? "",
+		published_at: toDateString(article.published_at) ?? null,
+		views: article.views,
+		featured_image_id: article.featured_image_id,
+		imageUrl: buildImageUrl(article.image_path),
+		tags: tags
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			.filter((t: any) => t.article_id === article.id)
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
+	}));
 };
 
 export default {

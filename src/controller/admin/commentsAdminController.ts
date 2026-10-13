@@ -1,129 +1,77 @@
 import type { Request, Response } from "express";
 import commentsAdminModel from "../../model/admin/commentsAdminModel";
 import type { Comment, CommentStatus } from "../../types/comments";
-import { sendError } from "../../utils/httpErrors";
-import logger from "../../utils/logger";
+import { HttpError } from "../../utils/httpErrors";
+import { parseIdParam, parsePaginationParams } from "../../utils/requestParams";
+
+const VALID_STATUSES: CommentStatus[] = [
+	"pending",
+	"approved",
+	"rejected",
+	"spam",
+];
 
 // Liste paginée des commentaires. Query : page, limit (1–20), status optionnel (pending | approved | rejected | spam).
 // GET /admin/comments?page=1&limit=10&status=pending
 const browseAll = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const page = Number.parseInt(req.query.page as string, 10) || 1;
-		const limit = Number.parseInt(req.query.limit as string, 10) || 10;
+	const { page, limit } = parsePaginationParams(req.query);
 
-		if (page < 1) {
-			sendError(res, 400, "Le paramètre page doit être un nombre positif");
-			return;
+	let status: CommentStatus | undefined;
+	const statusRaw = req.query.status;
+	if (statusRaw !== undefined && statusRaw !== "") {
+		const s = String(statusRaw);
+		if (!VALID_STATUSES.includes(s as CommentStatus)) {
+			throw new HttpError(400, "Statut de filtre invalide");
 		}
-		if (limit < 1 || limit > 20) {
-			sendError(res, 400, "Le paramètre limit doit être entre 1 et 20");
-			return;
-		}
-
-		let status: CommentStatus | undefined;
-		const statusRaw = req.query.status;
-		if (statusRaw !== undefined && statusRaw !== "") {
-			const s = String(statusRaw);
-			if (!["pending", "approved", "rejected", "spam"].includes(s)) {
-				sendError(res, 400, "Statut de filtre invalide");
-				return;
-			}
-			status = s as CommentStatus;
-		}
-
-		const [{ comments, total }, counts] = await Promise.all([
-			commentsAdminModel.findAllPaginated(page, limit, status),
-			commentsAdminModel.findTabCounts(),
-		]);
-
-		res.status(200).json({
-			comments,
-			total,
-			page,
-			limit,
-			counts,
-		});
-	} catch (err) {
-		logger.error(
-			"Erreur lors de la récupération de tous les commentaires :",
-			err,
-		);
-		sendError(res, 500, "Erreur lors de la récupération des commentaires");
+		status = s as CommentStatus;
 	}
+
+	const [{ comments, total }, counts] = await Promise.all([
+		commentsAdminModel.findAllPaginated(page, limit, status),
+		commentsAdminModel.findTabCounts(),
+	]);
+
+	res.status(200).json({ comments, total, page, limit, counts });
 };
 
 // Récupère un commentaire par ID
-// GET /comments/:id
+// GET /admin/comments/:id
 const readById = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const commentId: number = Number.parseInt(req.params.id, 10);
-		if (Number.isNaN(commentId)) {
-			sendError(res, 400, "ID invalide");
-			return;
-		}
-		const comment: Comment | null =
-			await commentsAdminModel.findById(commentId);
-		if (!comment) {
-			sendError(res, 404, "Commentaire non trouvé");
-			return;
-		}
-		res.status(200).json(comment);
-	} catch (err) {
-		logger.error("Erreur lors de la récupération du commentaire par ID :", err);
-		sendError(res, 500, "Erreur lors de la récupération du commentaire");
+	const commentId = parseIdParam(req.params.id);
+	const comment: Comment | null = await commentsAdminModel.findById(commentId);
+	if (!comment) {
+		throw new HttpError(404, "Commentaire non trouvé");
 	}
+	res.status(200).json(comment);
 };
 
 // Met à jour le statut d'un commentaire
-// PATCH /comments/:id/status
+// PATCH /admin/comments/:id/status
 const editStatus = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const commentId: number = Number.parseInt(req.params.id, 10);
-		const { status } = req.body;
-		if (Number.isNaN(commentId)) {
-			sendError(res, 400, "ID invalide");
-			return;
-		}
-		if (!["pending", "approved", "rejected", "spam"].includes(status)) {
-			sendError(res, 400, "Statut invalide");
-			return;
-		}
-		const updatedComment: Comment | null =
-			await commentsAdminModel.updateStatus(commentId, { status });
-		if (!updatedComment) {
-			sendError(res, 404, "Commentaire non trouvé");
-			return;
-		}
-		res.status(200).json(updatedComment);
-	} catch (err) {
-		logger.error("Erreur lors de la mise à jour du statut :", err);
-		sendError(
-			res,
-			500,
-			"Erreur lors de la mise à jour du statut du commentaire",
-		);
+	const commentId = parseIdParam(req.params.id);
+	const { status } = req.body;
+	if (!VALID_STATUSES.includes(status)) {
+		throw new HttpError(400, "Statut invalide");
 	}
+	const updatedComment: Comment | null = await commentsAdminModel.updateStatus(
+		commentId,
+		{ status },
+	);
+	if (!updatedComment) {
+		throw new HttpError(404, "Commentaire non trouvé");
+	}
+	res.status(200).json(updatedComment);
 };
 
 // Supprime un commentaire
-// DELETE /comments/:id
+// DELETE /admin/comments/:id
 const destroy = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const commentId: number = Number.parseInt(req.params.id, 10);
-		if (Number.isNaN(commentId)) {
-			sendError(res, 400, "ID invalide");
-			return;
-		}
-		const deleted: boolean = await commentsAdminModel.deleteOne(commentId);
-		if (!deleted) {
-			sendError(res, 404, "Commentaire non trouvé");
-			return;
-		}
-		res.sendStatus(204);
-	} catch (err) {
-		logger.error("Erreur lors de la suppression du commentaire :", err);
-		sendError(res, 500, "Erreur lors de la suppression du commentaire");
+	const commentId = parseIdParam(req.params.id);
+	const deleted: boolean = await commentsAdminModel.deleteOne(commentId);
+	if (!deleted) {
+		throw new HttpError(404, "Commentaire non trouvé");
 	}
+	res.sendStatus(204);
 };
 
 export { browseAll, readById, editStatus, destroy };

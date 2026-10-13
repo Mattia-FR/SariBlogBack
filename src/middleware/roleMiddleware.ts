@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { UserRole } from "../types/users";
-import { sendError } from "../utils/httpErrors";
+import { HttpError } from "../utils/httpErrors";
 
 // ========================================
 // MIDDLEWARE DE VÉRIFICATION DES RÔLES
@@ -11,7 +11,6 @@ import { sendError } from "../utils/httpErrors";
 // Utilisation :
 //   - requireRole("admin") : uniquement admin
 //   - requireRole(["admin", "editor"]) : admin OU editor
-//   - requireAdmin() : alias pour requireRole("admin")
 //   - requireEditor() : alias pour requireRole(["admin", "editor"])
 //
 // Codes de retour :
@@ -24,10 +23,10 @@ import { sendError } from "../utils/httpErrors";
  * @returns Middleware Express qui vérifie le rôle de l'utilisateur
  */
 function requireRole(allowedRoles: UserRole | UserRole[]) {
-	return (req: Request, res: Response, next: NextFunction) => {
+	return (req: Request, _res: Response, next: NextFunction) => {
 		// 1. Vérifier que requireAuth a été appelé avant
 		if (!req.user || !req.user.role) {
-			return sendError(res, 401, "Non authentifié");
+			return next(new HttpError(401, "Non authentifié"));
 		}
 
 		// 2. Normaliser les rôles autorisés en tableau
@@ -38,20 +37,12 @@ function requireRole(allowedRoles: UserRole | UserRole[]) {
 		// 3. Vérifier que le rôle de l'utilisateur est dans la liste autorisée
 		const userRole = req.user.role as UserRole;
 		if (!rolesArray.includes(userRole)) {
-			return sendError(res, 403, "Accès refusé");
+			return next(new HttpError(403, "Accès refusé"));
 		}
 
 		// 4. Rôle autorisé, on continue
 		next();
 	};
-}
-
-/**
- * Middleware qui vérifie que l'utilisateur est administrateur.
- * Alias pour requireRole("admin").
- */
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-	return requireRole("admin")(req, res, next);
 }
 
 /**
@@ -62,4 +53,4 @@ function requireEditor(req: Request, res: Response, next: NextFunction) {
 	return requireRole(["admin", "editor"])(req, res, next);
 }
 
-export { requireRole, requireAdmin, requireEditor };
+export { requireRole, requireEditor };

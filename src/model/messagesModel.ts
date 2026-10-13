@@ -1,6 +1,5 @@
 import type { ResultSetHeader } from "mysql2/promise";
 import type { Message, MessageCreateData } from "../types/messages";
-import logger from "../utils/logger";
 import messagesAdminModel from "./admin/messagesAdminModel";
 import pool from "./db";
 
@@ -11,29 +10,24 @@ const { findById } = messagesAdminModel;
 // Ce choix est donc sécurisé côté métier, lisible, et maintenable, tout en évitant des typages MySQL trop complexes qui n'apporteraient rien pour ce projet.
 
 const create = async (data: MessageCreateData): Promise<Message> => {
-	try {
-		const [result] = await pool.query<ResultSetHeader>(
-			`INSERT INTO messages (firstname, lastname, email, ip, subject, text)
-			VALUES (?, ?, ?, ?, ?, ?)`,
-			[
-				data.firstname ?? null,
-				data.lastname ?? null,
-				data.email,
-				data.ip ?? null,
-				data.subject,
-				data.text,
-			],
-		);
+	const [result] = await pool.query<ResultSetHeader>(
+		`INSERT INTO messages (firstname, lastname, email, ip, subject, text)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		[
+			data.firstname ?? null,
+			data.lastname ?? null,
+			data.email,
+			data.ip ?? null,
+			data.subject,
+			data.text,
+		],
+	);
 
-		const newMessage = await findById(result.insertId);
-		if (!newMessage) {
-			throw new Error("Impossible de récupérer le message créé");
-		}
-		return newMessage;
-	} catch (err) {
-		logger.error(err);
-		throw err;
+	const newMessage = await findById(result.insertId);
+	if (!newMessage) {
+		throw new Error("Impossible de récupérer le message créé");
 	}
+	return newMessage;
 };
 
 export default {
