@@ -2,7 +2,11 @@ import type { Request, Response } from "express";
 import commentsAdminModel from "../../model/admin/commentsAdminModel";
 import type { Comment, CommentStatus } from "../../types/comments";
 import { HttpError } from "../../utils/httpErrors";
-import { parseIdParam, parsePaginationParams } from "../../utils/requestParams";
+import {
+	assertPageInRange,
+	parseIdParam,
+	parsePaginationParams,
+} from "../../utils/requestParams";
 
 const VALID_STATUSES: CommentStatus[] = [
 	"pending",
@@ -30,6 +34,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		commentsAdminModel.findAllPaginated(page, limit, status),
 		commentsAdminModel.findTabCounts(),
 	]);
+	assertPageInRange(page, limit, total);
 
 	res.status(200).json({ comments, total, page, limit, counts });
 };
@@ -50,9 +55,6 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 const editStatus = async (req: Request, res: Response): Promise<void> => {
 	const commentId = parseIdParam(req.params.id);
 	const { status } = req.body;
-	if (!VALID_STATUSES.includes(status)) {
-		throw new HttpError(400, "Statut invalide");
-	}
 	const updatedComment: Comment | null = await commentsAdminModel.updateStatus(
 		commentId,
 		{ status },

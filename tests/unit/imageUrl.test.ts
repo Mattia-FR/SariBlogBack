@@ -39,3 +39,31 @@ describe("buildImageUrl", () => {
 		);
 	});
 });
+
+describe("toThumbPath / buildThumbUrl", () => {
+	beforeEach(() => {
+		vi.resetModules();
+	});
+
+	it("insère -thumb avant l'extension", async () => {
+		const { toThumbPath } = await import("../../src/utils/imageUrl.js");
+
+		expect(toThumbPath("/uploads/images/x.webp")).toBe(
+			"/uploads/images/x-thumb.webp",
+		);
+		expect(toThumbPath("/uploads/images/portrait.jpg")).toBe(
+			"/uploads/images/portrait-thumb.jpg",
+		);
+	});
+
+	it("construit l'URL miniature depuis path", async () => {
+		process.env.IMAGE_BASE_URL = "http://localhost:4242";
+		const { buildThumbUrl } = await import("../../src/utils/imageUrl.js");
+
+		expect(buildThumbUrl("/uploads/images/x.webp")).toBe(
+			"http://localhost:4242/uploads/images/x-thumb.webp",
+		);
+		expect(buildThumbUrl(null)).toBeUndefined();
+		expect(buildThumbUrl("")).toBeUndefined();
+	});
+});

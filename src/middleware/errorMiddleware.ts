@@ -102,12 +102,13 @@ export function errorHandler(
 	}
 
 	const { status, body } = resolveError(err);
+	const rid = req.requestId ? `[${req.requestId}] ` : "";
 	const route = `${req.method} ${req.originalUrl}`;
 
 	if (status >= 500) {
-		logger.error(`${route} → ${status}`, err);
+		logger.error(`${rid}${route} → ${status}`, err);
 	} else {
-		logger.warn(`${route} → ${status} ${body.code}: ${body.error}`);
+		logger.warn(`${rid}${route} → ${status} ${body.code}: ${body.error}`);
 	}
 
 	res.status(status).json(body);

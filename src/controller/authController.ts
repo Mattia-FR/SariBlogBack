@@ -4,14 +4,19 @@ import jwt from "jsonwebtoken";
 import usersModel from "../model/usersModel";
 import type { TokenPayload } from "../types/auth";
 import type { User } from "../types/users";
+import { hashRefreshToken } from "../utils/hashRefreshToken";
 import { HttpError } from "../utils/httpErrors";
 
 const REFRESH_COOKIE_OPTIONS: CookieOptions = {
 	httpOnly: true,
-	secure: process.env.NODE_ENV === "production",
+	secure: true,
 	sameSite: "strict",
 };
 const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+const ACCESS_EXPIRES_IN = (process.env.ACCESS_TOKEN_EXPIRES_IN ||
+	"15m") as jwt.SignOptions["expiresIn"];
+const REFRESH_EXPIRES_IN = (process.env.REFRESH_TOKEN_EXPIRES_IN ||
+	"7d") as jwt.SignOptions["expiresIn"];
 
 /** Erreur de configuration serveur : 500 journalisé par errorHandler, jamais exposé au client. */
 function getSecrets(): { access: string; refresh: string } {
@@ -49,18 +54,18 @@ export async function login(req: Request, res: Response) {
 	const accessToken = jwt.sign(
 		{ userId: user.id, role: user.role },
 		secrets.access,
-		{ expiresIn: "15m" },
+		{ expiresIn: ACCESS_EXPIRES_IN },
 	);
 
 	// 4. Création REFRESH TOKEN
 	const refreshToken = jwt.sign(
 		{ userId: user.id, role: user.role },
 		secrets.refresh,
-		{ expiresIn: "7d" },
+		{ expiresIn: REFRESH_EXPIRES_IN },
 	);
 
-	// 5. Stockage du refresh token en DB
-	await usersModel.saveRefreshToken(user.id, refreshToken);
+	// 5. Stockage de l'empreinte du refresh token en DB
+	await usersModel.saveRefreshToken(user.id, hashRefreshToken(refreshToken));
 
 	// 6. Envoi cookie httpOnly
 	res.cookie("refreshToken", refreshToken, {
@@ -88,8 +93,6 @@ export async function refresh(req: Request, res: Response) {
 
 	// 2. Vérifier que les secrets existent
 	const secrets = getSecrets();
-	const ACCESS_EXPIRES_IN = (process.env.ACCESS_TOKEN_EXPIRES_IN ||
-		"15m") as jwt.SignOptions["expiresIn"];
 
 	// 3. Vérifier et décoder le refresh token
 	let payload: TokenPayload;
@@ -109,7 +112,7 @@ export async function refresh(req: Request, res: Response) {
 
 	// 4. Vérifier que le token est toujours valide en DB
 	const user = await usersModel.findByIdWithRefreshToken(payload.userId);
-	if (!user || user.refresh_token !== refreshToken) {
+	if (!user || user.refresh_token !== hashRefreshToken(refreshToken)) {
 		throw new HttpError(401, "Refresh token invalide");
 	}
 
@@ -124,9 +127,12 @@ export async function refresh(req: Request, res: Response) {
 	const newRefreshToken = jwt.sign(
 		{ userId: payload.userId, role: payload.role },
 		secrets.refresh,
-		{ expiresIn: "7d" },
+		{ expiresIn: REFRESH_EXPIRES_IN },
 	);
-	await usersModel.saveRefreshToken(payload.userId, newRefreshToken);
+	await usersModel.saveRefreshToken(
+		payload.userId,
+		hashRefreshToken(newRefreshToken),
+	);
 	res.cookie("refreshToken", newRefreshToken, {
 		...REFRESH_COOKIE_OPTIONS,
 		maxAge: REFRESH_MAX_AGE,

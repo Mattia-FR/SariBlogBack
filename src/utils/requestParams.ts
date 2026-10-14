@@ -47,6 +47,18 @@ export function parsePaginationParams(
 	return { page, limit };
 }
 
+/** Lève 404 si `page` dépasse le nombre de pages. `total === 0` autorise uniquement page 1. */
+export function assertPageInRange(
+	page: number,
+	limit: number,
+	total: number,
+): void {
+	const totalPages = Math.max(1, Math.ceil(total / limit));
+	if (page > totalPages) {
+		throw new HttpError(404, "Page hors limites");
+	}
+}
+
 /** Normalise une liste d'identifiants (`tag_ids`) : nombres valides, sans doublon. */
 export function parseIdList(value: unknown, name = "tag_ids"): number[] {
 	if (!Array.isArray(value)) {

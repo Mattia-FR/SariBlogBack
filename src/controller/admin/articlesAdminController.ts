@@ -15,6 +15,7 @@ import { excerptFromPlainText } from "../../utils/excerpt";
 import { HttpError } from "../../utils/httpErrors";
 import { publishedAtForCreate } from "../../utils/publishedAt";
 import {
+	assertPageInRange,
 	parseIdParam,
 	parseOptionalIdQuery,
 	parsePaginationParams,
@@ -43,6 +44,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		limit,
 		tagId,
 	);
+	assertPageInRange(page, limit, total);
 
 	res.status(200).json({ articles, total, page, limit });
 };

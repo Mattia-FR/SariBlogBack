@@ -5,29 +5,44 @@ import imagesAdminModel from "../../model/admin/imagesAdminModel";
 import type { Image, ImageUpdateData } from "../../types/images";
 import { assertAllowedImageFile } from "../../utils/assertAllowedImageFile";
 import { HttpError } from "../../utils/httpErrors";
-import { buildImageUrl } from "../../utils/imageUrl";
+import {
+	buildImageUrl,
+	buildThumbUrl,
+	toThumbPath,
+} from "../../utils/imageUrl";
 import logger from "../../utils/logger";
 import { processUploadedImage } from "../../utils/processUploadedImage";
 import {
+	assertPageInRange,
 	parseIdParam,
 	parseOptionalIdQuery,
 	parsePaginationParams,
 } from "../../utils/requestParams";
 
-function enrichWithImageUrl(item: Image): Image & { imageUrl: string } {
+function enrichWithImageUrl(
+	item: Image,
+): Image & { imageUrl: string; thumbUrl: string } {
 	return {
 		...item,
 		imageUrl: buildImageUrl(item.path) ?? item.path,
+		thumbUrl: buildThumbUrl(item.path) ?? item.path,
 	};
 }
 
+function ridPrefix(requestId?: string): string {
+	return requestId ? `[${requestId}] ` : "";
+}
+
 /** Supprime un fichier sans échouer s'il n'existe déjà plus. */
-async function removeFile(filePath: string): Promise<void> {
+async function removeFile(filePath: string, requestId?: string): Promise<void> {
 	try {
 		await fs.unlink(filePath);
 	} catch (err) {
 		if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") {
-			logger.error(`Suppression du fichier impossible : ${filePath}`, err);
+			logger.error(
+				`${ridPrefix(requestId)}Suppression du fichier impossible : ${filePath}`,
+				err,
+			);
 		}
 	}
 }
@@ -46,6 +61,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		limit,
 		tagId,
 	);
+	assertPageInRange(page, limit, total);
 	res.status(200).json({
 		images: images.map(enrichWithImageUrl),
 		total,
@@ -111,7 +127,10 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		try {
 			filename = await processUploadedImage(tmpPath);
 		} catch (err) {
-			logger.warn("Traitement image (Sharp) impossible :", err);
+			logger.warn(
+				`${ridPrefix(req.requestId)}Traitement image (Sharp) impossible :`,
+				err,
+			);
 			throw new HttpError(
 				400,
 				"Fichier image invalide ou illisible",
@@ -119,7 +138,7 @@ const add = async (req: Request, res: Response): Promise<void> => {
 			);
 		}
 	} catch (err) {
-		await removeFile(tmpPath);
+		await removeFile(tmpPath, req.requestId);
 		throw err;
 	}
 
@@ -140,7 +159,13 @@ const add = async (req: Request, res: Response): Promise<void> => {
 		});
 		res.status(201).json(enrichWithImageUrl(image));
 	} catch (err) {
-		await removeFile(path.join(path.dirname(tmpPath), filename));
+		const dir = path.dirname(tmpPath);
+		const fullPath = path.join(dir, filename);
+		await removeFile(fullPath, req.requestId);
+		await removeFile(
+			path.join(dir, path.basename(toThumbPath(filename))),
+			req.requestId,
+		);
 		throw err;
 	}
 };
@@ -212,7 +237,9 @@ const destroy = async (req: Request, res: Response): Promise<void> => {
 	// `image.path` contient un chemin public (ex: `/uploads/images/abc.webp`), relatif au `cwd` du processus.
 	// La suppression DB fait foi : un fichier déjà absent n'empêche pas la réponse 204.
 	const relativeImagePath = image.path.replace(/^\/+/, "");
-	await removeFile(path.join(process.cwd(), relativeImagePath));
+	const relativeThumbPath = toThumbPath(image.path).replace(/^\/+/, "");
+	await removeFile(path.join(process.cwd(), relativeImagePath), req.requestId);
+	await removeFile(path.join(process.cwd(), relativeThumbPath), req.requestId);
 
 	res.sendStatus(204);
 };

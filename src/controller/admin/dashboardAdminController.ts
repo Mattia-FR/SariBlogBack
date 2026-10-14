@@ -5,25 +5,39 @@ import messagesAdminModel from "../../model/admin/messagesAdminModel";
 import tagsAdminModel from "../../model/admin/tagsAdminModel";
 
 export const getStats = async (_req: Request, res: Response) => {
-	const stats = {
+	const [
+		articlesTotal,
+		articlesPublished,
+		articlesDrafts,
+		imagesTotal,
+		imagesInGallery,
+		tagsTotal,
+		messageCounts,
+	] = await Promise.all([
+		articlesAdminModel.countAll(),
+		articlesAdminModel.countByStatus("published"),
+		articlesAdminModel.countByStatus("draft"),
+		imagesAdminModel.countAll(),
+		imagesAdminModel.countInGallery(),
+		tagsAdminModel.countAll(),
+		messagesAdminModel.findTabCounts(),
+	]);
+
+	res.json({
 		articles: {
-			total: await articlesAdminModel.countAll(),
-			published: await articlesAdminModel.countByStatus("published"),
-			drafts: await articlesAdminModel.countByStatus("draft"),
+			total: articlesTotal,
+			published: articlesPublished,
+			drafts: articlesDrafts,
 		},
 		images: {
-			total: await imagesAdminModel.countAll(),
-			inGallery: await imagesAdminModel.countInGallery(),
+			total: imagesTotal,
+			inGallery: imagesInGallery,
 		},
-		tags: {
-			total: await tagsAdminModel.countAll(),
-		},
+		tags: { total: tagsTotal },
 		messages: {
-			unread: await messagesAdminModel.countByStatus("unread"),
-			read: await messagesAdminModel.countByStatus("read"),
-			archived: await messagesAdminModel.countByStatus("archived"),
+			unread: messageCounts.unread,
+			read: messageCounts.read,
+			archived: messageCounts.archived,
 		},
-	};
-
-	res.json(stats);
+	});
 };

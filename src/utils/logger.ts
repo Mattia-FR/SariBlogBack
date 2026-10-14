@@ -1,9 +1,25 @@
 import winston from "winston";
+import DailyRotateFile from "winston-daily-rotate-file";
 
 const isProduction = process.env.NODE_ENV === "production";
+const level = process.env.LOG_LEVEL || "info";
+
+const transports: winston.transport[] = [new winston.transports.Console()];
+
+if (isProduction) {
+	transports.push(
+		new DailyRotateFile({
+			filename: "logs/app-%DATE%.log",
+			datePattern: "YYYY-MM-DD",
+			maxFiles: "7d",
+			maxSize: "20m",
+			level,
+		}),
+	);
+}
 
 const logger = winston.createLogger({
-	level: process.env.LOG_LEVEL || "info",
+	level,
 	format: winston.format.combine(
 		winston.format.errors({ stack: true }),
 		winston.format.splat(),
@@ -21,7 +37,7 @@ const logger = winston.createLogger({
 					),
 				),
 	),
-	transports: [new winston.transports.Console()],
+	transports,
 });
 
 export const morganStream = {

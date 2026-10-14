@@ -2,7 +2,11 @@ import type { Request, Response } from "express";
 import messagesAdminModel from "../../model/admin/messagesAdminModel";
 import type { Message, MessageStatus } from "../../types/messages";
 import { HttpError } from "../../utils/httpErrors";
-import { parseIdParam, parsePaginationParams } from "../../utils/requestParams";
+import {
+	assertPageInRange,
+	parseIdParam,
+	parsePaginationParams,
+} from "../../utils/requestParams";
 
 const VALID_STATUSES: MessageStatus[] = ["unread", "read", "archived"];
 
@@ -25,6 +29,7 @@ const browseAll = async (req: Request, res: Response): Promise<void> => {
 		messagesAdminModel.findAllPaginated(page, limit, status),
 		messagesAdminModel.findTabCounts(),
 	]);
+	assertPageInRange(page, limit, total);
 
 	res.status(200).json({ messages, total, page, limit, counts });
 };
@@ -45,9 +50,6 @@ const readById = async (req: Request, res: Response): Promise<void> => {
 const editStatus = async (req: Request, res: Response): Promise<void> => {
 	const messageId = parseIdParam(req.params.id);
 	const { status } = req.body;
-	if (!VALID_STATUSES.includes(status)) {
-		throw new HttpError(400, "Statut invalide");
-	}
 	const updatedMessage: Message | null = await messagesAdminModel.updateStatus(
 		messageId,
 		{ status },

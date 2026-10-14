@@ -11,8 +11,12 @@ vi.mock("../../src/utils/logger", () => ({
 }));
 
 // Fabrique un couple req/res minimal : res.status() et res.json() sont chaînables et espionnés.
-function setup(headersSent = false) {
-	const req = { method: "GET", originalUrl: "/api/test" } as Request;
+function setup(headersSent = false, requestId?: string) {
+	const req = {
+		method: "GET",
+		originalUrl: "/api/test",
+		...(requestId !== undefined ? { requestId } : {}),
+	} as Request;
 	const res = {
 		headersSent,
 		status: vi.fn().mockReturnThis(),
@@ -22,8 +26,8 @@ function setup(headersSent = false) {
 	return { req, res, next };
 }
 
-function run(err: unknown) {
-	const { req, res, next } = setup();
+function run(err: unknown, requestId?: string) {
+	const { req, res, next } = setup(false, requestId);
 	errorHandler(err, req, res, next);
 	return {
 		status: vi.mocked(res.status).mock.calls[0]?.[0],
@@ -97,6 +101,19 @@ describe("errorHandler", () => {
 		expect(logger.error).toHaveBeenCalledTimes(1);
 		run(new HttpError(404, "Absent"));
 		expect(logger.warn).toHaveBeenCalledTimes(1);
+	});
+
+	it("préfixe les logs avec le requestId quand il est présent", () => {
+		const rid = "11111111-2222-4333-8444-555555555555";
+		run(new Error("boom"), rid);
+		expect(logger.error).toHaveBeenCalledWith(
+			`[${rid}] GET /api/test → 500`,
+			expect.any(Error),
+		);
+		run(new HttpError(404, "Absent"), rid);
+		expect(logger.warn).toHaveBeenCalledWith(
+			`[${rid}] GET /api/test → 404 NOT_FOUND: Absent`,
+		);
 	});
 
 	it("délègue à Express si les en-têtes sont déjà envoyés", () => {

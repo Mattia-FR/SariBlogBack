@@ -215,14 +215,12 @@ const findByCategoryId = async (
 
 const findImageOfTheDay = async (): Promise<Image | null> => {
 	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
-	const [rows]: any = await pool.query(
-		`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id, created_at, updated_at
-		FROM images
-		WHERE is_in_gallery = TRUE
-		ORDER BY id ASC`,
+	const [countResult]: any = await pool.query(
+		"SELECT COUNT(*) as total FROM images WHERE is_in_gallery = TRUE",
 	);
+	const total = countResult[0].total as number;
 
-	if (rows.length === 0) {
+	if (total === 0) {
 		return null;
 	}
 
@@ -231,9 +229,23 @@ const findImageOfTheDay = async (): Promise<Image | null> => {
 	const dayOfYear = Math.floor(
 		(today.getTime() - startOfYear.getTime()) / 86400000,
 	);
-	const imageIndex = dayOfYear % rows.length;
+	const offset = dayOfYear % total;
 
-	const row = rows[imageIndex];
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [rows]: any = await pool.query(
+		`SELECT id, title, description, path, alt_descr, is_in_gallery, user_id, article_id, category_id, created_at, updated_at
+		FROM images
+		WHERE is_in_gallery = TRUE
+		ORDER BY id ASC
+		LIMIT 1 OFFSET ?`,
+		[offset],
+	);
+
+	if (rows.length === 0) {
+		return null;
+	}
+
+	const row = rows[0];
 	return {
 		id: row.id,
 		title: row.title,

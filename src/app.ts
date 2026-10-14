@@ -1,10 +1,11 @@
 import path from "node:path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express from "express";
+import express, { type Request } from "express";
 import morgan from "morgan";
 import { helmetMiddleware } from "./config/helmet";
 import { errorHandler } from "./middleware/errorMiddleware";
+import { requestId } from "./middleware/requestIdMiddleware";
 import router from "./router";
 import { morganStream } from "./utils/logger";
 
@@ -27,11 +28,19 @@ app.use(express.json());
 // Parsing cookies
 app.use(cookieParser());
 
+// Corrélation des logs (avant Morgan pour que l'access log porte l'ID)
+app.use(requestId);
+
+morgan.token("request-id", (req) => (req as Request).requestId ?? "-");
+
 // Logging
 app.use(
-	morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", {
-		stream: morganStream,
-	}),
+	morgan(
+		process.env.NODE_ENV === "production"
+			? ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" rid=:request-id'
+			: ":method :url :status :response-time ms rid=:request-id",
+		{ stream: morganStream },
+	),
 );
 
 // Fichiers statiques

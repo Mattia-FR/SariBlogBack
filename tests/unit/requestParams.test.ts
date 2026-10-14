@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { HttpError } from "../../src/utils/httpErrors";
 import {
+	assertPageInRange,
 	parseIdList,
 	parseIdParam,
 	parseOptionalIdQuery,
@@ -17,6 +18,17 @@ function expectBadRequest(fn: () => unknown) {
 		return;
 	}
 	throw new Error("Une HttpError 400 était attendue");
+}
+
+function expectNotFound(fn: () => unknown) {
+	try {
+		fn();
+	} catch (err) {
+		expect(err).toBeInstanceOf(HttpError);
+		expect((err as HttpError).statusCode).toBe(404);
+		return;
+	}
+	throw new Error("Une HttpError 404 était attendue");
 }
 
 describe("parseIdParam", () => {
@@ -67,5 +79,23 @@ describe("parseIdList", () => {
 	it("refuse une valeur qui n'est pas une liste ou un identifiant invalide", () => {
 		expectBadRequest(() => parseIdList("1,2"));
 		expectBadRequest(() => parseIdList([1, "abc"]));
+	});
+});
+
+describe("assertPageInRange", () => {
+	it("autorise page 1 quand total est 0", () => {
+		expect(() => assertPageInRange(1, 10, 0)).not.toThrow();
+	});
+
+	it("refuse page 2 quand total est 0", () => {
+		expectNotFound(() => assertPageInRange(2, 10, 0));
+	});
+
+	it("autorise la dernière page valide", () => {
+		expect(() => assertPageInRange(3, 10, 25)).not.toThrow();
+	});
+
+	it("refuse une page au-delà du total", () => {
+		expectNotFound(() => assertPageInRange(4, 10, 25));
 	});
 });

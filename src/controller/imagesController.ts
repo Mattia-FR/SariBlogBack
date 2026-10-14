@@ -6,18 +6,22 @@ import type { Request, Response } from "express";
 import imagesModel from "../model/imagesModel";
 import type { Image } from "../types/images";
 import { HttpError } from "../utils/httpErrors";
-import { buildImageUrl } from "../utils/imageUrl";
+import { buildImageUrl, buildThumbUrl } from "../utils/imageUrl";
 import {
+	assertPageInRange,
 	parseIdParam,
 	parseOptionalIdQuery,
 	parsePaginationParams,
 } from "../utils/requestParams";
 
-/** Enrichit une image avec l'URL complète (path → imageUrl). */
-function enrichWithImageUrl(item: Image): Image & { imageUrl: string } {
+/** Enrichit une image avec les URLs complètes (path → imageUrl / thumbUrl). */
+function enrichWithImageUrl(
+	item: Image,
+): Image & { imageUrl: string; thumbUrl: string } {
 	return {
 		...item,
 		imageUrl: buildImageUrl(item.path) ?? item.path,
+		thumbUrl: buildThumbUrl(item.path) ?? item.path,
 	};
 }
 
@@ -71,6 +75,7 @@ const readByCategoryId = async (req: Request, res: Response): Promise<void> => {
 		limit,
 		tagId,
 	);
+	assertPageInRange(page, limit, total);
 	res.status(200).json({
 		images: images.map(enrichWithImageUrl),
 		total,

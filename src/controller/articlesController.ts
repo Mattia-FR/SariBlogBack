@@ -7,6 +7,7 @@ import articlesModel from "../model/articlesModel";
 import type { Article } from "../types/articles";
 import { HttpError } from "../utils/httpErrors";
 import {
+	assertPageInRange,
 	parseIdParam,
 	parseOptionalIdQuery,
 	parsePaginationParams,
@@ -23,6 +24,7 @@ const browsePublished = async (req: Request, res: Response): Promise<void> => {
 		limit,
 		tagId,
 	);
+	assertPageInRange(page, limit, total);
 	res.status(200).json({ articles, total, page, limit });
 };
 
