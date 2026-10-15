@@ -7,6 +7,11 @@ import {
 	readById,
 	readBySlug,
 } from "../../controller/admin/articlesAdminController";
+import { validate } from "../../middleware/validateMiddleware";
+import {
+	articleCreateSchema,
+	articleUpdateSchema,
+} from "../../schemas/articleSchemas";
 
 const router: Router = express.Router();
 
@@ -23,8 +28,8 @@ router.get("/slug/:slug", readBySlug);
 router.get("/:id", readById);
 
 // CRUD :
-router.post("/", add); // Créer
-router.patch("/:id", edit); // Modifier
-router.delete("/:id", destroy); // Supprimer
+router.post("/", validate(articleCreateSchema), add);
+router.patch("/:id", validate(articleUpdateSchema), edit);
+router.delete("/:id", destroy);
 
 export default router;

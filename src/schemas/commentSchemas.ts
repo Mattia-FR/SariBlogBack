@@ -14,3 +14,14 @@ export const commentCreateSchema = z.object({
 	lastname: z.string().trim().min(1, "Le nom est requis"),
 	email: z.string().min(1, "L'email est requis").pipe(z.email()),
 });
+
+const commentStatusSchema = z.enum(
+	["pending", "approved", "rejected", "spam"],
+	{
+		error: "Statut invalide (attendu : pending, approved, rejected, spam)",
+	},
+);
+
+export const commentUpdateStatusSchema = z.object({
+	status: commentStatusSchema,
+});

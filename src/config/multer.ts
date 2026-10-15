@@ -1,30 +1,35 @@
 import crypto from "node:crypto";
-import path from "node:path";
 import multer from "multer";
+import { HttpError } from "../utils/httpErrors";
+import { ALLOWED_IMAGE_MIME, MAX_IMAGE_BYTES } from "./imageConstraints";
 
 const uploadDir = "./uploads/images";
+
+const allowedMime = new Set<string>(ALLOWED_IMAGE_MIME);
 
 const storage = multer.diskStorage({
 	destination: (_req, _file, callbackMulter) => {
 		callbackMulter(null, uploadDir);
 	},
-	filename: (_req, file, callbackMulter) => {
-		const id = crypto.randomUUID();
-		const ext = path.extname(file.originalname);
-		callbackMulter(null, `${id}${ext}`);
+	filename: (_req, _file, callbackMulter) => {
+		callbackMulter(null, `${crypto.randomUUID()}.tmp`);
 	},
 });
 
 export const uploadImage = multer({
 	storage,
-	limits: { fileSize: 20 * 1024 * 1024 },
+	limits: { fileSize: MAX_IMAGE_BYTES },
 	fileFilter: (_req, file, callbackMulter) => {
-		if (file.mimetype.startsWith("image/")) {
+		if (allowedMime.has(file.mimetype)) {
 			callbackMulter(null, true);
 		} else {
-			// On rejette proprement pour éviter de tomber sur un 500.
-			// `add()` gère déjà le cas `!req.file` et renvoie un 400.
-			callbackMulter(null, false);
+			callbackMulter(
+				new HttpError(
+					400,
+					"Type de fichier non autorisé (image attendue)",
+					"INVALID_FILE_TYPE",
+				),
+			);
 		}
 	},
 });

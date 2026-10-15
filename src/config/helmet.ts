@@ -1,4 +1,7 @@
 import helmet from "helmet";
+import { IMAGE_BASE_URL } from "../utils/imageUrl";
+
+const backendOrigin = IMAGE_BASE_URL.replace(/\/$/, "");
 
 export const helmetMiddleware = helmet({
 	contentSecurityPolicy: {
@@ -11,17 +14,9 @@ export const helmetMiddleware = helmet({
 
 			fontSrc: ["'self'", "https://fonts.gstatic.com"],
 
-			imgSrc: [
-				"'self'",
-				"data:",
-				"https://sariblogback-production.up.railway.app",
-			],
+			imgSrc: ["'self'", "data:", backendOrigin],
 
-			connectSrc: [
-				"'self'",
-				"http://localhost:4242",
-				"https://sariblogback-production.up.railway.app",
-			],
+			connectSrc: ["'self'", backendOrigin],
 
 			frameAncestors: ["'self'"],
 

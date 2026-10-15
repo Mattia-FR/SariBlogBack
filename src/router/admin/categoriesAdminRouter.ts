@@ -6,13 +6,18 @@ import {
 	readById,
 } from "../../controller/admin/categoriesAdminController";
 import { browseAll } from "../../controller/categoriesController";
+import { validate } from "../../middleware/validateMiddleware";
+import {
+	categoryCreateSchema,
+	categoryUpdateSchema,
+} from "../../schemas/categorySchemas";
 
 const router: Router = express.Router();
 
 router.get("/", browseAll);
 router.get("/:id", readById);
-router.post("/", add);
-router.patch("/:id", edit);
+router.post("/", validate(categoryCreateSchema), add);
+router.patch("/:id", validate(categoryUpdateSchema), edit);
 router.delete("/:id", destroy);
 
 export default router;

@@ -11,3 +11,11 @@ export const messageVisitorSchema = z.object({
 		.min(1, "Le message est requis")
 		.max(5000, "Le message ne doit pas dépasser 5000 caractères"),
 });
+
+const messageStatusSchema = z.enum(["unread", "read", "archived"], {
+	error: "Statut invalide (attendu : unread, read, archived)",
+});
+
+export const messageUpdateStatusSchema = z.object({
+	status: messageStatusSchema,
+});

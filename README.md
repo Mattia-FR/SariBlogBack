@@ -172,7 +172,7 @@ Back/
 │   ├── middleware/
 │   │   ├── authMiddleware.ts        # requireAuth, optionalAuth (JWT)
 │   │   ├── errorMiddleware.ts       # Gestionnaire d'erreurs global (Zod, Multer, 500)
-│   │   ├── roleMiddleware.ts        # requireRole, requireEditor, requireAdmin
+│   │   ├── roleMiddleware.ts        # requireRole, requireEditor
 │   │   └── validateMiddleware.ts    # validate(zodSchema) — parse req.body
 │   ├── schemas/
 │   │   ├── authSchemas.ts           # loginSchema (Zod)
@@ -561,7 +561,9 @@ GET {{baseUrl}}/articles/homepage-preview
 
 - **Hashage des mots de passe** : Argon2id (options OWASP dans `src/config/argon2.ts` — memoryCost 19 MB, timeCost 2)
 - **Authentification JWT** : Access token (Bearer) + refresh token (cookie HttpOnly) ; secrets en variables d'environnement
-- **Rôles** : Middlewares `requireAuth`, `requireEditor`, `requireAdmin` pour protéger les routes admin
+- **Refresh token en DB** : seule l'empreinte HMAC-SHA256 (`hashRefreshToken`) est stockée dans `users.refresh_token` ; le cookie conserve le JWT brut
+- **Déploiement (hash refresh)** : après mise en prod de ce changement, invalider les sessions existantes une fois : `UPDATE users SET refresh_token = NULL;` (sinon les JWT encore en clair en DB ne matcheront plus → 401 au refresh → re-login)
+- **Rôles** : Middlewares `requireAuth`, `requireEditor` pour protéger les routes admin
 - **CORS** : Activé avec `credentials: true`, origine contrôlée via `ALLOWED_ORIGIN`
 - **Helmet** : Headers de sécurité HTTP configurés (CSP stricte, frameAncestors, crossOriginResourcePolicy)
 - **Validation des entrées** : Schémas Zod pour auth, messages et commentaires (`src/schemas/`)

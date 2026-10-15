@@ -7,6 +7,14 @@
 const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || "http://localhost:4242";
 
 /**
+ * Dérive le path miniature par convention de nommage.
+ * Ex. `/uploads/images/x.webp` → `/uploads/images/x-thumb.webp`
+ */
+export function toThumbPath(imagePath: string): string {
+	return imagePath.replace(/(\.[^.]+)$/, "-thumb$1");
+}
+
+/**
  * Retourne l'URL complète (base + path) si path est défini, sinon undefined.
  * Gère les cas base terminant par / et path commençant par / pour éviter le double slash.
  * @param path - Chemin relatif (ex. /uploads/images/xxx.jpg) ou null/undefined
@@ -20,6 +28,18 @@ export function buildImageUrl(
 	const base = IMAGE_BASE_URL.replace(/\/$/, "");
 	const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 	return `${base}${normalizedPath}`;
+}
+
+/**
+ * URL complète de la miniature dérivée de `path` (convention `-thumb` avant l'extension).
+ */
+export function buildThumbUrl(
+	path: string | null | undefined,
+): string | undefined {
+	if (path == null || path === "") {
+		return undefined;
+	}
+	return buildImageUrl(toThumbPath(path));
 }
 
 export { IMAGE_BASE_URL };

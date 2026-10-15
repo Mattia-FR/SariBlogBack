@@ -1,19 +1,24 @@
 import rateLimit from "express-rate-limit";
+import { HttpError } from "../utils/httpErrors";
 
-export const loginLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	limit: 5, // Limite de 5 requêtes par IP
-	message: "Trop de tentatives de connexion. Veuillez réessayer plus tard.",
-});
+function createLimiter(message: string) {
+	return rateLimit({
+		windowMs: 15 * 60 * 1000, // 15 minutes
+		limit: 5, // Limite de 5 requêtes par IP
+		handler: (_req, _res, next) => {
+			next(new HttpError(429, message, "RATE_LIMITED"));
+		},
+	});
+}
 
-export const messagesLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	limit: 5, // Limite de 5 requêtes par IP
-	message: "Trop de messages. Veuillez réessayer plus tard.",
-});
+export const loginLimiter = createLimiter(
+	"Trop de tentatives de connexion. Veuillez réessayer plus tard.",
+);
 
-export const commentsLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	limit: 5, // Limite de 5 requêtes par IP
-	message: "Trop de commentaires. Veuillez réessayer plus tard.",
-});
+export const messagesLimiter = createLimiter(
+	"Trop de messages. Veuillez réessayer plus tard.",
+);
+
+export const commentsLimiter = createLimiter(
+	"Trop de commentaires. Veuillez réessayer plus tard.",
+);
