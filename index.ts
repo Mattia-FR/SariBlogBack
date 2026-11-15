@@ -11,15 +11,21 @@ if (!process.env.ALLOWED_ORIGIN?.trim()) {
 		"ALLOWED_ORIGIN est absent ou vide : le CORS peut ne pas convenir au front en requêtes cross-origin. Définis cette variable dans .env avant un déploiement.",
 	);
 }
-
-const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 4242;
+if (!process.env.PORT) {
+	throw new Error("PORT manquant dans l'environnement");
+}
+const port = Number.parseInt(process.env.PORT, 10);
+if (Number.isNaN(port)) {
+	throw new Error(`PORT invalide : "${process.env.PORT}"`);
+}
+const host = process.env.HOST || "127.0.0.1";
 
 app.get("/", (req, res) => {
-	res.status(200).send("Je suis sur l'API 'http://localhost:4242'");
+	res.status(200).send(`Je suis sur l'API 'http://${host}:${port}'`);
 });
 
-const server = app.listen(port, () => {
-	logger.info(`Server adress : http://localhost:${port}`);
+const server = app.listen(port, host, () => {
+	logger.info(`Server address : http://${host}:${port}`);
 });
 
 let shuttingDown = false;
