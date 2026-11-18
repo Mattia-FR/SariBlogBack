@@ -15,12 +15,11 @@
 - [Technologies](#-technologies)
 - [Architecture](#-architecture)
 - [Installation](#-installation)
-- [Configuration](#-configuration)
 - [API Endpoints](#-api-endpoints) (auth, publics, admin)
 - [Base de données](#-base-de-données)
 - [Tests](#-tests)
 - [Sécurité](#-sécurité)
-- [Contribution](#-contribution)
+- [Scripts disponibles](#-scripts-disponibles)
 
 ## 🎯 À propos
 
@@ -63,9 +62,9 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
   - Public : liste complète, par slug
   - Admin : liste, par ID, création, modification, suppression
 
-- **Commentaires** : Système de commentaires modérés (2 endpoints publics) + modération admin (5 endpoints)
+- **Commentaires** : Système de commentaires modérés (2 endpoints publics) + modération admin (4 endpoints)
   - Public : liste des commentaires approuvés d'un article ; création d'un commentaire (modération ensuite)
-  - Admin : liste, par statut, par ID, mise à jour statut, suppression
+  - Admin : liste paginée (filtre `?status=` optionnel), par ID, mise à jour statut, suppression
 
 - **Utilisateurs** : Artiste principale (1 endpoint public) + profil connecté (3 endpoints admin)
   - Public : profil de l'artiste principale (`GET /api/users/artist`)
@@ -73,14 +72,14 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 
 - **Messages** : Formulaire de contact (1 endpoint public) + gestion admin (4 endpoints)
   - Public : création de message (visiteur)
-  - Admin : liste, par statut, par ID, mise à jour statut, suppression
+  - Admin : liste paginée (filtre `?status=` optionnel), par ID, mise à jour statut, suppression
 
 - **Authentification** : JWT avec refresh (3 endpoints)
   - Login, refresh (cookie), logout
 
 - **Dashboard** : Statistiques admin (1 endpoint)
 
-**Total : 59 endpoints (23 routes publiques incluant `/api/auth`, 36 sous `/api/admin` avec JWT + rôle éditeur ou admin)**
+**Total : 58 endpoints (23 routes publiques incluant `/api/auth`, 35 sous `/api/admin` avec JWT + rôle éditeur ou admin)**
 
 ## 🛠️ Technologies
 
@@ -95,13 +94,14 @@ API REST d'un CMS blog/portfolio développé pour ma sœur illustratrice. Premie
 | **Auth** | jsonwebtoken | 9.0.3 |
 | **Validation** | Zod | 4.1.12 |
 | **Upload** | Multer | 2.1.0 |
+| **Traitement images** | sharp | 0.35.5 |
+| **Détection MIME** | file-type | 22.1.1 |
 | **Rate limiting** | express-rate-limit | 8.2.1 |
-| **Logging** | winston | 3.19.x |
+| **Logging** | winston, winston-daily-rotate-file, morgan | 3.19.x / 5.0.x / 1.12.x |
 | **Utilitaires** | dotenv, cookie-parser, slugify | - |
 | **Sécurité HTTP** | Helmet | 8.1.0 |
 | **CORS** | cors | 2.8.5 |
-| **Dev** | Nodemon, ts-node | 3.1.x / 10.9.x |
-| **Qualité** | Biome (format + lint) | 1.x |
+| **Dev** | Nodemon, ts-node, Vitest, Supertest | 3.1.x / 10.9.x / 4.1.x / 7.3.x |
 
 ## 📁 Architecture
 
@@ -112,7 +112,8 @@ Back/
 │   ├── config/
 │   │   ├── argon2.ts                # Options de hashage Argon2 (OWASP)
 │   │   ├── helmet.ts                # Configuration Helmet (sécurité HTTP)
-│   │   ├── multer.ts                # Upload d'images (20 MB max, nommage UUID)
+│   │   ├── imageConstraints.ts      # MIME autorisés, taille max (20 MB)
+│   │   ├── multer.ts                # Upload disque (UUID.tmp, filtre MIME)
 │   │   └── rateLimit.ts             # Rate limiters (login, messages, commentaires)
 │   ├── controller/
 │   │   ├── articlesController.ts    # Articles publics (handlers utilisés par articlesRouter)
@@ -126,10 +127,10 @@ Back/
 │   │   └── admin/
 │   │       ├── articlesAdminController.ts    # CRUD articles (6 handlers)
 │   │       ├── categoriesAdminController.ts  # CRUD catégories (5 handlers)
-│   │       ├── commentsAdminController.ts    # Modération commentaires (5 handlers)
+│   │       ├── commentsAdminController.ts    # Modération commentaires (4 handlers)
 │   │       ├── dashboardAdminController.ts   # Statistiques (1 handler)
 │   │       ├── imagesAdminController.ts      # CRUD images + upload (5 handlers)
-│   │       ├── messagesAdminController.ts    # Gestion messages (5 handlers)
+│   │       ├── messagesAdminController.ts    # Gestion messages (4 handlers)
 │   │       ├── tagsAdminController.ts        # CRUD tags (7 routes)
 │   │       └── usersAdminController.ts       # Profil connecté / mot de passe (3 handlers)
 │   ├── model/
@@ -170,14 +171,21 @@ Back/
 │   │       ├── tagsAdminRouter.ts
 │   │       └── usersAdminRouter.ts
 │   ├── middleware/
-│   │   ├── authMiddleware.ts        # requireAuth, optionalAuth (JWT)
+│   │   ├── authMiddleware.ts        # requireAuth (JWT Bearer)
 │   │   ├── errorMiddleware.ts       # Gestionnaire d'erreurs global (Zod, Multer, 500)
+│   │   ├── requestIdMiddleware.ts   # Injection requestId + header X-Request-Id
 │   │   ├── roleMiddleware.ts        # requireRole, requireEditor
 │   │   └── validateMiddleware.ts    # validate(zodSchema) — parse req.body
 │   ├── schemas/
+│   │   ├── articleSchemas.ts
 │   │   ├── authSchemas.ts           # loginSchema (Zod)
+│   │   ├── categorySchemas.ts
 │   │   ├── commentSchemas.ts
-│   │   └── messageSchemas.ts
+│   │   ├── common.ts
+│   │   ├── imageSchemas.ts
+│   │   ├── messageSchemas.ts
+│   │   ├── tagSchemas.ts
+│   │   └── userSchemas.ts
 │   ├── types/
 │   │   ├── articles.ts
 │   │   ├── auth.ts
@@ -188,23 +196,29 @@ Back/
 │   │   ├── tags.ts
 │   │   └── users.ts
 │   └── utils/
+│       ├── assertAllowedImageFile.ts # Vérification magic bytes (file-type)
 │       ├── dateHelpers.ts
 │       ├── excerpt.ts               # Génération d'extraits texte (tronqués à N mots)
+│       ├── hashRefreshToken.ts      # Empreinte HMAC-SHA256 du refresh token
 │       ├── httpErrors.ts            # HttpError, isHttpError, sendError
 │       ├── imageUrl.ts
-│       ├── logger.ts                # Winston (logs)
+│       ├── logger.ts                # Winston (+ rotation fichier en prod)
+│       ├── mysqlErrors.ts
+│       ├── processUploadedImage.ts  # Conversion Sharp → WebP + miniature
 │       ├── publishedAt.ts           # Calcul de published_at à la création d'article
+│       ├── requestParams.ts         # Pagination / parsing query
 │       └── slug.ts
 ├── uploads/
 │   └── images/                      # Fichiers images (servis statiquement)
 ├── tests/
 │   ├── api.http                     # Tests REST Client (VS Code)
+│   ├── integration/                 # Tests d'intégration Supertest
 │   └── unit/                        # Tests unitaires Vitest
-├── vitest.config.ts
+├── vitest.config.mts
 ├── index.ts                         # Point d'entrée (port 4242)
 ├── init.ts                          # Script d'initialisation DB (npm run db:init)
 ├── seeds.ts                         # Données de test
-├── schema.sql                       # Schéma complet (10 tables)
+├── schema.sql                       # Schéma complet (9 tables)
 ├── package.json
 ├── tsconfig.json
 ├── .env.sample
@@ -254,15 +268,25 @@ DB_PORT=3306
 PORT=4242
 
 ALLOWED_ORIGIN=http://localhost:5173
+
+# Niveaux Winston : error | warn | info | http | verbose | debug | silly
+LOG_LEVEL=info
+# En production (NODE_ENV=production) : logs aussi dans logs/app-*.log (rotation 7j / 20m)
+
+# Origine publique du backend (URLs images + CSP Helmet) — fallback http://localhost:4242 si absent
 IMAGE_BASE_URL=http://localhost:4242
 
 # JWT (obligatoire pour l'auth) : générer deux secrets avec :
 # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ACCESS_TOKEN_SECRET=une_longue_chaîne_aléatoire_secrète_1
 REFRESH_TOKEN_SECRET=une_autre_longue_chaîne_aléatoire_secrète_2
+
+# Durées de vie des tokens (format jwt) ; défauts 15m / 7d si absentes
+ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_IN=7d
 ```
 
-> ⚠️ **Important** : Les variables `DB_*`, `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `ALLOWED_ORIGIN` et `IMAGE_BASE_URL` sont **obligatoires** pour le bon fonctionnement.
+> ⚠️ **Important** : `DB_*`, `PORT`, `ACCESS_TOKEN_SECRET` et `REFRESH_TOKEN_SECRET` sont **obligatoires**. `ALLOWED_ORIGIN` est fortement recommandé (CORS). `IMAGE_BASE_URL` a un fallback local si absent.
 
 4. **Initialiser la base de données**
 
@@ -272,7 +296,7 @@ REFRESH_TOKEN_SECRET=une_autre_longue_chaîne_aléatoire_secrète_2
 npm run db:init
 ```
 
-Le fichier `schema.sql` contient les 10 tables avec leurs relations. Aucune étape `mysql` manuelle n’est nécessaire : tout est fait par le script.
+Le fichier `schema.sql` contient les 9 tables avec leurs relations. Aucune étape `mysql` manuelle n’est nécessaire : tout est fait par le script.
 
 5. **Démarrer le serveur**
 
@@ -304,7 +328,7 @@ Pour les routes protégées, envoyer le header : `Authorization: Bearer <accessT
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
 | `GET` | `/articles/homepage-preview` | 4 derniers articles publiés (enrichis avec images et tags) | Public |
-| `GET` | `/articles/published` | Liste des articles publiés (`?limit=N`, max 20) | Public |
+| `GET` | `/articles/published` | Liste paginée des articles publiés. Query : `page`, `limit` (1–20), `tagId` optionnel. Réponse : `{ articles, total, page, limit }` | Public |
 | `GET` | `/articles/published/id/:id` | Article publié par ID (avec contenu complet) | Public |
 | `GET` | `/articles/published/slug/:slug` | Article publié par slug (avec contenu complet) | Public |
 
@@ -406,7 +430,6 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
 | `GET` | `/admin/comments` | Liste paginée. Query : `page`, `limit` (1–20, défaut 10), `status` optionnel (`pending` \| `approved` \| `rejected` \| `spam`). Réponse : `{ comments, total, page, limit, counts }` avec `counts` : `{ total, pending, approved, rejected, spam }`. |
-| `GET` | `/admin/comments/status/:status` | Commentaires par statut, liste complète (non paginée) |
 | `GET` | `/admin/comments/:id` | Commentaire par ID |
 | `PATCH` | `/admin/comments/:id/status` | Mettre à jour le statut |
 | `DELETE` | `/admin/comments/:id` | Supprimer un commentaire |
@@ -438,7 +461,7 @@ Toutes les routes ci-dessous nécessitent le header `Authorization: Bearer <acce
 
 | URL | Description |
 |-----|-------------|
-| `/uploads/images/*` | Fichiers images uploadés (servis statiquement) |
+| `/uploads/images/*` | Fichiers images uploadés (servis statiquement via `/uploads`) |
 
 ### Exemples de requêtes
 
@@ -481,20 +504,19 @@ curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/adm
 
 ### Structure
 
-**10 tables** avec relations (foreign keys) :
+**9 tables** avec relations (foreign keys) :
 
 | Table | Description | Relations |
 |-------|-------------|-----------|
 | `users` | Utilisateurs (2 données de test) | - |
 | `articles` | Articles de blog (30 données de test) | `users`, `images` (featured_image) |
-| `images` | Galerie d'images (14 données de test) | `users`, `articles` |
+| `images` | Galerie d'images (60 données de test) | `users`, `articles`, `categories` (`category_id`) |
 | `tags` | Tags multi-entités (10 données de test) | - |
 | `categories` | Catégories d'images (5 données de test) | - |
-| `comments` | Commentaires sur articles (10 données de test) | `users`, `articles` |
-| `messages` | Messages de contact (10 données de test) | `users` |
+| `comments` | Commentaires sur articles (13 données de test) | `users` (nullable), `articles` |
+| `messages` | Messages de contact (10 données de test) | - |
 | `articles_tags` | Relation N-N articles ↔ tags | `articles`, `tags` |
 | `images_tags` | Relation N-N images ↔ tags | `images`, `tags` |
-| `images_categories` | Relation N-N images ↔ catégories | `images`, `categories` |
 
 ### Caractéristiques
 
@@ -502,6 +524,7 @@ curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/adm
 - **Rôles utilisateurs** : `admin`, `editor`
 - **Statuts de commentaires** : `pending`, `approved`, `rejected`, `spam`
 - **Statuts de messages** : `unread`, `read`, `archived`
+- **Catégorie d'image** : relation 1-N via `images.category_id` (pas de table de jointure)
 - **Encodage** : UTF-8 (utf8mb4_unicode_ci)
 - **Moteur** : InnoDB (support des transactions et foreign keys)
 
@@ -510,12 +533,12 @@ curl -H "Authorization: Bearer VOTRE_ACCESS_TOKEN" http://localhost:4242/api/adm
 Le fichier `seeds.ts` (injecté via `npm run db:init`) inclut :
 - 2 utilisateurs (1 admin, 1 éditrice — l'artiste principale)
 - 30 articles (28 publiés, 2 brouillons)
-- 14 images (galerie et illustrations d'articles)
+- 60 images (galerie et illustrations d'articles)
 - 10 tags (aquarelle, fantasy, portrait, etc.)
 - 5 catégories (portraits, aquarelle, paysages, fantasy, croquis & esquisses)
-- 10 commentaires (8 approuvés, 1 spam, 1 rejeté)
+- 13 commentaires (11 approuvés, 1 spam, 1 rejeté)
 - 10 messages de contact
-- Relations articles-tags, images-tags et images-catégories
+- Relations articles-tags et images-tags ; catégories liées via `images.category_id`
 
 ## 🧪 Tests
 
@@ -536,14 +559,16 @@ Le fichier contient :
 - Variables globales (`@baseUrl`, `@adminUrl`, `@accessToken`)
 - Exemples de codes HTTP (200, 401, 403, 404)
 
-### Tests unitaires (Vitest)
+### Tests unitaires et d'intégration (Vitest)
 
 ```bash
 npm test          # exécution unique
 npm run test:watch  # mode surveillance
 ```
 
-Les fichiers se trouvent dans `tests/unit/` ; la configuration est dans `vitest.config.ts`.
+- **Unitaires** : `tests/unit/` (utils, middlewares, upload, etc.)
+- **Intégration** : `tests/integration/errorContract.test.ts` (contrat JSON d'erreur via Supertest)
+- **Configuration** : `vitest.config.mts`
 
 ### Exemple de test
 
@@ -560,15 +585,17 @@ GET {{baseUrl}}/articles/homepage-preview
 ### ✅ Implémenté
 
 - **Hashage des mots de passe** : Argon2id (options OWASP dans `src/config/argon2.ts` — memoryCost 19 MB, timeCost 2)
-- **Authentification JWT** : Access token (Bearer) + refresh token (cookie HttpOnly) ; secrets en variables d'environnement
+- **Authentification JWT** : Access token (Bearer) + refresh token (cookie HttpOnly, `secure: true`, `sameSite: "strict"`) ; secrets en variables d'environnement
 - **Refresh token en DB** : seule l'empreinte HMAC-SHA256 (`hashRefreshToken`) est stockée dans `users.refresh_token` ; le cookie conserve le JWT brut
 - **Déploiement (hash refresh)** : après mise en prod de ce changement, invalider les sessions existantes une fois : `UPDATE users SET refresh_token = NULL;` (sinon les JWT encore en clair en DB ne matcheront plus → 401 au refresh → re-login)
+- **Cookie secure** : `secure: true` partout — sur HTTP local (sans HTTPS), le navigateur peut refuser le cookie refresh ; privilégier HTTPS ou un reverse proxy local si besoin
 - **Rôles** : Middlewares `requireAuth`, `requireEditor` pour protéger les routes admin
 - **CORS** : Activé avec `credentials: true`, origine contrôlée via `ALLOWED_ORIGIN`
 - **Helmet** : Headers de sécurité HTTP configurés (CSP stricte, frameAncestors, crossOriginResourcePolicy)
-- **Validation des entrées** : Schémas Zod pour auth, messages et commentaires (`src/schemas/`)
+- **Validation des entrées** : Schémas Zod pour auth, messages, commentaires et CRUD admin (articles, images, tags, catégories, users) dans `src/schemas/`
 - **Rate limiting** : 3 limiteurs distincts (`loginLimiter`, `messagesLimiter`, `commentsLimiter`) — 5 requêtes par IP par tranche de 15 min
-- **Upload sécurisé** : Multer avec taille max 20 MB et nommage UUID des fichiers (`src/config/multer.ts`)
+- **Upload sécurisé** : Multer (20 MB max, fichier `UUID.tmp`) + whitelist MIME (`imageConstraints.ts`) + vérification magic bytes (`file-type`) + conversion Sharp en WebP et miniature `-thumb.webp`
+- **Corrélation des logs** : middleware `requestId` (header `X-Request-Id`) ; Morgan → Winston ; en production, rotation fichier (`logs/app-*.log`, 7j / 20m)
 - **Exclusion des mots de passe** : Les mots de passe ne sont jamais retournés dans les réponses API
 
 ## 📝 Scripts disponibles
@@ -577,18 +604,22 @@ GET {{baseUrl}}/articles/homepage-preview
 # Démarrage en mode développement (avec hot reload)
 npm run dev
 
+# Compilation TypeScript
+npm run build
+
 # Initialiser la base de données (suppression/recréation de DB_NAME, schéma + données de test)
 npm run db:init
 
-# Tests unitaires (Vitest)
+# Tests (Vitest)
 npm test
 npm run test:watch
 
-# Formatage du code (Biome)
+# Formatage / lint (scripts présents ; nécessitent @biomejs/biome, non listé dans package.json)
 npm run format
-
-# Analyse statique / lint (Biome)
 npm run lint
+
+# Vérification ad hoc
+npm run check
 ```
 
 ## 👤 Auteur
