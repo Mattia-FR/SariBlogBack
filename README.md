@@ -337,6 +337,7 @@ Pour les routes protégées, envoyer le header : `Authorization: Bearer <accessT
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
 | `GET` | `/images/image-of-the-day` | Image du jour (change automatiquement) | Public |
+| `GET` | `/images/homepage-preview` | 6 dernières œuvres de la galerie (tags + `categorySlug`) | Public |
 | `GET` | `/images/gallery` | Galerie d'images publiques (`is_in_gallery = TRUE`) | Public |
 | `GET` | `/images/article/:articleId` | Images associées à un article | Public |
 | `GET` | `/images/tag/:tagId` | Images filtrées par tag | Public |
@@ -477,6 +478,9 @@ curl http://localhost:4242/api/articles/published/slug/decouvrir-aquarelle-guide
 
 # Récupérer l'image du jour
 curl http://localhost:4242/api/images/image-of-the-day
+
+# Aperçu homepage (6 dernières œuvres)
+curl http://localhost:4242/api/images/homepage-preview
 
 # Récupérer la galerie d'images
 curl http://localhost:4242/api/images/gallery

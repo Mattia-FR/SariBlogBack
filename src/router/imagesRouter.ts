@@ -5,6 +5,7 @@ import {
 	readByCategoryId,
 	readById,
 	readByTag,
+	readHomepagePreview,
 	readImageOfTheDay,
 } from "../controller/imagesController";
 
@@ -12,6 +13,9 @@ const router: Router = express.Router();
 
 // Route pour l'image du jour (doit être avant /:id pour éviter les conflits)
 router.get("/image-of-the-day", readImageOfTheDay);
+
+// Aperçu homepage (doit être avant /:id)
+router.get("/homepage-preview", readHomepagePreview);
 
 // Route pour la galerie d'images (public)
 router.get("/gallery", browseGallery);

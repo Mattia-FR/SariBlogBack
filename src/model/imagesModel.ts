@@ -213,6 +213,57 @@ const findByCategoryId = async (
 	return { images: mapped, total };
 };
 
+const findHomepagePreview = async (): Promise<Image[]> => {
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [images]: any = await pool.query(
+		`SELECT i.id, i.title, i.description, i.path, i.alt_descr, i.is_in_gallery,
+		i.user_id, i.article_id, i.category_id, i.created_at, i.updated_at,
+		c.slug as category_slug
+		FROM images i
+		INNER JOIN categories c ON i.category_id = c.id
+		WHERE i.is_in_gallery = TRUE
+		ORDER BY i.created_at DESC
+		LIMIT 6`,
+	);
+
+	if (images.length === 0) {
+		return [];
+	}
+
+	const imageIds: number[] = images.map((image: { id: number }) => image.id);
+	const placeholders = imageIds.map(() => "?").join(",");
+
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	const [tags]: any = await pool.query(
+		`SELECT it.image_id, t.id, t.name, t.slug
+		FROM images_tags it
+		LEFT JOIN tags t ON it.tag_id = t.id
+		WHERE it.image_id IN (${placeholders})`,
+		imageIds,
+	);
+
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+	return images.map((image: any) => ({
+		id: image.id,
+		title: image.title,
+		description: image.description,
+		path: image.path,
+		alt_descr: image.alt_descr,
+		is_in_gallery: image.is_in_gallery,
+		user_id: image.user_id,
+		article_id: image.article_id,
+		category_id: image.category_id ?? null,
+		created_at: toDateString(image.created_at) ?? "",
+		updated_at: toDateString(image.updated_at) ?? "",
+		categorySlug: image.category_slug ?? null,
+		tags: tags
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			.filter((t: any) => t.image_id === image.id)
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
+			.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
+	}));
+};
+
 const findImageOfTheDay = async (): Promise<Image | null> => {
 	// biome-ignore lint/suspicious/noExplicitAny: mysql2 query result typing
 	const [countResult]: any = await pool.query(
@@ -267,5 +318,6 @@ export default {
 	findByArticleId,
 	findByTagId,
 	findByCategoryId,
+	findHomepagePreview,
 	findImageOfTheDay,
 };

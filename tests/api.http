@@ -289,6 +289,9 @@ Authorization: Bearer {{accessToken}}
 ### 1. Image du jour
 GET {{baseUrl}}/images/image-of-the-day
 
+### 1b. Aperçu homepage (6 dernières œuvres)
+GET {{baseUrl}}/images/homepage-preview
+
 ### 2. Images de la GALERIE (is_in_gallery = TRUE)
 GET {{baseUrl}}/images/gallery
 

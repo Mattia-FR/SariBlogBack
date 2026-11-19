@@ -13,6 +13,8 @@ export interface Image {
 	created_at: string;
 	updated_at: string;
 	tags?: Tag[];
+	/** Slug de la catégorie (présent sur homepage-preview). */
+	categorySlug?: string | null;
 }
 
 /** Données pour créer une image (path et user_id requis). */

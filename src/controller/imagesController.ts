@@ -97,6 +97,16 @@ const readImageOfTheDay = async (
 	res.status(200).json(enrichWithImageUrl(image));
 };
 
+// 6 dernières œuvres de la galerie (avec tags + categorySlug). Retourne Image[] + imageUrl.
+// GET /images/homepage-preview
+const readHomepagePreview = async (
+	_req: Request,
+	res: Response,
+): Promise<void> => {
+	const images: Image[] = await imagesModel.findHomepagePreview();
+	res.status(200).json(images.map(enrichWithImageUrl));
+};
+
 export {
 	browseGallery,
 	readById,
@@ -104,4 +114,5 @@ export {
 	readByTag,
 	readByCategoryId,
 	readImageOfTheDay,
+	readHomepagePreview,
 };
