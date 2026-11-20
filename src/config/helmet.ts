@@ -10,9 +10,9 @@ export const helmetMiddleware = helmet({
 
 			scriptSrc: ["'self'"],
 
-			styleSrc: ["'self'", "https://fonts.googleapis.com"],
+			styleSrc: ["'self'"],
 
-			fontSrc: ["'self'", "https://fonts.gstatic.com"],
+			fontSrc: ["'self'"],
 
 			imgSrc: ["'self'", "data:", backendOrigin],
 
